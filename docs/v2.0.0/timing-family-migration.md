@@ -1,10 +1,10 @@
 # #275 Timing family migration (timing + session intros/recaps)
 
-**Status:** Slice 4 — timing inventory + practice→qualifying→race session intros/recaps (all `legacy`; no `FAMILY_ROUTE` flip).  
+**Status:** Slice 5 — EN patterns + TTS slot formats curated on all inventory wires (all `legacy`; no `FAMILY_ROUTE` flip).  
 **Issue:** [#275](https://github.com/Buchtanen/ir-obs-switcher/issues/275)  
 **Module:** `src/irswitch/contracts/timing_family_map.py`  
 **Tests:** `tests/test_timing_family_map.py`  
-**Lookup:** [inflight § #275](../dokumentace/inflight/README.md#275-timing-family-map-slice-4-lookup) · [events branch delta](../dokumentace/domeny/events.md#timing-family-migration-map-contractstiming_family_mappy)
+**Lookup:** [inflight § #275](../dokumentace/inflight/README.md#275-timing-family-map-slice-5-lookup) · [events branch delta](../dokumentace/domeny/events.md#timing-family-migration-map-contractstiming_family_mappy)
 
 ## Guardrails
 
@@ -40,9 +40,33 @@ Helpers: `timing_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status(
 - **Invalid-lap scope explicit** — modes `['PRACTICE', 'QUALIFYING']`.
 - **Inherited facts use active lineage only** — session intros/recaps set `requires_active_lineage=True`; stage order `['practice', 'qualifying', 'race']`; non-recap wires do not silently inherit.
 
+
+
+## EN patterns / TTS slots (Slice 5)
+
+Curated without rewriting frozen `machine/realization-pattern-cards.json` hashes:
+
+| Wire | Beat pattern ids (4× tight) | Claim-surface polarity | Forbidden tokens | TTS slots |
+| --- | --- | --- | --- | --- |
+| `LAP_COMPLETE` | `timing.lap.completed:tight:1`, `timing.lap.completed:tight:2`, `timing.lap.completed:tight:3`, `timing.lap.completed:tight:4` | completes lap {lapNumber}; crosses the line on lap {lapNumber}… | `wins the race`, `checkered`, `race finish`, `takes the win` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `SECTOR_SPLIT` | `timing.sector.split:tight:1`, `timing.sector.split:tight:2`, `timing.sector.split:tight:3`, `timing.sector.split:tight:4` | splits sector {sectorId}; ticks sector {sectorId}… | `sector best`, `personal best`, `invalid lap` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `SECTOR_BEST` | `timing.sector.best:tight:1`, `timing.sector.best:tight:2`, `timing.sector.best:tight:3`, `timing.sector.best:tight:4` | sets a sector {sectorId} best; improves sector {sectorId}… | `loses time`, `invalid lap`, `race finish` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `PERSONAL_BEST` | `timing.lap.personal_best:tight:1`, `timing.lap.personal_best:tight:2`, `timing.lap.personal_best:tight:3`, `timing.lap.personal_best:tight:4` | sets a personal best; improves the personal best to {lapTime}… | `sector only`, `invalid lap`, `race win` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `GAIN_FOUND` | `timing.pace.gain:tight:1`, `timing.pace.gain:tight:2`, `timing.pace.gain:tight:3`, `timing.pace.gain:tight:4` | finds {delta} against the reference; gains time vs the reference… | `loses time`, `drops time`, `falls back`, `worse than` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `TIME_LOST` | `timing.pace.loss:tight:1`, `timing.pace.loss:tight:2`, `timing.pace.loss:tight:3`, `timing.pace.loss:tight:4` | loses {delta} against the reference; drops time vs the reference… | `finds time`, `gains time`, `improves by`, `picks up` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `HOT_LAP` | `timing.lap.hot:tight:1`, `timing.lap.hot:tight:2`, `timing.lap.hot:tight:3`, `timing.lap.hot:tight:4` | is on a hot lap; starts flying lap {attemptId}… | `completed result`, `race finish`, `invalid lap claimed as valid` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `PROJECTED_LAP` | `timing.lap.projected:tight:1`, `timing.lap.projected:tight:2`, `timing.lap.projected:tight:3`, `timing.lap.projected:tight:4` | projects {projectedTime}; is on for {projectedTime}… | `has completed`, `personal best confirmed`, `checkered` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `INVALID_LAP` | `incident.invalid_lap:tight:1`, `incident.invalid_lap:tight:2`, `incident.invalid_lap:tight:3`, `incident.invalid_lap:tight:4` | invalidates lap {lapNumber}; loses lap {lapNumber} to a track limit… | `race finish`, `wins the race`, `personal best stands` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `SESSION_INTRO_PRACTICE` | `session.intro.practice:tight:1`, `session.intro.practice:tight:2`, `session.intro.practice:tight:3`, `session.intro.practice:tight:4` | opens practice; is into practice… | `qualifying already decided`, `race underway`, `checkered` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `SESSION_INTRO_QUALIFY` | `session.intro.qualifying:tight:1`, `session.intro.qualifying:tight:2`, `session.intro.qualifying:tight:3`, `session.intro.qualifying:tight:4` | opens qualifying; is into qualifying… | `practice only`, `race underway`, `checkered` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `SESSION_INTRO_RACE` | `session.intro.race:tight:1`, `session.intro.race:tight:2`, `session.intro.race:tight:3`, `session.intro.race:tight:4` | opens the race; is into the race… | `practice only`, `qualifying still open as live`, `unofficial win` | `{subjectSurface}`, `{requiredClaimSurface}` |
+| `QUALI_RECAP` | `session.qualifying_recap:tight:1`, `session.qualifying_recap:tight:2`, `session.qualifying_recap:tight:3`, `session.qualifying_recap:tight:4` | recaps qualifying in P{position}; brings the quali result of P{position}… | `live sector split`, `projected as final`, `race already won` | `{subjectSurface}`, `{requiredClaimSurface}` |
+
+Helper: `en_patterns_and_tts_slots_are_curated()`.
+
 ## Later #275 slices
 
-Deferred: EN patterns / TTS slots; restart/rewind replay cases.
+Deferred: restart/rewind replay cases.
 
 ## Docs / config
 

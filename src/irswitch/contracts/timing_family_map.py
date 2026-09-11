@@ -4,7 +4,7 @@ Maps wire identifiers for lap/sector/PB/pace/hot/projected/invalid lap and
 practice→qualifying→race session intros/recaps onto legacy emitters, adapters,
 beat/story routes, predicates, realization families, policy TTL and tape channels.
 
-Slices 1–4 record every family as ``legacy``. They do **not** rewrite frozen
+Slices 1–5 record every family as ``legacy``. They do **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 """
 
@@ -47,7 +47,7 @@ ScopeKind = Literal[
 ]
 SessionStage = Literal["practice", "qualifying", "race"]
 
-# Slice 1–4 inventory: timing wires + practice→qualifying→race session intros/recaps.
+# Slice 1–5 inventory: timing wires + practice→qualifying→race session intros/recaps.
 TIMING_WIRE_IDS: tuple[str, ...] = (
     "LAP_COMPLETE",
     "SECTOR_SPLIT",
@@ -108,6 +108,10 @@ class TimingFamilyRow:
     migration_status: MigrationStatus
     session_stage: SessionStage | None = None
     requires_active_lineage: bool = False
+    en_pattern_ids: tuple[str, ...] = ()
+    en_claim_surfaces: tuple[str, ...] = ()
+    en_forbidden_tokens: tuple[str, ...] = ()
+    tts_slot_formats: tuple[str, ...] = ()
     notes: str = ""
 
 
@@ -121,6 +125,10 @@ class _StaticSource:
     scope_kind: ScopeKind
     session_stage: SessionStage | None = None
     requires_active_lineage: bool = False
+    en_pattern_ids: tuple[str, ...] = ()
+    en_claim_surfaces: tuple[str, ...] = ()
+    en_forbidden_tokens: tuple[str, ...] = ()
+    tts_slot_formats: tuple[str, ...] = ()
     notes: str = ""
 
 
@@ -132,6 +140,20 @@ _STATIC: dict[str, _StaticSource] = {
         adapter_module="irswitch.events.adapters.lap:lap_race_event_to_envelope",
         polarity="lap_complete",
         scope_kind="lap_sf",
+        en_pattern_ids=(
+            "timing.lap.completed:tight:1",
+            "timing.lap.completed:tight:2",
+            "timing.lap.completed:tight:3",
+            "timing.lap.completed:tight:4",
+        ),
+        en_claim_surfaces=(
+            "completes lap {lapNumber}",
+            "crosses the line on lap {lapNumber}",
+            "finishes lap {lapNumber}",
+            "banks lap {lapNumber}",
+        ),
+        en_forbidden_tokens=("wins the race", "checkered", "race finish", "takes the win"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Start/finish lap crossing; must not be treated as race finish.",
     ),
     "SECTOR_SPLIT": _StaticSource(
@@ -141,6 +163,20 @@ _STATIC: dict[str, _StaticSource] = {
         adapter_module="irswitch.events.adapters.timing:timing_race_event_to_envelope",
         polarity="sector_split",
         scope_kind="sector",
+        en_pattern_ids=(
+            "timing.sector.split:tight:1",
+            "timing.sector.split:tight:2",
+            "timing.sector.split:tight:3",
+            "timing.sector.split:tight:4",
+        ),
+        en_claim_surfaces=(
+            "splits sector {sectorId}",
+            "ticks sector {sectorId}",
+            "runs sector {sectorId}",
+            "clears sector {sectorId}",
+        ),
+        en_forbidden_tokens=("sector best", "personal best", "invalid lap"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Intra-lap sector split; update/transient policy.",
     ),
     "SECTOR_BEST": _StaticSource(
@@ -150,6 +186,20 @@ _STATIC: dict[str, _StaticSource] = {
         adapter_module="irswitch.events.adapters.timing:timing_race_event_to_envelope",
         polarity="sector_best",
         scope_kind="sector",
+        en_pattern_ids=(
+            "timing.sector.best:tight:1",
+            "timing.sector.best:tight:2",
+            "timing.sector.best:tight:3",
+            "timing.sector.best:tight:4",
+        ),
+        en_claim_surfaces=(
+            "sets a sector {sectorId} best",
+            "improves sector {sectorId}",
+            "finds time in sector {sectorId}",
+            "beats the sector {sectorId} mark",
+        ),
+        en_forbidden_tokens=("loses time", "invalid lap", "race finish"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Session-best sector improvement; no dedicated sequence-graph node.",
     ),
     "PERSONAL_BEST": _StaticSource(
@@ -159,6 +209,20 @@ _STATIC: dict[str, _StaticSource] = {
         adapter_module="irswitch.events.adapters.lap:lap_race_event_to_envelope",
         polarity="personal_best",
         scope_kind="lap_pb",
+        en_pattern_ids=(
+            "timing.lap.personal_best:tight:1",
+            "timing.lap.personal_best:tight:2",
+            "timing.lap.personal_best:tight:3",
+            "timing.lap.personal_best:tight:4",
+        ),
+        en_claim_surfaces=(
+            "sets a personal best",
+            "improves the personal best to {lapTime}",
+            "beats the personal best",
+            "posts a new personal best",
+        ),
+        en_forbidden_tokens=("sector only", "invalid lap", "race win"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Hero personal-best lap; LapEmitter may emit instead of lap_complete.",
     ),
     "GAIN_FOUND": _StaticSource(
@@ -168,6 +232,20 @@ _STATIC: dict[str, _StaticSource] = {
         adapter_module="irswitch.events.adapters.timing:timing_race_event_to_envelope",
         polarity="gain_found",
         scope_kind="pace_delta",
+        en_pattern_ids=(
+            "timing.pace.gain:tight:1",
+            "timing.pace.gain:tight:2",
+            "timing.pace.gain:tight:3",
+            "timing.pace.gain:tight:4",
+        ),
+        en_claim_surfaces=(
+            "finds {delta} against the reference",
+            "gains time vs the reference",
+            "picks up {delta}",
+            "improves by {delta}",
+        ),
+        en_forbidden_tokens=("loses time", "drops time", "falls back", "worse than"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Pace improved vs reference; practice/qualifying temporal delta.",
     ),
     "TIME_LOST": _StaticSource(
@@ -177,6 +255,20 @@ _STATIC: dict[str, _StaticSource] = {
         adapter_module="irswitch.events.adapters.timing:timing_race_event_to_envelope",
         polarity="time_lost",
         scope_kind="pace_delta",
+        en_pattern_ids=(
+            "timing.pace.loss:tight:1",
+            "timing.pace.loss:tight:2",
+            "timing.pace.loss:tight:3",
+            "timing.pace.loss:tight:4",
+        ),
+        en_claim_surfaces=(
+            "loses {delta} against the reference",
+            "drops time vs the reference",
+            "gives up {delta}",
+            "slips by {delta}",
+        ),
+        en_forbidden_tokens=("finds time", "gains time", "improves by", "picks up"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Pace worsened vs reference; opposite polarity of gain_found.",
     ),
     "HOT_LAP": _StaticSource(
@@ -186,6 +278,20 @@ _STATIC: dict[str, _StaticSource] = {
         adapter_module="irswitch.events.adapters.timing:timing_race_event_to_envelope",
         polarity="hot_lap",
         scope_kind="lap_attempt",
+        en_pattern_ids=(
+            "timing.lap.hot:tight:1",
+            "timing.lap.hot:tight:2",
+            "timing.lap.hot:tight:3",
+            "timing.lap.hot:tight:4",
+        ),
+        en_claim_surfaces=(
+            "is on a hot lap",
+            "starts flying lap {attemptId}",
+            "pushes a hot lap",
+            "goes purple on the attempt",
+        ),
+        en_forbidden_tokens=("completed result", "race finish", "invalid lap claimed as valid"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Active qualifying/practice attempt (hot lap); not a completed result.",
     ),
     "PROJECTED_LAP": _StaticSource(
@@ -195,6 +301,20 @@ _STATIC: dict[str, _StaticSource] = {
         adapter_module="irswitch.events.adapters.timing:timing_race_event_to_envelope",
         polarity="projected_lap",
         scope_kind="lap_projection",
+        en_pattern_ids=(
+            "timing.lap.projected:tight:1",
+            "timing.lap.projected:tight:2",
+            "timing.lap.projected:tight:3",
+            "timing.lap.projected:tight:4",
+        ),
+        en_claim_surfaces=(
+            "projects {projectedTime}",
+            "is on for {projectedTime}",
+            "tracks toward {projectedTime}",
+            "shows a {projectedTime} projection",
+        ),
+        en_forbidden_tokens=("has completed", "personal best confirmed", "checkered"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="In-lap projection only; must not claim a completed lap result.",
     ),
     "INVALID_LAP": _StaticSource(
@@ -204,6 +324,20 @@ _STATIC: dict[str, _StaticSource] = {
         adapter_module="irswitch.events.adapters.exception_extra:invalid_lap_race_event_to_envelope",
         polarity="invalid_lap",
         scope_kind="invalid_lap",
+        en_pattern_ids=(
+            "incident.invalid_lap:tight:1",
+            "incident.invalid_lap:tight:2",
+            "incident.invalid_lap:tight:3",
+            "incident.invalid_lap:tight:4",
+        ),
+        en_claim_surfaces=(
+            "invalidates lap {lapNumber}",
+            "loses lap {lapNumber} to a track limit",
+            "has an invalid lap {lapNumber}",
+            "wipes lap {lapNumber}",
+        ),
+        en_forbidden_tokens=("race finish", "wins the race", "personal best stands"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Invalid-lap scope is PRACTICE|QUALIFYING only (not RACE); incident.invalid_lap family.",
     ),
     "SESSION_INTRO_PRACTICE": _StaticSource(
@@ -215,6 +349,20 @@ _STATIC: dict[str, _StaticSource] = {
         scope_kind="session_intro",
         session_stage="practice",
         requires_active_lineage=True,
+        en_pattern_ids=(
+            "session.intro.practice:tight:1",
+            "session.intro.practice:tight:2",
+            "session.intro.practice:tight:3",
+            "session.intro.practice:tight:4",
+        ),
+        en_claim_surfaces=(
+            "opens practice",
+            "is into practice",
+            "starts the practice session",
+            "begins practice running",
+        ),
+        en_forbidden_tokens=("qualifying already decided", "race underway", "checkered"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Practice session opener; inherited facts require active lineage.",
     ),
     "SESSION_INTRO_QUALIFY": _StaticSource(
@@ -226,6 +374,20 @@ _STATIC: dict[str, _StaticSource] = {
         scope_kind="session_intro",
         session_stage="qualifying",
         requires_active_lineage=True,
+        en_pattern_ids=(
+            "session.intro.qualifying:tight:1",
+            "session.intro.qualifying:tight:2",
+            "session.intro.qualifying:tight:3",
+            "session.intro.qualifying:tight:4",
+        ),
+        en_claim_surfaces=(
+            "opens qualifying",
+            "is into qualifying",
+            "starts the qualifying session",
+            "begins qualifying running",
+        ),
+        en_forbidden_tokens=("practice only", "race underway", "checkered"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Qualifying session opener; follows practice in SESSION_STAGE_ORDER.",
     ),
     "SESSION_INTRO_RACE": _StaticSource(
@@ -237,6 +399,20 @@ _STATIC: dict[str, _StaticSource] = {
         scope_kind="session_intro",
         session_stage="race",
         requires_active_lineage=True,
+        en_pattern_ids=(
+            "session.intro.race:tight:1",
+            "session.intro.race:tight:2",
+            "session.intro.race:tight:3",
+            "session.intro.race:tight:4",
+        ),
+        en_claim_surfaces=(
+            "opens the race",
+            "is into the race",
+            "starts the race session",
+            "begins race running",
+        ),
+        en_forbidden_tokens=("practice only", "qualifying still open as live", "unofficial win"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Race session opener; may yield to QUALI_RECAP when quali bag exists.",
     ),
     "QUALI_RECAP": _StaticSource(
@@ -248,6 +424,20 @@ _STATIC: dict[str, _StaticSource] = {
         scope_kind="session_recap",
         session_stage="race",
         requires_active_lineage=True,
+        en_pattern_ids=(
+            "session.qualifying_recap:tight:1",
+            "session.qualifying_recap:tight:2",
+            "session.qualifying_recap:tight:3",
+            "session.qualifying_recap:tight:4",
+        ),
+        en_claim_surfaces=(
+            "recaps qualifying in P{position}",
+            "brings the quali result of P{position}",
+            "recalls qualifying at P{position}",
+            "carries the quali bag from P{position}",
+        ),
+        en_forbidden_tokens=("live sector split", "projected as final", "race already won"),
+        tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes="Historical qualifying recap into race; active lineage only; not a live result claim.",
     ),
 }
@@ -338,6 +528,23 @@ def timing_family_rows() -> tuple[TimingFamilyRow, ...]:
         if not isinstance(realization, dict) or "family" not in realization:
             raise ContractViolation(f"beat {beat_id} missing realization.family")
         predicate_id, actor_frame = _claim_meta(beat)
+        if not static.en_pattern_ids:
+            raise ContractViolation(f"{wire_id} must curate EN pattern ids")
+        if not static.en_claim_surfaces:
+            raise ContractViolation(f"{wire_id} must curate EN claim surfaces")
+        if not static.tts_slot_formats:
+            raise ContractViolation(f"{wire_id} must curate TTS slot formats")
+        for pattern_id in static.en_pattern_ids:
+            if not pattern_id.startswith(f"{beat_id}:"):
+                raise ContractViolation(
+                    f"{wire_id} pattern {pattern_id!r} must belong to beat {beat_id}"
+                )
+        for surface in static.en_claim_surfaces:
+            lowered = surface.lower()
+            if any(token in lowered for token in static.en_forbidden_tokens):
+                raise ContractViolation(
+                    f"{wire_id} claim surface {surface!r} contains forbidden token"
+                )
         rows.append(
             TimingFamilyRow(
                 wire_id=wire_id,
@@ -361,6 +568,10 @@ def timing_family_rows() -> tuple[TimingFamilyRow, ...]:
                 migration_status="legacy",
                 session_stage=static.session_stage,
                 requires_active_lineage=static.requires_active_lineage,
+                en_pattern_ids=static.en_pattern_ids,
+                en_claim_surfaces=static.en_claim_surfaces,
+                en_forbidden_tokens=static.en_forbidden_tokens,
+                tts_slot_formats=static.tts_slot_formats,
                 notes=static.notes,
             )
         )
@@ -473,3 +684,32 @@ def inherited_facts_use_active_lineage_only() -> bool:
         if row.requires_active_lineage:
             return False
     return session_stage_order_is_monotonic()
+
+
+def en_patterns_and_tts_slots_are_curated() -> bool:
+    """Slice 5 helper: every wire keeps ≥4 EN patterns, claim surfaces, and TTS slots."""
+
+    rows = timing_family_rows()
+    if len(rows) != len(TIMING_WIRE_IDS):
+        return False
+    for row in rows:
+        if len(row.en_pattern_ids) < 4:
+            return False
+        if len(row.en_claim_surfaces) < 4:
+            return False
+        if not row.tts_slot_formats:
+            return False
+        if "subjectSurface" not in row.tts_slot_formats:
+            return False
+        if "requiredClaimSurface" not in row.tts_slot_formats:
+            return False
+        if not row.beat_id:
+            return False
+        if any(not pattern_id.startswith(f"{row.beat_id}:") for pattern_id in row.en_pattern_ids):
+            return False
+    # Polarity-safe gain vs loss claim surfaces.
+    gained = row_for_wire_id("GAIN_FOUND")
+    lost = row_for_wire_id("TIME_LOST")
+    if set(gained.en_claim_surfaces) & set(lost.en_claim_surfaces):
+        return False
+    return True

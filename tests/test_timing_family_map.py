@@ -1,4 +1,4 @@
-"""#275 Slice 1–4 — timing family map (timing + session intros/recaps)."""
+"""#275 Slice 1–5 — timing family map (timing + session intros/recaps)."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from irswitch.contracts.timing_family_map import (
     SESSION_STAGE_ORDER,
     TIMING_WIRE_IDS,
     TimingFamilyRow,
+    en_patterns_and_tts_slots_are_curated,
     gain_and_loss_polarities_are_distinct,
     inherited_facts_use_active_lineage_only,
     invalid_lap_scope_is_explicit,
@@ -360,6 +361,55 @@ def test_emitters_and_adapters_are_documented() -> None:
 def test_row_for_unknown_wire_raises() -> None:
     with pytest.raises(ContractViolation, match="unknown timing wire id"):
         row_for_wire_id("NOT_A_TIMING_WIRE")
+
+
+def test_en_patterns_and_tts_slots_are_curated() -> None:
+    assert en_patterns_and_tts_slots_are_curated() is True
+    for row in timing_family_rows():
+        assert len(row.en_pattern_ids) >= 4
+        assert len(row.en_claim_surfaces) >= 4
+        assert row.tts_slot_formats == ("subjectSurface", "requiredClaimSurface")
+        assert row.beat_id is not None
+        assert all(pid.startswith(f"{row.beat_id}:") for pid in row.en_pattern_ids)
+
+
+def test_en_claim_surfaces_keep_gain_loss_polarity() -> None:
+    gained = row_for_wire_id("GAIN_FOUND")
+    lost = row_for_wire_id("TIME_LOST")
+    assert gained.en_claim_surfaces
+    assert lost.en_claim_surfaces
+    for surface in gained.en_claim_surfaces:
+        lowered = surface.lower()
+        assert not any(token in lowered for token in gained.en_forbidden_tokens)
+    for surface in lost.en_claim_surfaces:
+        lowered = surface.lower()
+        assert not any(token in lowered for token in lost.en_forbidden_tokens)
+    assert set(gained.en_claim_surfaces).isdisjoint(set(lost.en_claim_surfaces))
+    assert set(gained.en_forbidden_tokens).isdisjoint(set(lost.en_forbidden_tokens))
+
+
+def test_lap_complete_en_surfaces_are_not_race_finish() -> None:
+    lap = row_for_wire_id("LAP_COMPLETE")
+    assert lap.en_forbidden_tokens
+    for surface in lap.en_claim_surfaces:
+        lowered = surface.lower()
+        assert "wins the race" not in lowered
+        assert "checkered" not in lowered
+        assert not any(token in lowered for token in lap.en_forbidden_tokens)
+
+
+def test_projected_lap_en_surfaces_are_not_completed_result() -> None:
+    projected = row_for_wire_id("PROJECTED_LAP")
+    for surface in projected.en_claim_surfaces:
+        lowered = surface.lower()
+        assert "has completed" not in lowered
+        assert "checkered" not in lowered
+        assert (
+            "projected" in lowered
+            or "on for" in lowered
+            or "tracks toward" in lowered
+            or "projection" in lowered
+        )
 
 
 def test_timing_family_row_is_frozen() -> None:
