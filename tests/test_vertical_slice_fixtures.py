@@ -1,0 +1,117 @@
+"""#278 Slice 1 — offline consumer of frozen F01–F44 vertical-slice fixtures.
+
+Loads the checked-in machine projection and re-runs the builder validator.
+Does not rewrite frozen ``docs/v2.0.0/machine/*`` hashes and does not claim
+live Windows §24.9 GO.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+MACHINE = ROOT / "docs" / "v2.0.0" / "machine"
+FIXTURES_PATH = MACHINE / "vertical-slice-fixtures.json"
+MUTATIONS_PATH = MACHINE / "vertical-slice-mutations.json"
+BUILDER_PATH = MACHINE / "build_vertical_slice_fixtures.py"
+
+# Named F scenarios already covered by adjacent unit tests (docstring inventory).
+WIRED_UNIT_COVERAGE: dict[str, tuple[str, ...]] = {
+    "F22": ("tests/test_stream_timeline.py",),
+    "F25": ("tests/test_stream_timeline.py",),
+    "F27": ("tests/test_narrative_tape_queue.py",),
+    "F31": ("tests/test_stream_timeline.py",),
+    "F34": ("tests/test_narrative_tape_replay.py",),
+    "F44": (
+        "tests/test_narrative_capture_plan.py",
+        "tests/test_narrative_capture_safety.py",
+    ),
+}
+
+
+def _load_builder() -> Any:
+    module_name = "irswitch_vertical_slice_fixtures_builder_under_test"
+    if module_name in sys.modules:
+        return sys.modules[module_name]
+    machine_path = str(MACHINE)
+    if machine_path not in sys.path:
+        sys.path.insert(0, machine_path)
+    spec = importlib.util.spec_from_file_location(module_name, BUILDER_PATH)
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+builder = _load_builder()
+
+
+@pytest.fixture(scope="module")
+def fixture_bundle() -> dict[str, Any]:
+    return json.loads(FIXTURES_PATH.read_text(encoding="utf-8"))
+
+
+@pytest.fixture(scope="module")
+def mutations() -> list[dict[str, str]]:
+    return json.loads(MUTATIONS_PATH.read_text(encoding="utf-8"))
+
+
+def test_frozen_vertical_slice_artifacts_match_builder(
+    fixture_bundle: dict[str, Any], mutations: list[dict[str, str]]
+) -> None:
+    assert builder.canonical(fixture_bundle) == builder.canonical(builder.build_fixtures())
+    assert builder.canonical(mutations) == builder.canonical(builder.build_mutations())
+
+
+def test_vertical_slice_fixture_counts_and_ids(fixture_bundle: dict[str, Any]) -> None:
+    fixtures = fixture_bundle["fixtures"]
+    assert [row["id"] for row in fixtures] == [f"F{n:02d}" for n in range(1, 45)]
+    assert len(fixtures) == 44
+    expectation_count = sum(len(row["expectations"]) for row in fixtures)
+    calculation_count = sum(len(row["calculations"]) for row in fixtures)
+    assert expectation_count == 248
+    assert calculation_count == 14
+    for row in fixtures:
+        assert len(row["contractHashes"]) == 7
+
+
+def test_vertical_slice_validate_all_accepts_frozen_bundle(
+    fixture_bundle: dict[str, Any], mutations: list[dict[str, str]]
+) -> None:
+    builder.validate_all(fixture_bundle, mutations)
+
+
+def test_vertical_slice_mutations_are_fail_closed(
+    fixture_bundle: dict[str, Any], mutations: list[dict[str, str]]
+) -> None:
+    assert len(mutations) == 16
+    for mutation in mutations:
+        errors = builder.fixture_errors(builder.mutate(fixture_bundle, mutation["id"]))
+        assert errors, mutation["id"]
+        assert mutation["errorContains"] in errors[0]
+
+
+def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
+    fixture_bundle: dict[str, Any],
+) -> None:
+    """Slice 1 inventory: machine harness covers all 44; runtime unit wiring is sparse."""
+
+    all_ids = {row["id"] for row in fixture_bundle["fixtures"]}
+    assert set(WIRED_UNIT_COVERAGE) <= all_ids
+    unwired = sorted(all_ids - set(WIRED_UNIT_COVERAGE))
+    assert len(unwired) == 38
+    assert "F01" in unwired
+    assert "F05" in unwired
+    assert "F23" in unwired
+    # Named coverage stays an explicit allow-list so later slices shrink it deliberately.
+    assert WIRED_UNIT_COVERAGE["F44"] == (
+        "tests/test_narrative_capture_plan.py",
+        "tests/test_narrative_capture_safety.py",
+    )
