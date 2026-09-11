@@ -338,3 +338,12 @@ Graph nodes `session_intro_practice` / `session_intro_qualify` / `session_intro_
 - **Channel cadence:** `byTapeChannel` on `GET /api/commentary/runtime` (kick/accepted/queued/selected/started/expired) is rendered on `GET /commentary`. No event-name parsing; no global DEBUG.
 - **INFO/WARN + full tape:** `[commentary.tape]` NDJSON volume is independent of `app.log_level`. Full `detail=full` capture must remain usable while the operator log stays at INFO/WARN (writer emits no per-record INFO/WARN).
 
+## Wave G / #274 race-outcome shadow (branch harness)
+
+Race-outcome family migration (#274) activates **observational** shadow compare for
+`position` + `session` via the private in-module `FAMILY_ROUTE` table in
+`events/legacy_v2_shadow_compare.py`. This is **not** `graph_runtime`
+`legacy|shadow|active` speech ownership and does **not** add CONFIG.md keys or
+API.md endpoints. Live audible cutover remains a later cutover wave; the
+temporary harness stays on the final-PR exclusion list with #272.
+

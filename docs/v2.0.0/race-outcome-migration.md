@@ -1,6 +1,6 @@
 # #274 Race-outcome family migration
 
-**Status:** Slice 5 — shadow activation for position + session (creatable wires `shadow`; alias `OVERTAKEN` still `legacy`).  
+**Status:** Closeout — shadow activation + evidence/fail-soft/disposition recorded (creatable `shadow`; alias `OVERTAKEN` `legacy`; no live `v2` speech cutover).  
 **Issue:** [#274](https://github.com/Buchtanen/ir-obs-switcher/issues/274)  
 **Module:** `src/irswitch/contracts/race_outcome_family_map.py`  
 **Tests:** `tests/test_race_outcome_family_map.py`  
@@ -117,3 +117,27 @@ Observational only — still no live speech cutover / no `v2` route:
 4. ~~Verifier minimal pairs~~ (landed)  
 5. ~~Shadow (`position`/`session` → `shadow` after routing fix)~~ (landed)  
 6. Per-family activation (integration-only)
+
+
+## Closeout evidence
+
+Module: `src/irswitch/contracts/race_outcome_activation_evidence.py`  
+Tests: `tests/test_race_outcome_activation_evidence.py` (+ existing `test_pass_and_finish_outcomes_are_self_contained`)
+
+| AC / verification | Evidence |
+| --- | --- |
+| Self-contained if opening unspoken | Creatable rows use `critical`/`result` (`SELF_CONTAINED_POLICIES`); retention keeps `position.pass` / `session.hero_finish` without a spoken opener |
+| Per-family coverage / semantic / latency | Evidence helper records migration status, accept/reject verifier pair counts, shadow family/route, and observational `compare_latency_ms` |
+| Fail-soft + legacy rollback surface | `observe_family_safely` swallows observer failures for position/session; `FAMILY_ROUTE["battle"]` stays `legacy` rollback owner for non-migrated overtake chrome |
+| CONFIG / API | **No keys / endpoints** — private `FAMILY_ROUTE` only |
+| COMMENTARY_ENGINE | Documents that #274 race-outcome shadow is observational harness, not `graph_runtime` speech ownership |
+
+## Remaining legacy / visual disposition
+
+| Item | Disposition |
+| --- | --- |
+| `OVERTAKEN` | Compatibility alias; not creatable; later → `POSITION_LOST` + cause |
+| `BATTLE_OVERTAKE` | Stays on `battle` family (substring trap preserved) |
+| Visual-only battle chrome | Unchanged; outside race-outcome speakable inventory |
+| Live `v2` speech cutover | **Out of scope for #274** — requires later wave / cutover issue |
+
