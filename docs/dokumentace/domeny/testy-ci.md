@@ -60,6 +60,23 @@ Lookup: [inflight § #278 slice 2](../inflight/README.md#278-vertical-slice-expi
 
 Lookup: [inflight § #278 slice 3](../inflight/README.md#278-vertical-slice-transition-runtime-slice-3-lookup) · [dokumentace index § #278](../README.md).
 
+## #278 vertical-slice scoring runtime (Slice 4)
+
+**Status:** offline F05/F06/F07 drivers on branch `cursor/vertical-slice-scoring-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Artifact | Path |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_scoring_runtime.py`](../../../tests/test_vertical_slice_scoring_runtime.py) (**7** tests: **3** parametrized machine projection + F05/F06/F07 runtime drivers) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **15/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 4](../../v2.0.0/vertical-slice-acceptance.md#slice-4--f05f06f07-director-scoring-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F05/F06/F07 rows; hashes **unchanged**) |
+
+**Slice 4 locks:** F05 opening pursuit score 70 clears threshold without V4 priority term; F06 related continuation preferred over weather filler; F07 inclusive switch margin (82 holds / 84 switches); machine projection still matches frozen expectations/calcs; gap inventory **15/44** wired, **29** unwired.
+
+**Explicit non-goals:** no rewrite of frozen `machine/*` hashes; **`CONFIG.md` / `API.md` unchanged**; no live §24.9 GO.
+
+Lookup: [inflight § #278 slice 4](../inflight/README.md#278-vertical-slice-scoring-runtime-slice-4-lookup) · [dokumentace index § #278](../README.md).
+
 ## Related
 
 [RELEASE_POLICY.md](../../../RELEASE_POLICY.md), [scripts/README.md](../../../scripts/README.md) (`check_semver_label.py`), [VERSIONING.md](../../../VERSIONING.md), skill `pr-semver-label`.

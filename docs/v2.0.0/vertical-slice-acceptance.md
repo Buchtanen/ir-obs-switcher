@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 3 — offline transition runtime drivers for F02/F03/F04 (no live Windows §24.9 GO).
+**Status:** Slice 4 — offline director scoring drivers for F05/F06/F07 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -45,6 +45,20 @@
 **AC locks (Slice 3):**
 - Machine projection for F02/F03/F04 still matches frozen expectations.
 - Runtime drivers prove lineage inheritance, ordered rewind without `SESSION_REWOUND`, speech cancel on occurrence reset, and confirmed restart without false positives.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+## Slice 4 — F05/F06/F07 director scoring runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F05` (first pursuit / controlled open score), `F06` (related continuation preference), `F07` (inclusive switch margin) |
+| Pytest | `tests/test_vertical_slice_scoring_runtime.py` |
+| Inventory | **15/44** wired; **29** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 4):**
+- Machine projection for F05/F06/F07 still matches frozen expectations/calcs (`score_70` / `score_76` / margin boundaries).
+- Runtime drivers prove threshold open without V4 priority term, related successor over weather filler, and inclusive switch margin (82 holds / 84 switches).
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices
