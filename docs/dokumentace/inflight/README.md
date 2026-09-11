@@ -986,3 +986,16 @@ Live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / Pr
 | Checkboxes | Status identity addition **all three flipped** |
 | Scope | Branch-only verify; **no master PR** |
 
+
+
+### #273 TTS quarantine + tape drop health lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| Runtime | `speech_quarantine_reason` + pending start/stop timeout induction on speech deadline |
+| Ingress | `components.tts.reason` + force unavailable while quarantined; tape drops → `degraded`/`tape_queue_drop` |
+| Goldens | `status_component_tts_quarantine_timeout.json`; tape counters golden updated |
+| Evidence | feat `13ab3d5`; tip `13ab3d5`; PR [#295](https://github.com/Buchtanen/ir-obs-switcher/pull/295) FF-merged; **no master PR** |
+| Checkbox | Public-liveness TTS/tape health **flipped** |
+
