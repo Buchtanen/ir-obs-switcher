@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 EffectWorker = Callable[
     [dict[str, Any]],
-    Awaitable[NarrativeCommand | list[NarrativeCommand] | None] | AsyncIterator[NarrativeCommand],
+    (Awaitable[NarrativeCommand | list[NarrativeCommand] | None] | AsyncIterator[NarrativeCommand]),
 ]
 
 
@@ -221,4 +221,4 @@ def build_tts_effect(
                 worker_sequence=2,
             )
 
-    return tts_effect  # type: ignore[return-value]
+    return tts_effect

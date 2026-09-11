@@ -11,7 +11,7 @@ import asyncio
 import inspect
 import time
 from collections import deque
-from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal, TypedDict
@@ -68,9 +68,18 @@ class _TapeCounterStatusFields(TypedDict):
     tape_purpose_counts: tuple[dict[str, object], ...] | None
 
 
-EffectWorker = Callable[
-    [dict[str, Any]], Awaitable[NarrativeCommand | Sequence[NarrativeCommand] | None]
+AwaitableEffectWorker = Callable[
+    [dict[str, Any]],
+    Awaitable[NarrativeCommand | Sequence[NarrativeCommand] | None],
 ]
+EffectWorker = Callable[
+    [dict[str, Any]],
+    (
+        Awaitable[NarrativeCommand | Sequence[NarrativeCommand] | None]
+        | AsyncIterator[NarrativeCommand]
+    ),
+]
+
 CommitWorldProvider = Callable[[], CommitWorld]
 
 _OBS_TO_STREAM: dict[str, tuple[str, bool | None]] = {
@@ -300,7 +309,7 @@ class NarrativeRuntime:
         detector_bank: DetectorBank | None = None,
         command_journal_path: Path | str | None = None,
         semantic_verifier: SemanticVerifier | None = None,
-        tape_effect: EffectWorker | None = None,
+        tape_effect: AwaitableEffectWorker | None = None,
         tape_writer: NarrativeTapeWriter | None = None,
         shutdown_flush_timeout_s: float = 2.0,
     ) -> None:
@@ -1099,27 +1108,23 @@ class NarrativeRuntime:
                         await aclose()
                     raise
                 return
-            if inspect.isawaitable(produced):
-                produced = await produced
-            else:
+            if not inspect.isawaitable(produced):
                 return
+            awaited: NarrativeCommand | Sequence[NarrativeCommand] | None = await produced
         except asyncio.CancelledError:
             raise
         except Exception:
             return
         else:
-            if produced is None:
+            if awaited is None:
                 return
-            commands = (
-                produced
-                if isinstance(produced, Sequence)
-                and not isinstance(produced, (str, bytes))
-                and not hasattr(produced, "kind")
-                else (produced,)
-            )
-            # NarrativeCommand is not a Sequence of commands; treat single command as one-item.
-            if hasattr(produced, "kind"):
-                commands = (produced,)
+            commands: Sequence[Any]
+            if hasattr(awaited, "kind"):
+                commands = (awaited,)
+            elif isinstance(awaited, Sequence) and not isinstance(awaited, (str, bytes)):
+                commands = awaited
+            else:
+                return
             for command in commands:
                 if not isinstance(command, NarrativeCommand):
                     continue
