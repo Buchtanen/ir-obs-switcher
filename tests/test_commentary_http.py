@@ -165,6 +165,7 @@ async def test_assignments_route_unregistered_generic_404(app: web.Application) 
                 assert "commentary-runtime" not in text
                 assert "gone" not in text.lower()
 
+
 @pytest.mark.asyncio
 async def test_commentary_page_uses_versioned_contracts_only(app: web.Application) -> None:
     """#273: operator page fetches only commentary-runtime/2 public paths."""

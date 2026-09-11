@@ -52,7 +52,9 @@ def test_required_commentary_runtime_goldens_exist() -> None:
 
 def test_error_goldens_match_machine_api_goldens() -> None:
     machine = json.loads(MACHINE_GOLDENS.read_text(encoding="utf-8"))
-    by_id = {row["id"]: row for row in machine["valid"] if str(row.get("id", "")).startswith("error_")}
+    by_id = {
+        row["id"]: row for row in machine["valid"] if str(row.get("id", "")).startswith("error_")
+    }
     assert by_id, "machine api-goldens.json must list error_* rows"
     for error_id, row in sorted(by_id.items()):
         path = FIXTURES / f"{error_id}.json"
@@ -121,7 +123,9 @@ async def test_runtime_speak_busy_matches_error_golden() -> None:
 
 @pytest.mark.asyncio
 async def test_runtime_speak_component_unavailable_matches_error_golden() -> None:
-    expected = json.loads((FIXTURES / "error_component_unavailable.json").read_text(encoding="utf-8"))
+    expected = json.loads(
+        (FIXTURES / "error_component_unavailable.json").read_text(encoding="utf-8")
+    )
     request = json.loads((FIXTURES / "speak_request.json").read_text(encoding="utf-8"))
     app = _app_with_provider(None)
     async with TestServer(app) as server:
