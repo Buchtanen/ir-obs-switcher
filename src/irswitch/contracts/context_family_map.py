@@ -1,10 +1,10 @@
-"""#277 context family migration map — session/stream leftovers + filler + weather/field + bio style (Slices 1–5).
+"""#277 context family migration map — session/stream leftovers + filler + weather/field + bio style (Slices 1–6).
 
 Maps remaining non-race session/stream, filler, weather and field wire identifiers onto legacy
 emitters, adapters, beat/story routes, predicates, realization families, policy
 TTL and tape channels.
 
-Slices 1–5 record these wires as ``legacy``. They do **not** rewrite frozen
+Slices 1–6 record these wires as ``legacy``. They do **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 Session intros/recaps stay owned by the timing map; session wrap/checkered/finish
 stay owned by the ops / race-outcome maps. Beat-only silence fillers are documented without inventing freeze wires.
@@ -106,6 +106,150 @@ CONTEXT_LONG_SILENCE_FATIGUE_AXES: tuple[str, ...] = (
     "semantic",
     "edge",
     "path",
+)
+
+# Slice 6 — EN-only curation + reject generic forced filler (inventory vs packaged cards).
+CONTEXT_EN_AUDITED_LANGUAGE = "en"
+CONTEXT_EN_LEGACY_DISPOSITION = "reject_unreviewed_not_migrate"
+CONTEXT_EN_CURATED_BEAT_IDS: tuple[str, ...] = (
+    "stream.started",
+    "session.preview.next",
+    "session.enter_car.practice",
+    "session.enter_car.qualifying",
+    "session.enter_car.race",
+    "session.final_lap",
+    "filler.out_lap",
+    "filler.in_lap",
+    "filler.parade_lap",
+    "filler.garage",
+    "filler.lobby",
+    "filler.quiet_track",
+    "session.weather_brief",
+    "session.weather_change",
+    "session.field_fact",
+    "session.sof_brief",
+    "bio.pressure",
+)
+CONTEXT_EN_PATTERN_IDS_BY_BEAT_ID: dict[str, tuple[str, ...]] = {
+    "stream.started": (
+        "stream.started:tight:1",
+        "stream.started:tight:2",
+        "stream.started:tight:3",
+        "stream.started:tight:4",
+    ),
+    "session.preview.next": (
+        "session.preview.next:tight:1",
+        "session.preview.next:tight:2",
+        "session.preview.next:tight:3",
+        "session.preview.next:tight:4",
+    ),
+    "session.enter_car.practice": (
+        "session.enter_car.practice:tight:1",
+        "session.enter_car.practice:tight:2",
+        "session.enter_car.practice:tight:3",
+        "session.enter_car.practice:tight:4",
+    ),
+    "session.enter_car.qualifying": (
+        "session.enter_car.qualifying:tight:1",
+        "session.enter_car.qualifying:tight:2",
+        "session.enter_car.qualifying:tight:3",
+        "session.enter_car.qualifying:tight:4",
+    ),
+    "session.enter_car.race": (
+        "session.enter_car.race:tight:1",
+        "session.enter_car.race:tight:2",
+        "session.enter_car.race:tight:3",
+        "session.enter_car.race:tight:4",
+    ),
+    "session.final_lap": (
+        "session.final_lap:tight:1",
+        "session.final_lap:tight:2",
+        "session.final_lap:tight:3",
+        "session.final_lap:tight:4",
+    ),
+    "filler.out_lap": (
+        "filler.out_lap:tight:1",
+        "filler.out_lap:tight:2",
+        "filler.out_lap:tight:3",
+        "filler.out_lap:tight:4",
+    ),
+    "filler.in_lap": (
+        "filler.in_lap:tight:1",
+        "filler.in_lap:tight:2",
+        "filler.in_lap:tight:3",
+        "filler.in_lap:tight:4",
+    ),
+    "filler.parade_lap": (
+        "filler.parade_lap:tight:1",
+        "filler.parade_lap:tight:2",
+        "filler.parade_lap:tight:3",
+        "filler.parade_lap:tight:4",
+    ),
+    "filler.garage": (
+        "filler.garage:tight:1",
+        "filler.garage:tight:2",
+        "filler.garage:tight:3",
+        "filler.garage:tight:4",
+    ),
+    "filler.lobby": (
+        "filler.lobby:tight:1",
+        "filler.lobby:tight:2",
+        "filler.lobby:tight:3",
+        "filler.lobby:tight:4",
+    ),
+    "filler.quiet_track": (
+        "filler.quiet_track:tight:1",
+        "filler.quiet_track:tight:2",
+        "filler.quiet_track:tight:3",
+        "filler.quiet_track:tight:4",
+    ),
+    "session.weather_brief": (
+        "session.weather_brief:tight:1",
+        "session.weather_brief:tight:2",
+        "session.weather_brief:tight:3",
+        "session.weather_brief:tight:4",
+    ),
+    "session.weather_change": (
+        "session.weather_change:tight:1",
+        "session.weather_change:tight:2",
+        "session.weather_change:tight:3",
+        "session.weather_change:tight:4",
+    ),
+    "session.field_fact": (
+        "session.field_fact:tight:1",
+        "session.field_fact:tight:2",
+        "session.field_fact:tight:3",
+        "session.field_fact:tight:4",
+    ),
+    "session.sof_brief": (
+        "session.sof_brief:tight:1",
+        "session.sof_brief:tight:2",
+        "session.sof_brief:tight:3",
+        "session.sof_brief:tight:4",
+    ),
+    "bio.pressure": (
+        "bio.pressure:tight:1",
+        "bio.pressure:tight:2",
+        "bio.pressure:tight:3",
+        "bio.pressure:tight:4",
+    ),
+}
+CONTEXT_EN_PATTERN_IDS: tuple[str, ...] = tuple(
+    pattern_id
+    for beat_id in CONTEXT_EN_CURATED_BEAT_IDS
+    for pattern_id in CONTEXT_EN_PATTERN_IDS_BY_BEAT_ID[beat_id]
+)
+# Spoken phrases that must not be used as forced generic filler openers.
+CONTEXT_GENERIC_FORCED_FILLER_PHRASES: tuple[str, ...] = (
+    "as we wait",
+    "nothing happening",
+    "nothing to report",
+    "filling time",
+    "just filling",
+    "stay tuned for nothing",
+    "dead air",
+    "meanwhile nothing",
+    "generic update",
 )
 
 
@@ -471,7 +615,7 @@ def _resolve_beat_ids(
 
 
 def context_family_rows() -> tuple[ContextFamilyRow, ...]:
-    """Return the closed context migration inventory (Slices 1–5: session leftovers + filler + weather/field + bio style, legacy)."""
+    """Return the closed context migration inventory (Slices 1–6: session leftovers + filler + weather/field + bio style, legacy)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -864,5 +1008,90 @@ def filler_can_result_in_silence() -> bool:
     if "source_guard_failed" not in CONTEXT_LONG_SILENCE_OUTCOMES:
         return False
     if "busy_lane" not in CONTEXT_LONG_SILENCE_OUTCOMES:
+        return False
+    return True
+
+
+def context_en_content_is_curated() -> bool:
+    """Slice 6 helper: context realization cards stay EN-only and fully curated."""
+
+    if CONTEXT_EN_AUDITED_LANGUAGE != "en":
+        return False
+    registry = _load("realization-pattern-cards.json")
+    if str(registry.get("legacyDisposition") or "") != CONTEXT_EN_LEGACY_DISPOSITION:
+        return False
+    cards = {
+        str(row["id"]): row
+        for row in _rows(registry.get("cards"), "realization-pattern-cards.cards")
+    }
+    if not CONTEXT_EN_CURATED_BEAT_IDS:
+        return False
+    if set(CONTEXT_EN_PATTERN_IDS_BY_BEAT_ID) != set(CONTEXT_EN_CURATED_BEAT_IDS):
+        return False
+    seen: set[str] = set()
+    for beat_id in CONTEXT_EN_CURATED_BEAT_IDS:
+        pattern_ids = CONTEXT_EN_PATTERN_IDS_BY_BEAT_ID[beat_id]
+        if len(pattern_ids) < 4:
+            return False
+        for pattern_id in pattern_ids:
+            if pattern_id in seen:
+                return False
+            seen.add(pattern_id)
+            if not pattern_id.startswith(f"{beat_id}:"):
+                return False
+            card = cards.get(pattern_id)
+            if card is None:
+                return False
+            if str(card.get("auditedLanguage") or "") != "en":
+                return False
+            if card.get("enabled") is not True:
+                return False
+            if str(card.get("beatId") or "") != beat_id:
+                return False
+            pattern = str(card.get("pattern") or "")
+            if not pattern.strip():
+                return False
+            # No Czech diacritics / non-EN inventory leakage in curated cards.
+            if any(ch in pattern for ch in "áčďéěíňóřšťúůýžÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ"):
+                return False
+    # Catalog must not keep non-EN enabled cards for curated beats.
+    for card in cards.values():
+        beat_id = str(card.get("beatId") or "")
+        if beat_id not in CONTEXT_EN_CURATED_BEAT_IDS:
+            continue
+        if card.get("enabled") is True and str(card.get("auditedLanguage") or "") != "en":
+            return False
+    if set(CONTEXT_EN_PATTERN_IDS) != seen:
+        return False
+    return True
+
+
+def generic_forced_filler_is_removed() -> bool:
+    """Slice 6 AC helper: no generic forced filler — silence preferred when empty."""
+
+    if not context_en_content_is_curated():
+        return False
+    if not filler_can_result_in_silence():
+        return False
+    if not CONTEXT_GENERIC_FORCED_FILLER_PHRASES:
+        return False
+    registry = _load("realization-pattern-cards.json")
+    cards = _rows(registry.get("cards"), "realization-pattern-cards.cards")
+    curated = set(CONTEXT_EN_PATTERN_IDS)
+    for card in cards:
+        if str(card.get("id") or "") not in curated:
+            continue
+        blob = " ".join(
+            str(card.get(key) or "") for key in ("pattern", "id", "family", "beatId")
+        ).lower()
+        for phrase in CONTEXT_GENERIC_FORCED_FILLER_PHRASES:
+            if phrase in blob:
+                return False
+    # Parade inventory notes remain the anti-force contract.
+    row = row_for_wire_id("PARADE_PAD")
+    lowered = row.notes.lower()
+    if "never force" not in lowered and "not force" not in lowered:
+        return False
+    if "silence" not in lowered:
         return False
     return True

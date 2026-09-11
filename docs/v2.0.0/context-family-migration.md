@@ -1,10 +1,10 @@
 # #277 Context family migration (session / filler / weather / field / bio)
 
-**Status:** Slice 5 — leftovers + filler + weather/field + bio style + long-silence eligibility/fatigue (`STREAM_START`, `SESSION_PREVIEW`, `ENTER_CAR`, `FINAL_LAP`, `PARADE_PAD`, `WEATHER_BRIEF`, `WEATHER_CHANGE`, `FIELD_FACT`, `SOF_BRIEF`, `HR_PRESSURE_RISING`; impulse `LONG_SILENCE_ELAPSED`; all inventory `legacy`; no `FAMILY_ROUTE` flip).
+**Status:** Slice 6 — leftovers + filler + weather/field + bio + long-silence + EN curation (`STREAM_START`, `SESSION_PREVIEW`, `ENTER_CAR`, `FINAL_LAP`, `PARADE_PAD`, `WEATHER_BRIEF`, `WEATHER_CHANGE`, `FIELD_FACT`, `SOF_BRIEF`, `HR_PRESSURE_RISING`; impulse `LONG_SILENCE_ELAPSED`; EN pattern inventory **68**; all inventory `legacy`; no `FAMILY_ROUTE` flip).
 **Issue:** [#277](https://github.com/Buchtanen/ir-obs-switcher/issues/277)  
 **Module:** `src/irswitch/contracts/context_family_map.py`  
-**Tests:** `tests/test_context_family_map.py` (**16**)
-**Lookup:** [inflight § #277 slice 5](../dokumentace/inflight/README.md#277-context-family-map-slice-5-lookup) · [events branch delta](../dokumentace/domeny/events.md#context-family-migration-map-contractscontext_family_mappy)
+**Tests:** `tests/test_context_family_map.py` (**18**)
+**Lookup:** [inflight § #277 slice 5](../dokumentace/inflight/README.md#277-context-family-map-slice-6-lookup) · [events branch delta](../dokumentace/domeny/events.md#context-family-migration-map-contractscontext_family_mappy)
 
 ## Guardrails
 
@@ -144,9 +144,29 @@ Helpers (add): `bio_style_wires_are_documented()`, `bio_cannot_invent_sport_trut
 
 Helpers (add): `long_silence_eligibility_is_documented()`, `long_silence_fatigue_is_documented()`, `filler_can_result_in_silence()`.
 
+
+## Slice 6 inventory — EN-only curation + remove generic forced filler
+
+| Contract | Value |
+| --- | --- |
+| Audited language | `en` |
+| Legacy disposition | `reject_unreviewed_not_migrate` |
+| Curated beats | **17** (session leftovers, filler, weather/field/SoF, bio) |
+| Curated pattern cards | **68** (≥4 per beat, enabled, EN-only) |
+| Forced generic filler | **removed** — silence preferred (`filler_can_result_in_silence()`) |
+
+**Forbidden forced-filler phrases (must stay absent from curated cards):** `as we wait`, `nothing happening`, `nothing to report`, `filling time`, `just filling`, `stay tuned for nothing`, `dead air`, `meanwhile nothing`, `generic update`.
+
+**AC locks (Slice 6):**
+- Context realization inventory is EN-only (`context_en_content_is_curated()`).
+- Generic forced filler copy is rejected; silence remains valid (`generic_forced_filler_is_removed()`).
+- No frozen `machine/*` hash rewrite; no `FAMILY_ROUTE` flip; no live v2 speech cutover.
+
+Helpers (add): `context_en_content_is_curated()`, `generic_forced_filler_is_removed()`.
+
 ## Later #277 slices
 
-Deferred: EN-only curation + remove generic forced filler; shadow activation.
+Deferred: shadow activation.
 
 ## Docs / config
 

@@ -1,4 +1,4 @@
-"""#277 Slices 1–5 — context family map (session + filler + weather/field + bio style + long-silence)."""
+"""#277 Slices 1–6 — context family map (session + filler + weather/field + bio style + long-silence)."""
 
 from __future__ import annotations
 
@@ -9,8 +9,14 @@ import pytest
 from irswitch.contracts.context_family_map import (
     CONTEXT_BIO_ALIAS_WIRE_IDS,
     CONTEXT_BIO_STYLE_WIRE_IDS,
+    CONTEXT_EN_AUDITED_LANGUAGE,
+    CONTEXT_EN_CURATED_BEAT_IDS,
+    CONTEXT_EN_LEGACY_DISPOSITION,
+    CONTEXT_EN_PATTERN_IDS,
+    CONTEXT_EN_PATTERN_IDS_BY_BEAT_ID,
     CONTEXT_FILLER_BEAT_IDS,
     CONTEXT_FILLER_WIRE_IDS,
+    CONTEXT_GENERIC_FORCED_FILLER_PHRASES,
     CONTEXT_LONG_SILENCE_BUSY_LANES,
     CONTEXT_LONG_SILENCE_ELIGIBLE_BEAT_IDS,
     CONTEXT_LONG_SILENCE_FATIGUE_AXES,
@@ -27,6 +33,7 @@ from irswitch.contracts.context_family_map import (
     ContextFamilyRow,
     bio_cannot_invent_sport_truth,
     bio_style_wires_are_documented,
+    context_en_content_is_curated,
     context_family_rows,
     context_session_phase_order_is_monotonic,
     context_session_stories_have_explicit_invalidation,
@@ -34,6 +41,7 @@ from irswitch.contracts.context_family_map import (
     filler_beats_are_documented,
     filler_can_result_in_silence,
     filler_may_resolve_to_silence,
+    generic_forced_filler_is_removed,
     long_silence_eligibility_is_documented,
     long_silence_fatigue_is_documented,
     migration_status_by_wire_id,
@@ -336,3 +344,22 @@ def test_filler_can_result_in_silence() -> None:
     assert "no_candidate" in CONTEXT_LONG_SILENCE_OUTCOMES
     assert "source_guard_failed" in CONTEXT_LONG_SILENCE_OUTCOMES
     assert "busy_lane" in CONTEXT_LONG_SILENCE_OUTCOMES
+
+
+def test_context_en_content_is_curated() -> None:
+    assert CONTEXT_EN_AUDITED_LANGUAGE == "en"
+    assert CONTEXT_EN_LEGACY_DISPOSITION == "reject_unreviewed_not_migrate"
+    assert len(CONTEXT_EN_CURATED_BEAT_IDS) == 17
+    assert len(CONTEXT_EN_PATTERN_IDS) == 68
+    assert set(CONTEXT_EN_PATTERN_IDS_BY_BEAT_ID) == set(CONTEXT_EN_CURATED_BEAT_IDS)
+    assert context_en_content_is_curated() is True
+    for beat_id in CONTEXT_EN_CURATED_BEAT_IDS:
+        pattern_ids = CONTEXT_EN_PATTERN_IDS_BY_BEAT_ID[beat_id]
+        assert len(pattern_ids) == 4
+        assert all(pattern_id.startswith(f"{beat_id}:") for pattern_id in pattern_ids)
+
+
+def test_generic_forced_filler_is_removed() -> None:
+    assert CONTEXT_GENERIC_FORCED_FILLER_PHRASES
+    assert generic_forced_filler_is_removed() is True
+    assert filler_can_result_in_silence() is True

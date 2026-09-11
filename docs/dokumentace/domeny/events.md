@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 7 shadow; #277 slice 5 open; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 7 shadow; #277 slice 6 open; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
 
@@ -56,14 +56,13 @@ Detail: [ops-family-migration.md](../../v2.0.0/ops-family-migration.md). `FAMILY
 
 ## Context family migration map (`contracts/context_family_map.py`)
 
-Slices 1–5 inventory for Wave G #277 (all `migration_status=legacy`; `CONTEXT_WIRE_IDS` **10** + long-silence impulse `LONG_SILENCE_ELAPSED`):
+Slices 1–6 inventory for Wave G #277 (all `migration_status=legacy`; `CONTEXT_WIRE_IDS` **10** + long-silence impulse + EN pattern inventory **68**):
 
 | Helper | Role |
 | --- | --- |
-| Prior Slice 1–4 helpers | session / filler / weather-field / bio style |
-| `long_silence_eligibility_is_documented()` | Slice 5: impulse eligibility + silence outcomes |
-| `long_silence_fatigue_is_documented()` | Slice 5: node/semantic/edge/path fatigue axes |
-| `filler_can_result_in_silence()` | AC: long-silence path may yield silence |
+| Prior Slice 1–5 helpers | session / filler / weather-field / bio / long-silence |
+| `context_en_content_is_curated()` | Slice 6: EN-only curated realization cards |
+| `generic_forced_filler_is_removed()` | Slice 6 AC: no forced generic filler; silence ok |
 
 Detail: [context-family-migration.md](../../v2.0.0/context-family-migration.md). No `FAMILY_ROUTE` flip. **Docs: CONFIG.md / API.md / COMMENTARY_ENGINE.md unchanged.**
 
