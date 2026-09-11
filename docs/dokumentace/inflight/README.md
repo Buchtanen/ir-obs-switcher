@@ -750,6 +750,19 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 | Scope | Branch-only; freezes public error bodies before further handler edits |
 
 
+
+### #273 health commentary summary freeze slice lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| Projector | `events/narrative_ingress.py` → `project_commentary_health_component` → `{status, reason}` only |
+| HTTP | `GET /health` `commentary` field in `server/api.py` — never flips overall status alone |
+| Goldens | `tests/fixtures/commentary_runtime/health_commentary_{disabled,ready,ready_history_incomplete,degraded}.json` |
+| Lock tests | `tests/test_commentary_runtime_goldens.py` (machine `health_ready` parity + projector) + `tests/test_api.py` HTTP isolation |
+| Scope | Branch-only freeze of bounded summary + failure semantics |
+
+
 ### #284 #273 ManualAdmissionLatch slice lookup
 
 - **Latch (`events/narrative_manual_latch.py`):** `ManualAdmissionLatch` — one-shot rendezvous only (`pending | actor_claimed | caller_abandoned`); `ADMISSION_TIMEOUT_S=1.0`. Not a speech waiter, prepared-text queue, actor input, or replayed DTO. **Not** exported from `events/__init__.py`.

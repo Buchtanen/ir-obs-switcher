@@ -42,6 +42,10 @@ REQUIRED_FIXTURES = (
     "error_component_unavailable.json",
     "error_mailbox_overloaded.json",
     "error_admission_timeout.json",
+    "health_commentary_disabled.json",
+    "health_commentary_ready.json",
+    "health_commentary_ready_history_incomplete.json",
+    "health_commentary_degraded.json",
 )
 
 
@@ -133,3 +137,45 @@ async def test_runtime_speak_component_unavailable_matches_error_golden() -> Non
             resp = await client.post("/api/commentary/runtime/speak", json=request)
             assert resp.status == 503
             assert await resp.json() == expected
+
+
+def test_health_commentary_ready_matches_machine_golden() -> None:
+    """#273: /health commentary ready shape is frozen to machine health_ready."""
+    machine = json.loads(MACHINE_GOLDENS.read_text(encoding="utf-8"))
+    row = next(item for item in machine["valid"] if item["id"] == "health_ready")
+    fixture = json.loads((FIXTURES / "health_commentary_ready.json").read_text(encoding="utf-8"))
+    assert fixture == row["value"]
+    assert set(fixture) == {"status", "reason"}
+
+
+def test_health_commentary_projector_matches_disabled_and_ready_goldens() -> None:
+    from irswitch.events.narrative_ingress import project_commentary_health_component
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+
+    disabled = json.loads(
+        (FIXTURES / "health_commentary_disabled.json").read_text(encoding="utf-8")
+    )
+    ready = json.loads((FIXTURES / "health_commentary_ready.json").read_text(encoding="utf-8"))
+    assert project_commentary_health_component() == disabled
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    assert project_commentary_health_component(runtime.status()) == ready
+
+
+def test_health_commentary_projector_matches_degraded_golden() -> None:
+    from dataclasses import replace
+
+    from irswitch.events.narrative_ingress import project_commentary_health_component
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+
+    expected = json.loads(
+        (FIXTURES / "health_commentary_degraded.json").read_text(encoding="utf-8")
+    )
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    degraded = replace(
+        runtime.status(),
+        runtime_state="degraded",
+        reason_codes=("component_unavailable",),
+    )
+    assert project_commentary_health_component(degraded) == expected

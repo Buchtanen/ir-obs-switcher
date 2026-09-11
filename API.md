@@ -273,6 +273,8 @@ Health check endpoint pro monitoring.
 - `unhealthy` - žádný připojený
 
 **Commentary** (`#273` / `#284` bounded field via `project_commentary_health_component`):
+
+Frozen goldens: `tests/fixtures/commentary_runtime/health_commentary_*.json` (machine `health_ready` parity + HTTP isolation that commentary `disabled`/`degraded` never flips overall `/health` alone).
 - Top-level `{status, reason}` only — never flips overall `/health` alone.
 - Resolves process `get_narrative_runtime()` when attached; otherwise library disabled snapshot.
 - Full operator detail remains on `GET /api/commentary/runtime`.

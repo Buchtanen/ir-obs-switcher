@@ -403,4 +403,4 @@ Busy returns `speech_busy`/409; invalid text returns `validation_failed`/422; un
 }
 ~~~
 
-Commentary `disabled` or `degraded` does not make overall health fail. Full component detail remains in `/api/commentary/status`.
+Commentary `disabled` or `degraded` does not make overall health fail. Full component detail remains in `GET /api/commentary/runtime` (legacy `/api/commentary/status` is TTS-test only).

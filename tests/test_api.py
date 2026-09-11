@@ -302,6 +302,169 @@ async def test_health_unhealthy() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.asyncio
+async def test_health_commentary_matches_disabled_golden(app: web.Application) -> None:
+    """#273: GET /health commentary field freezes to health_commentary_disabled.json."""
+    import json
+    from pathlib import Path
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.events.narrative_runtime_http import set_narrative_runtime
+
+    set_narrative_runtime(None)
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "health_commentary_disabled.json"
+        ).read_text(encoding="utf-8")
+    )
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/health")
+            assert resp.status == 200
+            data = await resp.json()
+            assert data["commentary"] == expected
+            assert set(data["commentary"]) == {"status", "reason"}
+
+
+@pytest.mark.asyncio
+async def test_health_commentary_ready_when_runtime_enabled(app: web.Application) -> None:
+    """#273: attached ready NarrativeRuntime projects health_commentary_ready.json."""
+    import json
+    from pathlib import Path
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+    from irswitch.events.narrative_runtime_http import set_narrative_runtime
+
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "health_commentary_ready.json"
+        ).read_text(encoding="utf-8")
+    )
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    set_narrative_runtime(runtime)
+    try:
+        async with TestServer(app) as server:
+            async with TestClient(server) as client:
+                resp = await client.get("/health")
+                assert resp.status == 200
+                data = await resp.json()
+                assert data["status"] == "healthy"
+                assert data["commentary"] == expected
+    finally:
+        set_narrative_runtime(None)
+
+
+@pytest.mark.asyncio
+async def test_health_commentary_degraded_does_not_fail_overall(app: web.Application) -> None:
+    """#273: commentary degraded/reason must not flip overall /health alone."""
+    import json
+    from dataclasses import replace
+    from pathlib import Path
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+    from irswitch.events.narrative_runtime_http import set_narrative_runtime
+
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "health_commentary_degraded.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    class _DegradedProvider:
+        def __init__(self) -> None:
+            runtime = NarrativeRuntime()
+            runtime.enable()
+            self._status = replace(
+                runtime.status(),
+                runtime_state="degraded",
+                reason_codes=("component_unavailable",),
+            )
+
+        def status(self):
+            return self._status
+
+    set_narrative_runtime(_DegradedProvider())  # type: ignore[arg-type]
+    try:
+        async with TestServer(app) as server:
+            async with TestClient(server) as client:
+                resp = await client.get("/health")
+                assert resp.status == 200
+                data = await resp.json()
+                assert data["status"] == "healthy"
+                assert data["commentary"] == expected
+                assert data["checks"]["iracing"]["available"] is True
+                assert data["checks"]["obs"]["available"] is True
+    finally:
+        set_narrative_runtime(None)
+
+
+@pytest.mark.asyncio
+async def test_health_commentary_reason_does_not_fail_overall(app: web.Application) -> None:
+    """#273: ready+reason (history_incomplete) keeps overall healthy when cores up."""
+    import json
+    from pathlib import Path
+
+    from aiohttp.test_utils import TestClient, TestServer
+    from test_narrative_runtime import _pure_fact
+
+    from irswitch.contracts.command import NarrativeCommand
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+    from irswitch.events.narrative_runtime_http import set_narrative_runtime
+
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "health_commentary_ready_history_incomplete.json"
+        ).read_text(encoding="utf-8")
+    )
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    latest = _pure_fact("health:latest", revision=70, fanout=70)
+    runtime.admit(
+        NarrativeCommand.recovery(
+            "health:recovery",
+            9100,
+            latest_context=latest.context_part,
+            loss_first_sequence=1,
+            loss_last_sequence=2,
+            safety_effects=(latest.safety_effect(),),
+        )
+    )
+    assert runtime.reduce_next() is not None
+    set_narrative_runtime(runtime)
+    try:
+        async with TestServer(app) as server:
+            async with TestClient(server) as client:
+                resp = await client.get("/health")
+                assert resp.status == 200
+                data = await resp.json()
+                assert data["status"] == "healthy"
+                assert data["commentary"] == expected
+    finally:
+        set_narrative_runtime(None)
+
+
 async def test_metrics(app: web.Application, initial_state: SwitchState) -> None:
     """Test GET /metrics endpoint."""
     from aiohttp.test_utils import TestClient, TestServer
