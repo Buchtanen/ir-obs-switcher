@@ -29,8 +29,16 @@ _OCCURRENCE = "1:race:0"
 _LINEAGE = "1:race:0"
 
 
-def adapt_batch_for_shadow(batch: FrozenAcceptedEventBatch) -> AdaptedPublication | None:
+def adapt_batch_for_shadow(
+    batch: FrozenAcceptedEventBatch,
+    *,
+    narrative_run_active: bool = False,
+) -> AdaptedPublication | None:
     """Adapt commentary-audience accepted events into one shadow publication.
+
+    ``narrative_run_active`` must follow the commentary kill-switch
+    (``commentary.enabled``). Default ``False`` so callers cannot silently
+    invent an active narrative run.
 
     Returns ``None`` when nothing can be admitted (no commentary events or all
     adaptations fail closed). Never raises into the consumer loop.
@@ -71,7 +79,10 @@ def adapt_batch_for_shadow(batch: FrozenAcceptedEventBatch) -> AdaptedPublicatio
     if not adapted_events:
         return None
     return AdaptedPublication(
-        timeline=_shadow_timeline(observed_mono_ms=int(batch.accepted_monotonic_ms)),
+        timeline=_shadow_timeline(
+            observed_mono_ms=int(batch.accepted_monotonic_ms),
+            narrative_run_active=bool(narrative_run_active),
+        ),
         fact_view=_shadow_fact_view(
             facts,
             observed_mono_ms=int(batch.accepted_monotonic_ms),
@@ -83,14 +94,16 @@ def adapt_batch_for_shadow(batch: FrozenAcceptedEventBatch) -> AdaptedPublicatio
     )
 
 
-def _shadow_timeline(*, observed_mono_ms: int) -> dict[str, Any]:
+def _shadow_timeline(
+    *, observed_mono_ms: int, narrative_run_active: bool = False
+) -> dict[str, Any]:
     return {
         "schemaVersion": "timeline-snapshot/2",
         "timelineRevision": 3,
         "observedMonoMs": observed_mono_ms,
         "broadcastEpoch": _BROADCAST_EPOCH,
         "streamEpoch": _STREAM_EPOCH,
-        "narrativeRunActive": True,
+        "narrativeRunActive": bool(narrative_run_active),
         "obsState": "active",
         "sessionRef": {"subSessionId": "42", "sessionNum": 2},
         "stage": "race",

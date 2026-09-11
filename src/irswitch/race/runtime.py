@@ -237,11 +237,11 @@ class RaceRuntime:
         # fanout subscription; shadow mirrors lifecycle/context only.
         # TTS via tts_effect; realization_effect + StoryDirector composition feed speakable
         # drafts from shadow events. Idle-lane speech disabled (idle_speech_enabled=False).
-        # Optional #269 Qwen path: enabled with short soft-fail warmup
-        # (_narrative_qwen_enabled=True). Missing Ollama leaves component not-ready;
-        # authored/template realization still works. No INI key.
-        self._narrative_shadow_enabled = True
-        self._narrative_qwen_enabled = True
+        # #349 Slice 1: commentary.enabled is the live-path kill-switch.
+        # Shadow/Qwen composition must not hard-enable when commentary is off.
+        commentary_enabled = bool(self._overlay_settings().commentary.enabled)
+        self._narrative_shadow_enabled = commentary_enabled
+        self._narrative_qwen_enabled = commentary_enabled
         self._narrative_shadow_subscription = None
         self.narrative_shadow_consumer = None
         self._narrative_shadow_supervisor = None
@@ -995,7 +995,10 @@ class RaceRuntime:
 
     def _adapt_batch_for_shadow_with_drafts(self, batch: object):
         """Adapt live batch for shadow and cache speakable drafts for realization."""
-        publication = adapt_batch_for_shadow(batch)  # type: ignore[arg-type]
+        publication = adapt_batch_for_shadow(
+            batch,  # type: ignore[arg-type]
+            narrative_run_active=bool(self._overlay_settings().commentary.enabled),
+        )
         if publication is not None and self._speech_draft_cache is not None:
             self._speech_draft_cache.observe_publication(publication)
         return publication

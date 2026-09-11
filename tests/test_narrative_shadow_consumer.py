@@ -49,7 +49,8 @@ def test_shadow_source_documents_default_off_boundary() -> None:
     assert "NarrativeShadowConsumer" not in events_exports
     assert "AdaptedPublication" not in events_exports
     race = RACE_SOURCE.read_text(encoding="utf-8")
-    assert "_narrative_shadow_enabled = True" in race
+    assert "commentary_enabled = bool(self._overlay_settings().commentary.enabled)" in race
+    assert "self._narrative_shadow_enabled = commentary_enabled" in race
     assert "NarrativeShadowConsumer" in race
 
 

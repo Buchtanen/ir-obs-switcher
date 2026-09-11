@@ -110,7 +110,8 @@ async def test_module_runtime_attach_feeds_http_status() -> None:
 
 def test_race_shadow_cutover_wires_actor_run_and_subscription_cutover() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
-    assert "_narrative_shadow_enabled = True" in race
+    assert "commentary_enabled = bool(self._overlay_settings().commentary.enabled)" in race
+    assert "self._narrative_shadow_enabled = commentary_enabled" in race
     assert "_narrative_subscription_cutover = True" in race
     assert "self._commentary_subscription = None" in race
     assert "NarrativeRuntime(" in race

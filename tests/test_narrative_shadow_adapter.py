@@ -57,7 +57,8 @@ def test_adapt_batch_for_shadow_skips_overlay_only_batch() -> None:
 
 def test_race_enables_shadow_cutover_with_adapter_and_actor_run() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
-    assert "_narrative_shadow_enabled = True" in race
+    assert "commentary_enabled = bool(self._overlay_settings().commentary.enabled)" in race
+    assert "self._narrative_shadow_enabled = commentary_enabled" in race
     assert "_narrative_subscription_cutover = True" in race
     assert "adapt_batch_for_shadow" in race
     assert "CommentaryConsumer" in race
