@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 7 shadow; #277 slice 1 open; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 7 shadow; #277 slice 2 open; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
 
