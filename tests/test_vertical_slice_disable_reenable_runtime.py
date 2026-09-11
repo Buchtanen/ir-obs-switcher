@@ -172,16 +172,18 @@ async def test_f16_disable_reenable_within_broadcast_is_runtime_owned(
     assert "history_incomplete" in runtime.status().reason_codes
     observed.add("incomplete_history")
 
+    # Re-enable must exceed the recovery jump floor (latest revision=80 →
+    # barrier (80, 86)); older/equal context revisions are stale no-ops (F19).
     runtime.admit(
         _context_with_timeline(
             "f16:enable",
             _timeline_run(
-                revision=22,
+                revision=81,
                 stream_epoch=2,
                 narrative_run_active=True,
                 transition_reasons=["narrative_enabled"],
             ),
-            fanout=22,
+            fanout=81,
             with_event=True,
         )
     )
