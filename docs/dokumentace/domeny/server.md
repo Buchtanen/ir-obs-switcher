@@ -26,11 +26,13 @@
 | Consumer | Path | Notes |
 | --- | --- | --- |
 | Runtime status panel | `GET /api/commentary/runtime` | Not legacy `GET /api/commentary/status` |
+| Channel cadence (`byTapeChannel`) | same runtime status payload | kick/accepted/queued/selected/started/expired per catalog channel rendered on page (#273); no event-name parsing / no global DEBUG |
 | Decision ring (“Proč ticho”) | `GET /api/commentary/runtime/decisions?limit=20` | Not legacy `GET /api/commentary/decisions` |
 | Offline validate button | `POST /api/commentary/validate` | `commentary-runtime/2` body + `X-Requested-With: irswitch` |
 | Server speak button | `POST /api/commentary/speak` | EN-only manual admit; body `{schemaVersion, text, language}` only; **202** `admittedState: committed` |
 
 - Browser Web Speech (`speechSynthesis`) remains local-only; CS Czech option does not call server speak.
+- `#273` observability close-out: page shows `byTapeChannel` cadence from runtime status; NarrativeTape volume is independent of `app.log_level` (full tape stays usable at INFO/WARN — see `CONFIG.md` `[commentary.tape]`).
 - Legacy `GET /api/commentary/status` and `GET /api/commentary/decisions` **remain registered** for other consumers/tests; the operator page no longer references them (viz [§ dashboard versioned-contracts](../inflight/README.md#273-dashboard-versioned-contracts-slice-lookup) · [public-contracts § Removed endpoint](../../v2.0.0/public-contracts.md)).
 - Config/TTS device edits stay on `config.ini` + `POST /config/reload` — not on this page.
 

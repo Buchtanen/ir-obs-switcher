@@ -332,3 +332,9 @@ Graph nodes `session_intro_practice` / `session_intro_qualify` / `session_intro_
 - `tests/test_session_context.py`
 - `tests/test_sof.py`
 - `tests/test_iracing_weather.py`
+
+## Operator observability (#273)
+
+- **Channel cadence:** `byTapeChannel` on `GET /api/commentary/runtime` (kick/accepted/queued/selected/started/expired) is rendered on `GET /commentary`. No event-name parsing; no global DEBUG.
+- **INFO/WARN + full tape:** `[commentary.tape]` NDJSON volume is independent of `app.log_level`. Full `detail=full` capture must remain usable while the operator log stays at INFO/WARN (writer emits no per-record INFO/WARN).
+
