@@ -171,7 +171,6 @@ async def handle_commentary_runtime_validate(request: web.Request) -> web.Respon
     return web.json_response(payload, status=200)
 
 
-
 _SPEAK_BODY_KEYS = frozenset({"schemaVersion", "text", "language"})
 
 

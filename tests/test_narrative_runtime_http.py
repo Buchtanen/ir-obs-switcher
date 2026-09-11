@@ -244,8 +244,6 @@ async def test_runtime_speak_accepted_and_busy() -> None:
 
 
 @pytest.mark.asyncio
-
-
 @pytest.mark.asyncio
 async def test_runtime_speak_rejects_unknown_body_fields() -> None:
     """#273 manual speak body is schemaVersion/text/language only (no force/overrides)."""
