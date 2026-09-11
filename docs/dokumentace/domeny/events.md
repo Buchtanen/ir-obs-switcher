@@ -1,10 +1,23 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 slice 1 open; #284 **CLOSED** merged @ `77452a9`)
 
-> **Větev `cursor/race-outcome-story-ttl-274-cad3` (#274, slice 2):** race-outcome story/beat roles + correlation + outcome TTL — [§ #274 map](../inflight/README.md#274-race-outcome-family-map-slice-2-lookup) · [race-outcome-migration.md](../../v2.0.0/race-outcome-migration.md).
+> **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
+
+## Timing family migration map (`contracts/timing_family_map.py`)
+
+Slice 1 inventory for Wave G #275 (all `migration_status=legacy`):
+
+| Helper | Role |
+| --- | --- |
+| `timing_family_rows()` | Closed rows for `LAP_COMPLETE` / `SECTOR_SPLIT` / `SECTOR_BEST` |
+| `migration_status_by_wire_id()` | Coverage-matrix companion |
+| `lap_complete_is_not_race_finish()` | AC: lap completion ≠ race finish |
+| Scope / polarity | `lap_sf` vs `sector`; `lap_complete` / `sector_split` / `sector_best` |
+
+Detail: [timing-family-migration.md](../../v2.0.0/timing-family-migration.md). No `FAMILY_ROUTE` flip. **Docs: `CONFIG.md` / `API.md` unchanged.**
 
 ## Race-outcome migration map (`contracts/race_outcome_family_map.py`)
 
-Slice 3 inventory + story/TTL + EN pattern curation for Wave G #274 (all `migration_status=legacy`):
+Slice 3 inventory + story/TTL + EN pattern curation for Wave G #274 (creatable rows `shadow`; alias `OVERTAKEN` `legacy`):
 
 | Helper | Role |
 | --- | --- |
@@ -14,7 +27,7 @@ Slice 3 inventory + story/TTL + EN pattern curation for Wave G #274 (all `migrat
 | Story/TTL fields | `correlation_kind` / bindings / closing routes / fallback / adapter prefix; beat role + policy TTL |
 | EN pattern fields | `en_pattern_ids` / `en_claim_surfaces` / `en_forbidden_tokens` (catalog-backed; no machine hash rewrite) |
 
-Detail: [race-outcome-migration.md](../../v2.0.0/race-outcome-migration.md). No `FAMILY_ROUTE` flip yet. **Docs: `CONFIG.md` / `API.md` unchanged.**
+Detail: [race-outcome-migration.md](../../v2.0.0/race-outcome-migration.md). `FAMILY_ROUTE` position/session → shadow observation only. **Docs: `CONFIG.md` / `API.md` unchanged.**
 
 ## NarrativeRuntime identity (`events/narrative_runtime.py`)
 
