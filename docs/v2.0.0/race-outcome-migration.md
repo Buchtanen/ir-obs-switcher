@@ -1,10 +1,10 @@
 # #274 Race-outcome family migration
 
-**Status:** Slice 2 — story/beat roles + correlation + outcome TTL (all families still `legacy`).  
+**Status:** Slice 3 — EN realization patterns (still all `legacy`) (all families still `legacy`).  
 **Issue:** [#274](https://github.com/Buchtanen/ir-obs-switcher/issues/274)  
 **Module:** `src/irswitch/contracts/race_outcome_family_map.py`  
 **Tests:** `tests/test_race_outcome_family_map.py`  
-**Lookup:** [inflight § #274](../dokumentace/inflight/README.md#274-race-outcome-family-map-slice-2-lookup) · [events branch delta](../dokumentace/domeny/events.md#race-outcome-migration-map-contractsrace_outcome_family_mappy)
+**Lookup:** [inflight § #274](../dokumentace/inflight/README.md#274-race-outcome-family-map-slice-3-lookup) · [events branch delta](../dokumentace/domeny/events.md#race-outcome-migration-map-contractsrace_outcome_family_mappy)
 
 ## Guardrails
 
@@ -65,9 +65,25 @@ Contract locks:
 - EN pattern curation, verifier minimal pairs, shadow then per-family activation remain open on #274.
 - Deeper speak-path proof for “self-contained if opening unspoken” stays open (policy flag + existing retention regression; not yet live activation).
 
+
+## EN realization patterns (slice 3)
+
+Curated without rewriting frozen `machine/realization-pattern-cards.json` hashes:
+
+| Wire | Beat pattern ids (4× tight) | Claim-surface polarity | Forbidden tokens |
+| --- | --- | --- | --- |
+| `OVERTAKE` | `position.pass:tight:1..4` | passer→passed via `{targetSurface}` | `is passed by`, `loses position to`, `drops behind` |
+| `POSITION_GAINED` | `position.gained:tight:1..4` | `gains` / `moves up` / `climbs` / `improves` to `P{newPosition}` | `drops`, `slips`, `loses`, `falls back` |
+| `POSITION_LOST` | `position.lost:tight:1..4` | `drops` / `slips` / `loses a spot` / `falls back` | `gains`, `climbs`, `moves up`, `improves` |
+| `LEADER_CHANGE` | `position.leader_change:tight:1..4` | old→new leader surfaces | `hero wins the race`, `checkered` |
+| `FINISH` | `session.hero_finish:tight:1..4` | observed `P{finishPosition}` | provisional / unofficial class language |
+| `OVERTAKEN` | — | — | — |
+
+Rows expose `en_pattern_ids`, `en_claim_surfaces`, `en_forbidden_tokens`. Creatable families require ≥4 catalog-backed EN pattern ids whose `beatId`/`family` match the inventory row.
+
 ## Next slices
 
-3. EN realization patterns  
+3. ~~EN realization patterns~~ (this slice)
 4. Verifier minimal pairs  
 5. Shadow (`position` → `shadow` after routing fix)  
 6. Per-family activation (integration-only)

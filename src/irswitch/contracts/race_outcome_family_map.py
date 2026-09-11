@@ -4,8 +4,9 @@ Maps wire identifiers for position pass / gain / loss, leader change and
 finish onto legacy emitters, adapters, beat/story routes, predicates,
 realization families, policy TTL, tape channels and correlation bindings.
 
-Slice 1 recorded every family as ``legacy``. Slice 2 locks story/beat roles,
-correlation identity and outcome TTL. It does **not** rewrite frozen
+Slice 1 recorded every family as ``legacy``. Slice 2 locked story/beat roles,
+correlation identity and outcome TTL. Slice 3 curates EN realization pattern
+ids and polarity-safe claim surfaces. It does **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and does **not** flip ``FAMILY_ROUTE``.
 """
 
@@ -67,6 +68,9 @@ class RaceOutcomeFamilyRow:
     closing_story_routes: tuple[str, ...]
     fallback_story_route: str | None
     adapter_correlation_prefix: str | None
+    en_pattern_ids: tuple[str, ...]
+    en_claim_surfaces: tuple[str, ...]
+    en_forbidden_tokens: tuple[str, ...]
     notes: str = ""
 
 
@@ -82,6 +86,9 @@ class _StaticSource:
     closing_story_routes: tuple[str, ...]
     fallback_story_route: str | None
     adapter_correlation_prefix: str | None
+    en_pattern_ids: tuple[str, ...]
+    en_claim_surfaces: tuple[str, ...]
+    en_forbidden_tokens: tuple[str, ...]
     notes: str = ""
 
 
@@ -98,6 +105,19 @@ _STATIC: dict[str, _StaticSource] = {
         closing_story_routes=("battle_ahead", "battle_two_front"),
         fallback_story_route=FALLBACK_STORY_ROUTE,
         adapter_correlation_prefix="position:",
+        en_pattern_ids=(
+            "position.pass:tight:1",
+            "position.pass:tight:2",
+            "position.pass:tight:3",
+            "position.pass:tight:4",
+        ),
+        en_claim_surfaces=(
+            "passes {targetSurface}",
+            "moves ahead of {targetSurface}",
+            "takes the place of {targetSurface}",
+            "gets by {targetSurface}",
+        ),
+        en_forbidden_tokens=("is passed by", "loses position to", "drops behind"),
         notes="Passer→passed order; closes battle_ahead/two_front or single_result.",
     ),
     "POSITION_GAINED": _StaticSource(
@@ -111,6 +131,19 @@ _STATIC: dict[str, _StaticSource] = {
         closing_story_routes=(),
         fallback_story_route=FALLBACK_STORY_ROUTE,
         adapter_correlation_prefix="position:",
+        en_pattern_ids=(
+            "position.gained:tight:1",
+            "position.gained:tight:2",
+            "position.gained:tight:3",
+            "position.gained:tight:4",
+        ),
+        en_claim_surfaces=(
+            "gains P{newPosition}",
+            "moves up to P{newPosition}",
+            "climbs to P{newPosition}",
+            "improves to P{newPosition}",
+        ),
+        en_forbidden_tokens=("drops", "slips", "loses", "falls back"),
         notes="Adapter maps RaceEvent direction gain → POSITION_GAINED.",
     ),
     "POSITION_LOST": _StaticSource(
@@ -124,6 +157,19 @@ _STATIC: dict[str, _StaticSource] = {
         closing_story_routes=("battle_behind", "battle_two_front"),
         fallback_story_route=FALLBACK_STORY_ROUTE,
         adapter_correlation_prefix="position:",
+        en_pattern_ids=(
+            "position.lost:tight:1",
+            "position.lost:tight:2",
+            "position.lost:tight:3",
+            "position.lost:tight:4",
+        ),
+        en_claim_surfaces=(
+            "drops to P{newPosition}",
+            "slips to P{newPosition}",
+            "loses a spot to P{newPosition}",
+            "falls back to P{newPosition}",
+        ),
+        en_forbidden_tokens=("gains", "climbs", "moves up", "improves"),
         notes="Adapter maps RaceEvent direction loss → POSITION_LOST.",
     ),
     "LEADER_CHANGE": _StaticSource(
@@ -137,6 +183,19 @@ _STATIC: dict[str, _StaticSource] = {
         closing_story_routes=(),
         fallback_story_route=FALLBACK_STORY_ROUTE,
         adapter_correlation_prefix="leader:",
+        en_pattern_ids=(
+            "position.leader_change:tight:1",
+            "position.leader_change:tight:2",
+            "position.leader_change:tight:3",
+            "position.leader_change:tight:4",
+        ),
+        en_claim_surfaces=(
+            "takes the lead from {oldLeaderSurface}",
+            "moves into the lead ahead of {oldLeaderSurface}",
+            "{newLeaderSurface} leads after {oldLeaderSurface}",
+            "the lead switches to {newLeaderSurface}",
+        ),
+        en_forbidden_tokens=("hero wins the race", "checkered"),
         notes="Old leader → new leader; hero involvement only when bound.",
     ),
     "FINISH": _StaticSource(
@@ -150,6 +209,19 @@ _STATIC: dict[str, _StaticSource] = {
         closing_story_routes=("session_occurrence",),
         fallback_story_route=FALLBACK_STORY_ROUTE,
         adapter_correlation_prefix="session:",
+        en_pattern_ids=(
+            "session.hero_finish:tight:1",
+            "session.hero_finish:tight:2",
+            "session.hero_finish:tight:3",
+            "session.hero_finish:tight:4",
+        ),
+        en_claim_surfaces=(
+            "finishes P{finishPosition}",
+            "takes the checkered in P{finishPosition}",
+            "crosses the line in P{finishPosition}",
+            "ends the race P{finishPosition}",
+        ),
+        en_forbidden_tokens=("provisional class win", "unofficial classification"),
         notes="Hero finish / checkered result; self-contained critical outcome.",
     ),
     "OVERTAKEN": _StaticSource(
@@ -163,6 +235,9 @@ _STATIC: dict[str, _StaticSource] = {
         closing_story_routes=(),
         fallback_story_route=None,
         adapter_correlation_prefix=None,
+        en_pattern_ids=(),
+        en_claim_surfaces=(),
+        en_forbidden_tokens=(),
         notes="compatibility_alias; reject as v2 input; migrate to POSITION_LOST + cause.",
     ),
 }
@@ -250,6 +325,8 @@ def race_outcome_family_rows() -> tuple[RaceOutcomeFamilyRow, ...]:
         if event_class == "compatibility_alias":
             if beat_ids or can_create:
                 raise ContractViolation(f"alias {wire_id} must not create opportunities")
+            if static.en_pattern_ids or static.en_claim_surfaces:
+                raise ContractViolation(f"alias {wire_id} must not curate EN patterns")
             rows.append(
                 RaceOutcomeFamilyRow(
                     wire_id=wire_id,
@@ -277,6 +354,9 @@ def race_outcome_family_rows() -> tuple[RaceOutcomeFamilyRow, ...]:
                     closing_story_routes=static.closing_story_routes,
                     fallback_story_route=static.fallback_story_route,
                     adapter_correlation_prefix=static.adapter_correlation_prefix,
+                    en_pattern_ids=static.en_pattern_ids,
+                    en_claim_surfaces=static.en_claim_surfaces,
+                    en_forbidden_tokens=static.en_forbidden_tokens,
                     notes=static.notes,
                 )
             )
@@ -306,6 +386,15 @@ def race_outcome_family_rows() -> tuple[RaceOutcomeFamilyRow, ...]:
             raise ContractViolation(
                 f"{wire_id} fallback {static.fallback_story_route!r} missing from beat storyRoutes"
             )
+        if not static.en_pattern_ids:
+            raise ContractViolation(f"{wire_id} must curate EN pattern ids")
+        if not static.en_claim_surfaces:
+            raise ContractViolation(f"{wire_id} must curate EN claim surfaces")
+        for pattern_id in static.en_pattern_ids:
+            if not pattern_id.startswith(f"{beat_id}:"):
+                raise ContractViolation(
+                    f"{wire_id} pattern {pattern_id!r} must belong to beat {beat_id}"
+                )
         rows.append(
             RaceOutcomeFamilyRow(
                 wire_id=wire_id,
@@ -333,6 +422,9 @@ def race_outcome_family_rows() -> tuple[RaceOutcomeFamilyRow, ...]:
                 closing_story_routes=static.closing_story_routes,
                 fallback_story_route=static.fallback_story_route,
                 adapter_correlation_prefix=static.adapter_correlation_prefix,
+                en_pattern_ids=static.en_pattern_ids,
+                en_claim_surfaces=static.en_claim_surfaces,
+                en_forbidden_tokens=static.en_forbidden_tokens,
                 notes=static.notes,
             )
         )

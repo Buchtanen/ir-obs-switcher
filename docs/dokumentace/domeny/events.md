@@ -1,10 +1,10 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 slice 2 story/TTL; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 slice 3 EN patterns; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/race-outcome-story-ttl-274-cad3` (#274, slice 2):** race-outcome story/beat roles + correlation + outcome TTL — [§ #274 map](../inflight/README.md#274-race-outcome-family-map-slice-2-lookup) · [race-outcome-migration.md](../../v2.0.0/race-outcome-migration.md).
 
 ## Race-outcome migration map (`contracts/race_outcome_family_map.py`)
 
-Slice 2 inventory + story/TTL contract for Wave G #274 (all `migration_status=legacy`):
+Slice 3 inventory + story/TTL + EN pattern curation for Wave G #274 (all `migration_status=legacy`):
 
 | Helper | Role |
 | --- | --- |
@@ -12,6 +12,7 @@ Slice 2 inventory + story/TTL contract for Wave G #274 (all `migration_status=le
 | `migration_status_by_wire_id()` | Coverage-matrix companion (migrated/legacy recording) |
 | Polarity tests | gain≠loss; passer→passed; alias not creatable |
 | Story/TTL fields | `correlation_kind` / bindings / closing routes / fallback / adapter prefix; beat role + policy TTL |
+| EN pattern fields | `en_pattern_ids` / `en_claim_surfaces` / `en_forbidden_tokens` (catalog-backed; no machine hash rewrite) |
 
 Detail: [race-outcome-migration.md](../../v2.0.0/race-outcome-migration.md). No `FAMILY_ROUTE` flip yet. **Docs: `CONFIG.md` / `API.md` unchanged.**
 

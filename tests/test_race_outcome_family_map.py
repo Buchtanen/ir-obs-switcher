@@ -227,3 +227,57 @@ def test_outcome_ttl_matches_policy_catalog() -> None:
     assert alias.policy_id is None
     assert alias.outcome_ttl_ms is None
     assert alias.self_contained is False
+
+
+def test_creatable_families_curate_en_pattern_ids_from_catalog() -> None:
+    cards = {
+        str(row["id"]): row
+        for row in json.loads(packaged_schema_bytes("realization-pattern-cards.json"))["cards"]
+    }
+    for row in race_outcome_family_rows():
+        if not row.can_create:
+            assert row.en_pattern_ids == ()
+            assert row.en_claim_surfaces == ()
+            continue
+        assert len(row.en_pattern_ids) >= 4
+        for pattern_id in row.en_pattern_ids:
+            card = cards[pattern_id]
+            assert card["beatId"] == row.beat_id
+            assert card["family"] == row.realization_family
+            assert card["enabled"] is True
+            assert card["auditedLanguage"] == "en"
+            assert pattern_id.startswith(f"{row.beat_id}:")
+
+
+def test_en_claim_surfaces_keep_polarity_and_pass_order() -> None:
+    gained = row_for_wire_id("POSITION_GAINED")
+    lost = row_for_wire_id("POSITION_LOST")
+    overtake = row_for_wire_id("OVERTAKE")
+    leader = row_for_wire_id("LEADER_CHANGE")
+    finish = row_for_wire_id("FINISH")
+
+    assert gained.en_claim_surfaces
+    assert lost.en_claim_surfaces
+    for surface in gained.en_claim_surfaces:
+        lowered = surface.lower()
+        assert not any(token in lowered for token in gained.en_forbidden_tokens)
+        assert "p{newposition}" in lowered
+    for surface in lost.en_claim_surfaces:
+        lowered = surface.lower()
+        assert not any(token in lowered for token in lost.en_forbidden_tokens)
+        assert "p{newposition}" in lowered
+    # Passer→passed: subject claim mentions target surface, never inverted "is passed by".
+    assert all("{targetsurface}" in s.lower() for s in overtake.en_claim_surfaces)
+    assert not any("is passed by" in s.lower() for s in overtake.en_claim_surfaces)
+    # Leader change keeps old→new ordering cues.
+    assert any("oldleadersurface" in s.lower() for s in leader.en_claim_surfaces)
+    assert any("newleadersurface" in s.lower() for s in leader.en_claim_surfaces)
+    # Finish stays on observed finish position wording.
+    assert all("p{finishposition}" in s.lower() for s in finish.en_claim_surfaces)
+    assert finish.en_forbidden_tokens
+
+
+def test_gain_and_loss_en_surfaces_are_disjoint() -> None:
+    gained = set(row_for_wire_id("POSITION_GAINED").en_claim_surfaces)
+    lost = set(row_for_wire_id("POSITION_LOST").en_claim_surfaces)
+    assert gained.isdisjoint(lost)

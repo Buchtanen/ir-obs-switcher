@@ -101,7 +101,7 @@ This index covers the complete refactor, not only the first vertical slice. Each
 
 ## Wave G — complete event-family migration
 
-- [ ] [#274 — v2: migrate race outcome event families](https://github.com/Buchtanen/ir-obs-switcher/issues/274) — position/pass/overtake/leader/finish. **Slice 2 in progress:** story/beat roles + correlation + outcome TTL (`contracts/race_outcome_family_map.py`); see [race-outcome-migration.md](race-outcome-migration.md).
+- [ ] [#274 — v2: migrate race outcome event families](https://github.com/Buchtanen/ir-obs-switcher/issues/274) — position/pass/overtake/leader/finish. **Slice 3 in progress:** curated EN realization pattern ids + polarity-safe claim surfaces (`contracts/race_outcome_family_map.py`); see [race-outcome-migration.md](race-outcome-migration.md).
 - [ ] [#275 — v2: migrate lap, sector, practice and qualifying families](https://github.com/Buchtanen/ir-obs-switcher/issues/275) — timing and inherited recaps.
 - [ ] [#276 — v2: migrate pit, incident, flag and recovery families](https://github.com/Buchtanen/ir-obs-switcher/issues/276) — stateful operational stories.
 - [ ] [#277 — v2: migrate session, filler, weather, field and bio families](https://github.com/Buchtanen/ir-obs-switcher/issues/277) — non-race-event commentary.
