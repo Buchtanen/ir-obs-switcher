@@ -134,7 +134,12 @@ async def test_commentary_page_exposes_decision_panel(app: web.Application) -> N
                 or "proč ticho" in html.lower()
                 or "decision" in html.lower()
             )
-            assert "/api/commentary/decisions" in html
+            assert "/api/commentary/runtime/decisions" in html
+            assert "/api/commentary/runtime" in html
+            # #273: dashboard must not call legacy status/decisions contracts.
+            assert "/api/commentary/status" not in html
+            assert '"/api/commentary/decisions"' not in html
+            assert "/api/commentary/decisions?" not in html
 
 
 @pytest.mark.asyncio
@@ -159,3 +164,28 @@ async def test_assignments_route_unregistered_generic_404(app: web.Application) 
                 text = await resp.text()
                 assert "commentary-runtime" not in text
                 assert "gone" not in text.lower()
+
+@pytest.mark.asyncio
+async def test_commentary_page_uses_versioned_contracts_only(app: web.Application) -> None:
+    """#273: operator page fetches only commentary-runtime/2 public paths."""
+    from aiohttp.test_utils import TestClient, TestServer
+
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            page = await client.get("/commentary")
+            html = await page.text()
+            for required in (
+                "/api/commentary/runtime",
+                "/api/commentary/runtime/decisions",
+                "/api/commentary/validate",
+                "/api/commentary/speak",
+            ):
+                assert required in html
+            for banned in (
+                "/api/commentary/status",
+                "/api/commentary/assignments",
+            ):
+                assert banned not in html
+            assert "/api/commentary/decisions" not in html.replace(
+                "/api/commentary/runtime/decisions", ""
+            )

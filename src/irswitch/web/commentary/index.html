@@ -18,10 +18,8 @@
     .bad { color: #f5a6a6; }
     .muted { color: #888; font-size: 0.9em; }
     #log { background: #1b1b1b; padding: 10px; min-height: 72px; white-space: pre-wrap; }
-    .nodes { display: flex; flex-wrap: wrap; gap: 6px; max-height: 220px; overflow: auto; }
-    .nodes button { margin: 0; font-size: 0.85em; }
-    .nodes button.active { outline: 2px solid #9be7ff; }
-    #decisions { background: #1b1b1b; padding: 10px; max-height: 220px; overflow: auto; font-size: 0.85em; white-space: pre-wrap; }
+    #decisions { background: #1b1b1b; padding: 10px; max-height: 280px; overflow: auto; font-size: 0.85em; white-space: pre-wrap; }
+    #runtimeBox { background: #1b1b1b; padding: 10px; font-size: 0.85em; white-space: pre-wrap; }
     #audioHint { margin: 0 0 12px; padding: 8px 10px; border-left: 3px solid #9be7ff; background: #1a2228; }
   </style>
 </head>
@@ -36,80 +34,54 @@
     <a href="/config">Config</a>
   </nav>
   <h1>Commentary / TTS test</h1>
-  <p class="muted">Krátký poslech: nejdřív <b>prohlížeč</b> (Web Speech, Edge/Chrome), pak <b>server</b> (Windows SAPI → Virtual Audio Driver, ne sluchátka). Server speak jde přes NarrativeRuntime (commentary-runtime/2). Offline validate potřebuje beat + bindings.</p>
+  <p class="muted">
+    Operator page consumes only versioned <code>commentary-runtime/2</code> contracts
+    (<code>/api/commentary/runtime*</code>, public validate/speak).
+    Browser speak uses Web Speech locally; server speak goes through NarrativeRuntime.
+  </p>
   <p id="audioHint" class="muted" hidden></p>
-  <p id="statusLine" class="muted">Načítám…</p>
+  <p id="statusLine" class="muted">Loading…</p>
 
   <div class="row">
     <section>
       <fieldset>
-        <legend>Řádek</legend>
+        <legend>Manual line</legend>
         <label>Text
-          <textarea id="text"></textarea>
+          <textarea id="text">Commentary audio test.</textarea>
         </label>
-        <label>Node
-          <select id="node"></select>
+        <label>Language (manual speak is EN-only on server)
+          <select id="language">
+            <option value="en">en</option>
+            <option value="cs">cs (browser only)</option>
+          </select>
         </label>
-        <button type="button" id="btnBrowser">Mluvit v prohlížeči</button>
-        <button type="button" id="btnServer">Mluvit na serveru</button>
-        <button type="button" id="btnValidate">Jen validovat</button>
-        <button type="button" id="btnStop">Stop</button>
+        <button type="button" id="btnBrowser">Speak in browser</button>
+        <button type="button" id="btnServer">Speak on server</button>
+        <button type="button" id="btnValidate">Validate offline</button>
+        <button type="button" id="btnStop">Stop browser</button>
         <div id="log"></div>
       </fieldset>
       <fieldset>
-        <legend>Nody v grafu</legend>
-        <div id="nodes" class="nodes"></div>
-      </fieldset>
-    </section>
-    <section>
-      <fieldset>
-        <legend>Manuální legacy test (neukládá v2 konfiguraci)</legend>
-        <label><input type="checkbox" id="enabled" disabled> legacy runtime enabled (read-only)</label>
-        <label><input type="checkbox" id="useHr" checked disabled> legacy HR emotion (read-only)</label>
-        <label>Jazyk overlay
-          <select id="language">
-            <option value="cs">cs</option>
-            <option value="en">en</option>
-          </select>
-        </label>
-        <label>TTS backend
-          <select id="backend">
-            <option value="auto">auto</option>
-            <option value="sapi">sapi (Windows)</option>
-            <option value="espeak">espeak</option>
-            <option value="null">null</option>
-          </select>
-        </label>
-        <label>Hlas (server)
-          <select id="voice"><option value="">default</option></select>
-        </label>
-        <label>Prohlížeč — hlas
+        <legend>Browser voice (local only)</legend>
+        <label>Voice
           <select id="browserVoice"><option value="">default</option></select>
         </label>
         <label>Rate (−10 … 10)
           <input id="rate" type="number" min="-10" max="10" step="1" value="0">
         </label>
-        <label>audio_device (SAPI výstup, např. CABLE Input)
-          <input id="audioDevice" placeholder="prázdné = default Windows výstup">
-        </label>
-        <label>duck_input (OBS zdroj, např. Zvuk plochy)
-          <input id="duckInput" placeholder="prázdné = bez ztlumení">
-        </label>
-        <label>duck_ratio (0–1, 0.25 = 25 %)
-          <input id="duckRatio" type="number" min="0" max="1" step="0.05" value="0.25">
-        </label>
-        <label>duck_fade_ms (0 = skok, 750 = fade)
-          <input id="duckFadeMs" type="number" min="0" max="3000" step="50" value="750">
-        </label>
-        <label>Cooldown s
-          <input id="cooldown" type="number" min="0.5" max="30" step="0.5" value="4">
-        </label>
-        <p class="muted">V2 konfiguraci uprav v config.ini podle CONFIG.md a načti přes POST /config/reload.</p>
+        <p class="muted">Server TTS/device/duck settings are not edited here — use config.ini + POST /config/reload.</p>
+      </fieldset>
+    </section>
+    <section>
+      <fieldset>
+        <legend>Runtime status (commentary-runtime/2)</legend>
+        <button type="button" id="btnRuntime">Refresh</button>
+        <div id="runtimeBox" class="muted">—</div>
       </fieldset>
       <fieldset>
-        <legend>Proč ticho (decision log)</legend>
-        <p class="muted">Živý feed: poslední spoken/skipped důvody z CommentaryDirector.</p>
-        <button type="button" id="btnDecisions">Obnovit</button>
+        <legend>Why silence (runtime decisions)</legend>
+        <p class="muted">Newest-first ring from NarrativeRuntime (<code>/api/commentary/runtime/decisions</code>).</p>
+        <button type="button" id="btnDecisions">Refresh</button>
         <div id="decisions" class="muted">—</div>
       </fieldset>
     </section>
@@ -118,32 +90,12 @@
   <script>
     const CSRF = { "X-Requested-With": "irswitch", "Content-Type": "application/json" };
     const $ = (id) => document.getElementById(id);
-    let status = null;
+    let runtime = null;
 
     function log(msg, cls) {
       const el = $("log");
       el.className = cls || "";
       el.textContent = msg;
-    }
-
-    function fillServerVoices(keep) {
-      const sel = $("voice");
-      const current = keep !== undefined ? keep : sel.value;
-      sel.innerHTML = '<option value="">default</option>';
-      (status && status.voices ? status.voices : []).forEach((name) => {
-        const opt = document.createElement("option");
-        opt.value = name;
-        opt.textContent = name;
-        if (name === current) opt.selected = true;
-        sel.appendChild(opt);
-      });
-      if (current && ![...sel.options].some((o) => o.value === current)) {
-        const custom = document.createElement("option");
-        custom.value = current;
-        custom.textContent = current + " (config)";
-        custom.selected = true;
-        sel.appendChild(custom);
-      }
     }
 
     function fillVoices() {
@@ -160,74 +112,71 @@
       });
     }
 
-    async function loadStatus() {
-      const res = await fetch("/api/commentary/status");
-      status = await res.json();
-      $("text").value = $("text").value || status.sample;
-      $("language").value = status.language;
-      $("enabled").checked = status.settings.enabled;
-      $("useHr").checked = status.settings.useHrEmotion;
-      $("backend").value = status.settings.ttsBackend;
-      fillServerVoices(status.settings.ttsVoice || "");
-      $("rate").value = status.settings.ttsRate;
-      $("audioDevice").value = status.settings.audioDevice || "";
-      $("duckInput").value = status.settings.duckInput || "";
-      $("duckRatio").value = status.settings.duckRatio;
-      $("duckFadeMs").value = status.settings.duckFadeMs;
-      $("cooldown").value = status.settings.cooldownS;
-      const nodeSel = $("node");
-      nodeSel.innerHTML = "";
-      const box = $("nodes");
-      box.innerHTML = "";
-      (status.nodes || []).forEach((node) => {
-        const opt = document.createElement("option");
-        opt.value = node.id;
-        opt.textContent = node.id + " (" + node.eventTypes.join(",") + ")";
-        nodeSel.appendChild(opt);
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.textContent = node.id;
-        btn.onclick = () => {
-          nodeSel.value = node.id;
-          $("text").value = node.sample;
-          [...box.children].forEach((el) => el.classList.remove("active"));
-          btn.classList.add("active");
-        };
-        box.appendChild(btn);
-      });
-      const hint = $("audioHint");
-      if (status.audioHint) {
-        hint.hidden = false;
-        hint.textContent = status.audioHint;
+    function summarizeRuntime(body) {
+      const speech = body.speech || {};
+      const tts = (body.components && body.components.tts) || {};
+      const timeline = body.timeline || {};
+      const mailbox = (body.queues && body.queues.mailbox) || {};
+      const loop = body.loop || {};
+      return [
+        "schema=" + (body.schemaVersion || "?"),
+        "status=" + (body.status || "?"),
+        "language=" + (body.language || "?"),
+        "speech=" + (speech.state || "?"),
+        "tts=" + (tts.backend || "null") + "/" + (tts.status || "?"),
+        "narrativeRunActive=" + String(timeline.narrativeRunActive),
+        "streamEpoch=" + String(timeline.streamEpoch),
+        "mailbox=" + String(mailbox.depth) + "/" + String(mailbox.capacity),
+        "loop.active=" + String(loop.active),
+      ].join("\n");
+    }
+
+    async function loadRuntime() {
+      const res = await fetch("/api/commentary/runtime");
+      runtime = await res.json();
+      $("language").value = runtime.language || "en";
+      if (!$("text").value) {
+        $("text").value = "Commentary audio test.";
       }
+      $("runtimeBox").textContent = summarizeRuntime(runtime);
       $("statusLine").textContent =
-        "Server backend: " + status.backend +
-        " (config " + status.configuredBackend + "), jazyk " + status.language +
-        ", device " + (status.settings.audioDevice || "default") +
-        ", prázdných variant: " + status.unfilledCells +
-        ". Prohlížeč: " + (window.speechSynthesis ? "Web Speech OK" : "bez Web Speech");
+        "Runtime " + (runtime.status || "?") +
+        " · speech " + ((runtime.speech && runtime.speech.state) || "?") +
+        " · language " + (runtime.language || "?") +
+        " · browser " + (window.speechSynthesis ? "Web Speech OK" : "no Web Speech");
+      const hint = $("audioHint");
+      const tts = (runtime.components && runtime.components.tts) || {};
+      if (tts.status && tts.status !== "ready") {
+        hint.hidden = false;
+        hint.textContent = "TTS component: " + tts.status + (tts.reason ? " (" + tts.reason + ")" : "");
+      } else {
+        hint.hidden = true;
+      }
     }
 
     async function loadDecisions() {
       const el = $("decisions");
       try {
-        const res = await fetch("/api/commentary/decisions?limit=20");
+        const res = await fetch("/api/commentary/runtime/decisions?limit=20");
         const body = await res.json();
         if (!body.runtime) {
-          el.textContent = "Runtime offline — decision log prázdný (startni irswitchd).";
+          el.textContent = "Runtime offline — decisions ring empty (attach NarrativeRuntime).";
           return;
         }
         const rows = body.decisions || [];
         if (!rows.length) {
-          el.textContent = "Zatím žádná rozhodnutí (zapni enabled a jeď race / mock).";
+          el.textContent = "No decisions yet.";
           return;
         }
         el.textContent = rows.map((d) => {
-          const t = (d.at || 0).toFixed ? d.at.toFixed(1) : d.at;
-          const bits = [t + "s", d.action, d.reason];
-          if (d.eventType) bits.push(d.eventType);
-          if (d.nodeId) bits.push(d.nodeId);
-          if (d.text) bits.push(JSON.stringify(d.text));
+          const bits = [
+            "seq=" + d.reducerSequence,
+            d.decision,
+            d.reason,
+          ];
+          if (d.beatId) bits.push(d.beatId);
+          if (d.tapeChannel) bits.push(d.tapeChannel);
+          if (d.score != null) bits.push("score=" + d.score);
           return bits.join(" | ");
         }).join("\n");
       } catch (err) {
@@ -238,7 +187,7 @@
     function browserSpeak() {
       const text = $("text").value.trim();
       if (!window.speechSynthesis) {
-        log("Web Speech API tady není. Zkus Edge/Chrome.", "bad");
+        log("Web Speech API missing. Use Edge/Chrome.", "bad");
         return;
       }
       speechSynthesis.cancel();
@@ -249,22 +198,42 @@
       const name = $("browserVoice").value;
       const match = speechSynthesis.getVoices().find((v) => v.name === name);
       if (match) u.voice = match;
-      u.onstart = () => log("Prohlížeč mluví…", "ok");
-      u.onerror = (ev) => log("Prohlížeč: " + (ev.error || "error"), "bad");
-      u.onend = () => log("Prohlížeč hotovo.", "ok");
+      u.onstart = () => log("Browser speaking…", "ok");
+      u.onerror = (ev) => log("Browser: " + (ev.error || "error"), "bad");
+      u.onend = () => log("Browser done.", "ok");
       speechSynthesis.speak(u);
     }
 
     async function validate() {
-      log("Offline validate potřebuje commentary-runtime/2 beat + actor/fact bindings (ne graph nodeId).", "bad");
-      return { valid: false };
+      const text = ($("text").value || "").trim();
+      if (!text) { log("Missing text.", "bad"); return; }
+      log("Offline validate (commentary-runtime/2)…", "");
+      const res = await fetch("/api/commentary/validate", {
+        method: "POST",
+        headers: CSRF,
+        body: JSON.stringify({
+          schemaVersion: "commentary-runtime/2",
+          text,
+          beatId: "battle.approach",
+          evaluationAtMonoMs: 90231,
+          actorBindings: [{"actorId": "hero", "aliases": ["he", "the driver"]}, {"actorId": "car:22", "aliases": ["Morgan", "the car ahead"]}],
+          factBindings: [{"attributes": {"gap": 1.4, "materialBand": "material", "targetEpoch": "relation:4"}, "broadcastEpoch": 2, "confidence": 0.94, "evidenceRefs": ["event:401", "feature:gap-ahead:77"], "factId": "fact:88", "lineageId": "3:practice:0>3:qualifying:1>3:race:2", "objectId": "car:22", "observedAtMonoMs": 90180, "occurrenceId": "3:race:2", "polarity": "positive", "predicate": "battle.approaching", "revision": 4, "schemaVersion": "atomic-fact/2", "scope": "occurrence", "status": "active", "streamEpoch": 3, "subjectId": "hero", "validFromMonoMs": 89000, "validUntilMonoMs": 94000}],
+        }),
+      });
+      const body = await res.json();
+      if (res.status === 200) {
+        log("Validate ok=" + String(body.valid) + " issues=" + JSON.stringify(body.issues || []), body.valid ? "ok" : "bad");
+      } else {
+        const code = (body.error && body.error.code) || res.status;
+        log("Validate refused: " + code, "bad");
+      }
     }
 
     async function serverSpeak() {
       const text = ($("text").value || "").trim();
-      if (!text) { log("Chybí text.", "bad"); return; }
+      if (!text) { log("Missing text.", "bad"); return; }
       if ($("language").value !== "en") {
-        log("Manual speak je jen EN (commentary-runtime/2).", "bad");
+        log("Manual server speak is EN-only (commentary-runtime/2).", "bad");
         return;
       }
       log("Server speak (NarrativeRuntime)…", "");
@@ -291,11 +260,12 @@
     $("btnValidate").onclick = validate;
     $("btnStop").onclick = () => { if (window.speechSynthesis) speechSynthesis.cancel(); };
     $("btnDecisions").onclick = loadDecisions;
+    $("btnRuntime").onclick = () => loadRuntime().catch((err) => { $("statusLine").textContent = String(err); });
     if (window.speechSynthesis) {
       fillVoices();
       speechSynthesis.onvoiceschanged = fillVoices;
     }
-    loadStatus().catch((err) => { $("statusLine").textContent = String(err); });
+    loadRuntime().catch((err) => { $("statusLine").textContent = String(err); });
     loadDecisions();
     setInterval(loadDecisions, 4000);
   </script>

@@ -1,6 +1,6 @@
 # Server / HTTP — branch delta (#273/#284 runtime status)
 
-> **Větev `cursor/narrative-runtime-284-matrix-cad3`:** tenký delta k master `server.md`. Shipped HTTP kontrakt: [API.md](../../../API.md). Branch lookup: [§ golden-health identity](../inflight/README.md#284-273-golden-health-identity-slice-lookup), [§ timeline session identity](../inflight/README.md#284-273-timeline-session-identity-slice-lookup), [§ golden-health speech](../inflight/README.md#284-273-golden-health-speech-slice-lookup), [§ components llm/tts](../inflight/README.md#284-273-components-llm-tts-slice-lookup), [§ components detectors/facts](../inflight/README.md#284-273-components-detectors-facts-slice-lookup), [§ golden-health decisions](../inflight/README.md#284-273-golden-health-decisions-slice-lookup), [§ golden-health validate/speak](../inflight/README.md#284-273-golden-health-validatespeak-slice-lookup), [§ assignments route removal](../inflight/README.md#273-assignments-route-removal-slice-lookup), [§ ManualAdmissionLatch](../inflight/README.md#284-273-manual-admission-latch-slice-lookup), [§ status_ready](../inflight/README.md#284-273-status-ready-slice-lookup), [§ loop liveness / supervisor heartbeats](../inflight/README.md#284-loop-liveness-slice-lookup), [§ health/API reason-code schema](../inflight/README.md#284-healthapi-reason-code-schema-slice-2026-09-10).
+> **Větev `cursor/narrative-runtime-284-matrix-cad3`:** tenký delta k master `server.md`. Shipped HTTP kontrakt: [API.md](../../../API.md). Branch lookup: [§ golden-health identity](../inflight/README.md#284-273-golden-health-identity-slice-lookup), [§ timeline session identity](../inflight/README.md#284-273-timeline-session-identity-slice-lookup), [§ golden-health speech](../inflight/README.md#284-273-golden-health-speech-slice-lookup), [§ components llm/tts](../inflight/README.md#284-273-components-llm-tts-slice-lookup), [§ components detectors/facts](../inflight/README.md#284-273-components-detectors-facts-slice-lookup), [§ golden-health decisions](../inflight/README.md#284-273-golden-health-decisions-slice-lookup), [§ golden-health validate/speak](../inflight/README.md#284-273-golden-health-validatespeak-slice-lookup), [§ assignments route removal](../inflight/README.md#273-assignments-route-removal-slice-lookup), [§ dashboard versioned-contracts](../inflight/README.md#273-dashboard-versioned-contracts-slice-lookup), [§ ManualAdmissionLatch](../inflight/README.md#284-273-manual-admission-latch-slice-lookup), [§ status_ready](../inflight/README.md#284-273-status-ready-slice-lookup), [§ loop liveness / supervisor heartbeats](../inflight/README.md#284-loop-liveness-slice-lookup), [§ health/API reason-code schema](../inflight/README.md#284-healthapi-reason-code-schema-slice-2026-09-10).
 
 ## GET /health — `commentary` pole
 
@@ -19,6 +19,21 @@
 - `GET /api/commentary/assignments` is **unregistered** (#273) — generic server 404, not a commentary tombstone; offline `render_assignments` stays for CLI (viz [§ assignments route removal](../inflight/README.md#273-assignments-route-removal-slice-lookup) · [public-contracts § Removed endpoint](../../v2.0.0/public-contracts.md)).
 - Validate/speak: additive `POST /api/commentary/runtime/validate` + `POST /api/commentary/runtime/speak` — offline validate + `try_manual_speak` s `ManualAdmissionLatch` (503 `admission_timeout` on latch timeout); public `POST /api/commentary/validate|speak` cut over na NarrativeRuntime handlery (feat `f2c1f1b`; `/runtime/*` alias) (viz `API.md` + [§ golden-health validate/speak](../inflight/README.md#284-273-golden-health-validatespeak-slice-lookup) · [§ ManualAdmissionLatch](../inflight/README.md#284-273-manual-admission-latch-slice-lookup)).
 
+## GET /commentary — operator page (#273 slice 2)
+
+`src/irswitch/web/commentary/index.html` — TTS test / operator dashboard at `GET /commentary` (`commentary/http.py` static mount). **Branch-only #273 slice 2:** page JavaScript fetches **only** versioned `commentary-runtime/2` contracts; legacy v1 page paths removed from HTML/JS.
+
+| Consumer | Path | Notes |
+| --- | --- | --- |
+| Runtime status panel | `GET /api/commentary/runtime` | Not legacy `GET /api/commentary/status` |
+| Decision ring (“Proč ticho”) | `GET /api/commentary/runtime/decisions?limit=20` | Not legacy `GET /api/commentary/decisions` |
+| Offline validate button | `POST /api/commentary/validate` | `commentary-runtime/2` body + `X-Requested-With: irswitch` |
+| Server speak button | `POST /api/commentary/speak` | EN-only manual admit via NarrativeRuntime |
+
+- Browser Web Speech (`speechSynthesis`) remains local-only; CS Czech option does not call server speak.
+- Legacy `GET /api/commentary/status` and `GET /api/commentary/decisions` **remain registered** for other consumers/tests; the operator page no longer references them (viz [§ dashboard versioned-contracts](../inflight/README.md#273-dashboard-versioned-contracts-slice-lookup) · [public-contracts § Removed endpoint](../../v2.0.0/public-contracts.md)).
+- Config/TTS device edits stay on `config.ini` + `POST /config/reload` — not on this page.
+
 ## Soubory
 
 | Soubor | Role |
@@ -30,11 +45,12 @@
 | `events/narrative_validate_projection.py` | `project_validate_response` (offline validate) |
 | `events/narrative_manual_latch.py` | `ManualAdmissionLatch` rendezvous (not exported) |
 | `commentary/http.py` | commentary test page + public routes; `#273` assignments route **not** registered |
+| `web/commentary/index.html` | operator page UI; `#273` slice 2 — runtime/decisions/validate/speak fetch only |
 | `commentary/assignments.py` | offline `render_assignments()` (CLI/docs; no HTTP mount) |
 
 ## Testy
 
-`tests/test_api.py` — `/health` obsahuje `commentary`; `tests/test_narrative_runtime_http.py` — decisions + validate/speak/cutover + admission-timeout + disabled-subset loop asserts (**16** rows); `tests/test_commentary_http.py` (**8** = **7** cutover + **1** assignments-unregistered row); `tests/test_narrative_ingress.py` — `test_project_commentary_health_reason_uses_actor_recovery_code` validates `/health` reason vs schema enum (feat `cffaab1`); related suite **306** s narrative ingress identity + timeline session identity (null + live) + speech + decision + validate + status_ready (stub + live config/episodes/byTapeChannel) + llm/tts components + loop heartbeats + latch + health reason codes + public validate/speak cutover + assignments generic-404 rows; ingress+http **43** (= prior **42** + **1** health reason row).
+`tests/test_api.py` — `/health` obsahuje `commentary`; `tests/test_narrative_runtime_http.py` — decisions + validate/speak/cutover + admission-timeout + disabled-subset loop asserts (**16** rows); `tests/test_commentary_http.py` (**9** = **7** cutover + **1** assignments-unregistered + **2** page contract rows incl. `test_commentary_page_uses_versioned_contracts_only`); `tests/test_narrative_ingress.py` — `test_project_commentary_health_reason_uses_actor_recovery_code` validates `/health` reason vs schema enum (feat `cffaab1`); related suite **306** s narrative ingress identity + timeline session identity (null + live) + speech + decision + validate + status_ready (stub + live config/episodes/byTapeChannel) + llm/tts components + loop heartbeats + latch + health reason codes + public validate/speak cutover + assignments generic-404 + operator-page contract rows; ingress+http **43** (= prior **42** + **1** health reason row).
 
 ## Related
 

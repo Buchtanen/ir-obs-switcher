@@ -835,12 +835,14 @@ Schema-driven editor overlay nastavení. Navigace je i na `/gr-status`.
 
 ### GET /commentary
 
-Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`).
+Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`) — `#273` cutover: page fetches **only** versioned `commentary-runtime/2` contracts.
 
 - **Mluvit v prohlížeči** — Web Speech API (Edge/Chrome), bez serverového enginu
-- **Mluvit na serveru** — `POST /api/commentary/speak` → SAPI / SuperTonic / espeak (jen `audio_device`) a duck OBS `duck_input` (fade `duck_fade_ms`; SuperTonic syntéza běží během fade-out, play až je duck dole)
-- **Proč ticho** — načítá `GET /api/commentary/decisions` (ring buffer z CommentaryDirector)
-- V2 commentary konfigurace se na této legacy testovací stránce neukládá. Upravuje se v `config.ini` a načítá přes `POST /config/reload`; legacy `commentary.*` ani `commentary.graph_runtime.mode` nejsou v `PUT /api/config` schématu.
+- **Mluvit na serveru** — `POST /api/commentary/speak` (`commentary-runtime/2` body) → NarrativeRuntime manual admit (alias of `/api/commentary/runtime/speak`)
+- **Offline validate** — `POST /api/commentary/validate` (`commentary-runtime/2` beat + bindings)
+- **Runtime status** — `GET /api/commentary/runtime` (not legacy `/api/commentary/status`)
+- **Proč ticho** — `GET /api/commentary/runtime/decisions` (NarrativeRuntime decision ring; not legacy `/api/commentary/decisions`)
+- V2 commentary konfigurace se na této stránce neukládá. Upravuje se v `config.ini` a načítá přes `POST /config/reload`; legacy `commentary.*` ani `commentary.graph_runtime.mode` nejsou v `PUT /api/config` schématu.
 
 **API**
 
