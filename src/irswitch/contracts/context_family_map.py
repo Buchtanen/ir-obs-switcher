@@ -1,10 +1,10 @@
-"""#277 context family migration map — session/stream leftovers + filler + weather/field (Slices 1–3).
+"""#277 context family migration map — session/stream leftovers + filler + weather/field + bio style (Slices 1–4).
 
 Maps remaining non-race session/stream, filler, weather and field wire identifiers onto legacy
 emitters, adapters, beat/story routes, predicates, realization families, policy
 TTL and tape channels.
 
-Slices 1–3 record these wires as ``legacy``. They do **not** rewrite frozen
+Slices 1–4 record these wires as ``legacy``. They do **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 Session intros/recaps stay owned by the timing map; session wrap/checkered/finish
 stay owned by the ops / race-outcome maps. Beat-only silence fillers are documented without inventing freeze wires.
@@ -33,6 +33,7 @@ ScopeKind = Literal[
     "weather_change",
     "field_fact",
     "sof_brief",
+    "bio_style",
 ]
 LifecyclePhase = Literal["stream_start", "preview", "enter_car", "final_lap"]
 FillerKind = Literal[
@@ -66,8 +67,18 @@ CONTEXT_WEATHER_FIELD_WIRE_IDS: tuple[str, ...] = (
     "SOF_BRIEF",
 )
 
+
+# Slice 4 inventory: HR pressure as optional style fact (not sport truth).
+CONTEXT_BIO_STYLE_WIRE_IDS: tuple[str, ...] = ("HR_PRESSURE_RISING",)
+
+# Compatibility alias — not speakable inventory (do not invent a freeze row).
+CONTEXT_BIO_ALIAS_WIRE_IDS: tuple[str, ...] = ("HEART_RATE",)
+
 CONTEXT_WIRE_IDS: tuple[str, ...] = (
-    CONTEXT_SESSION_WIRE_IDS + CONTEXT_FILLER_WIRE_IDS + CONTEXT_WEATHER_FIELD_WIRE_IDS
+    CONTEXT_SESSION_WIRE_IDS
+    + CONTEXT_FILLER_WIRE_IDS
+    + CONTEXT_WEATHER_FIELD_WIRE_IDS
+    + CONTEXT_BIO_STYLE_WIRE_IDS
 )
 
 # Silence-clock filler beats (policy filler). Parade also binds PARADE_PAD.
@@ -100,6 +111,7 @@ CONTEXT_FILLER_KIND_BY_BEAT_ID: dict[str, FillerKind] = {
 
 # Documented ownership outside this map (do not duplicate inventory rows).
 CONTEXT_OWNED_ELSEWHERE: dict[str, str] = {
+    "HEART_RATE": "compatibility_alias/not_speakable",
     "SESSION_INTRO_PRACTICE": "timing_family_map",
     "SESSION_INTRO_QUALIFY": "timing_family_map",
     "SESSION_INTRO_RACE": "timing_family_map",
@@ -319,6 +331,29 @@ _STATIC: dict[str, _StaticSource] = {
             "or predict results from SoF alone."
         ),
     ),
+    "HR_PRESSURE_RISING": _StaticSource(
+        legacy_node_id="hr_pressure_rising",
+        race_event_name="hr_pressure",
+        emitter_module="irswitch.events.hr_pressure:HrPressureEmitter",
+        adapter_module="irswitch.events.adapters.bio:bio_race_event_to_envelope",
+        lifecycle_phase=None,
+        scope_kind="bio_style",
+        invalidate_reasons=(
+            "stream_ended",
+            "session_reset",
+            "sensor_stale",
+            "hr_disabled",
+            "style_suppressed",
+        ),
+        terminal_reasons=(),
+        notes=(
+            "Optional style fact only (director resolve_emotion / use_hr_emotion). "
+            "Maps bio.hr_state band/bpm — never medical diagnosis, never invent "
+            "emotion cause, never change sport truth or invent performance claims. "
+            "HEART_RATE remains compatibility_alias outside speakable inventory. "
+            "Missing/stale sensor → suppress style, do not invent pressure."
+        ),
+    ),
 }
 
 
@@ -401,7 +436,7 @@ def _resolve_beat_ids(
 
 
 def context_family_rows() -> tuple[ContextFamilyRow, ...]:
-    """Return the closed context migration inventory (Slices 1–3: session leftovers + filler + weather/field, legacy)."""
+    """Return the closed context migration inventory (Slices 1–4: session leftovers + filler + weather/field + bio style, legacy)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -657,5 +692,68 @@ def weather_and_field_currency_is_explicit() -> bool:
     if "never" not in field_fact.notes.lower() and "not invent" not in field_fact.notes.lower():
         return False
     if "never" not in sof.notes.lower() and "not" not in sof.notes.lower():
+        return False
+    return True
+
+
+def bio_style_wires_are_documented() -> bool:
+    """Slice 4 helper: HR pressure style wire stays closed; HEART_RATE stays alias."""
+
+    if CONTEXT_BIO_STYLE_WIRE_IDS != ("HR_PRESSURE_RISING",):
+        return False
+    if CONTEXT_BIO_ALIAS_WIRE_IDS != ("HEART_RATE",):
+        return False
+    if "HEART_RATE" in CONTEXT_WIRE_IDS:
+        return False
+    if CONTEXT_OWNED_ELSEWHERE.get("HEART_RATE") != "compatibility_alias/not_speakable":
+        return False
+    row = row_for_wire_id("HR_PRESSURE_RISING")
+    if row.beat_id != "bio.pressure":
+        return False
+    if row.scope_kind != "bio_style":
+        return False
+    if row.realization_family != "bio.context":
+        return False
+    if row.policy_id != "context":
+        return False
+    if row.lifecycle_phase is not None:
+        return False
+    if not row.invalidate_reasons:
+        return False
+    if "style_suppressed" not in row.invalidate_reasons and "style" not in " ".join(
+        row.invalidate_reasons
+    ):
+        # require style_suppressed specifically
+        if "style_suppressed" not in row.invalidate_reasons:
+            return False
+    lowered = row.notes.lower()
+    if "optional style" not in lowered and "style fact" not in lowered:
+        return False
+    return True
+
+
+def bio_cannot_invent_sport_truth() -> bool:
+    """AC helper: bio/HR style must not invent sport truth, medical, or causal emotion."""
+
+    if not bio_style_wires_are_documented():
+        return False
+    row = row_for_wire_id("HR_PRESSURE_RISING")
+    lowered = row.notes.lower()
+    if "sport truth" not in lowered and "never change sport" not in lowered:
+        return False
+    if "medical" not in lowered:
+        return False
+    if "emotion" not in lowered and "cause" not in lowered:
+        return False
+    if (
+        "never invent" not in lowered
+        and "do not invent" not in lowered
+        and "not invent" not in lowered
+    ):
+        return False
+    if "performance" not in lowered:
+        return False
+    # Alias must remain non-speakable.
+    if "HEART_RATE" in set(CONTEXT_WIRE_IDS):
         return False
     return True

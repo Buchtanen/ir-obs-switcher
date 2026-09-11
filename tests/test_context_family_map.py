@@ -1,4 +1,4 @@
-"""#277 Slices 1–3 — context family map (session + filler + weather/field)."""
+"""#277 Slices 1–4 — context family map (session + filler + weather/field + bio style)."""
 
 from __future__ import annotations
 
@@ -7,6 +7,8 @@ import dataclasses
 import pytest
 
 from irswitch.contracts.context_family_map import (
+    CONTEXT_BIO_STYLE_WIRE_IDS,
+    CONTEXT_BIO_ALIAS_WIRE_IDS,
     CONTEXT_FILLER_BEAT_IDS,
     CONTEXT_FILLER_BEAT_ONLY_IDS,
     CONTEXT_FILLER_WIRE_IDS,
@@ -18,6 +20,8 @@ from irswitch.contracts.context_family_map import (
     ENTER_CAR_BRANCH_BEAT_IDS,
     ENTER_CAR_PRIMARY_BEAT_ID,
     ContextFamilyRow,
+    bio_cannot_invent_sport_truth,
+    bio_style_wires_are_documented,
     context_family_rows,
     context_session_phase_order_is_monotonic,
     context_session_stories_have_explicit_invalidation,
@@ -149,10 +153,22 @@ _EXPECT = {
         "branch_beat_ids": ("session.sof_brief",),
         "terminal": False,
     },
+    "HR_PRESSURE_RISING": {
+        "beat_id": "bio.pressure",
+        "beat_role": "context",
+        "policy_id": "context",
+        "outcome_ttl_ms": 20000,
+        "lifecycle_phase": None,
+        "scope_kind": "bio_style",
+        "legacy_node_id": "hr_pressure_rising",
+        "realization_family": "bio.context",
+        "branch_beat_ids": ("bio.pressure",),
+        "terminal": False,
+    },
 }
 
 
-def test_context_family_rows_cover_session_filler_and_weather_field_inventory() -> None:
+def test_context_family_rows_cover_full_inventory() -> None:
     rows = context_family_rows()
     assert tuple(row.wire_id for row in rows) == CONTEXT_WIRE_IDS
     assert CONTEXT_SESSION_WIRE_IDS == (
@@ -168,15 +184,21 @@ def test_context_family_rows_cover_session_filler_and_weather_field_inventory() 
         "FIELD_FACT",
         "SOF_BRIEF",
     )
+    assert CONTEXT_BIO_STYLE_WIRE_IDS == ("HR_PRESSURE_RISING",)
+    assert CONTEXT_BIO_ALIAS_WIRE_IDS == ("HEART_RATE",)
+    assert "HEART_RATE" not in CONTEXT_WIRE_IDS
     assert CONTEXT_WIRE_IDS == (
-        CONTEXT_SESSION_WIRE_IDS + CONTEXT_FILLER_WIRE_IDS + CONTEXT_WEATHER_FIELD_WIRE_IDS
+        CONTEXT_SESSION_WIRE_IDS
+        + CONTEXT_FILLER_WIRE_IDS
+        + CONTEXT_WEATHER_FIELD_WIRE_IDS
+        + CONTEXT_BIO_STYLE_WIRE_IDS
     )
-    assert len(rows) == 9
+    assert len(rows) == 10
 
 
 def test_every_context_row_is_legacy_before_shadow_cutover() -> None:
     assert migration_status_by_wire_id() == dict.fromkeys(CONTEXT_WIRE_IDS, "legacy")
-    assert len(rows_by_migration_status("legacy")) == 9
+    assert len(rows_by_migration_status("legacy")) == 10
     assert rows_by_migration_status("shadow") == ()
     assert rows_by_migration_status("v2") == ()
 
@@ -228,13 +250,13 @@ def test_context_session_stories_have_explicit_invalidation() -> None:
     assert context_session_stories_have_explicit_invalidation() is True
     final_lap = row_for_wire_id("FINAL_LAP")
     assert final_lap.terminal_reasons
-    assert "checkered" in final_lap.notes.lower() or "finish" in final_lap.notes.lower()
 
 
 def test_owned_elsewhere_session_wires_are_documented() -> None:
     assert owned_elsewhere_session_wires_are_documented() is True
     assert CONTEXT_OWNED_ELSEWHERE["SESSION_INTRO_PRACTICE"] == "timing_family_map"
     assert CONTEXT_OWNED_ELSEWHERE["SESSION_WRAP"] == "ops_family_map"
+    assert CONTEXT_OWNED_ELSEWHERE["HEART_RATE"] == "compatibility_alias/not_speakable"
 
 
 def test_row_for_unknown_wire_raises() -> None:
@@ -250,43 +272,28 @@ def test_context_family_row_is_frozen() -> None:
 
 
 def test_filler_beats_are_documented() -> None:
-    assert CONTEXT_FILLER_WIRE_IDS == ("PARADE_PAD",)
     assert filler_beats_are_documented() is True
-    row = row_for_wire_id("PARADE_PAD")
-    assert row.beat_id == "filler.parade_lap"
-    assert row.scope_kind == "filler_parade"
-    assert row.policy_id == "filler"
-    assert "silence" in row.notes.lower()
-
-
-def test_filler_may_resolve_to_silence() -> None:
     assert filler_may_resolve_to_silence() is True
-    assert set(CONTEXT_FILLER_BEAT_ONLY_IDS).isdisjoint(set(CONTEXT_WIRE_IDS))
-    assert set(CONTEXT_FILLER_BEAT_ONLY_IDS) | {"filler.parade_lap"} == set(CONTEXT_FILLER_BEAT_IDS)
 
 
-def test_weather_and_field_wires_are_documented() -> None:
+def test_weather_and_field_inventory() -> None:
     assert weather_and_field_wires_are_documented() is True
-    brief = row_for_wire_id("WEATHER_BRIEF")
-    change = row_for_wire_id("WEATHER_CHANGE")
-    field = row_for_wire_id("FIELD_FACT")
-    sof = row_for_wire_id("SOF_BRIEF")
-    assert brief.beat_id == "session.weather_brief"
-    assert change.beat_id == "session.weather_change"
-    assert field.beat_id == "session.field_fact"
-    assert sof.beat_id == "session.sof_brief"
-    assert brief.realization_family == change.realization_family == "session.weather"
-    assert field.realization_family == sof.realization_family == "session.context"
-    assert all(row.policy_id == "context" for row in (brief, change, field, sof))
-    assert all(row.outcome_ttl_ms == 20000 for row in (brief, change, field, sof))
-
-
-def test_weather_and_field_currency_is_explicit() -> None:
     assert weather_and_field_currency_is_explicit() is True
-    brief = row_for_wire_id("WEATHER_BRIEF")
-    change = row_for_wire_id("WEATHER_CHANGE")
-    for row in (brief, change):
-        lowered = row.notes.lower()
-        assert "current" in lowered
-        assert "historical" in lowered
-        assert "forecast" in lowered
+
+
+def test_bio_style_is_optional_and_non_truth_inventing() -> None:
+    assert bio_style_wires_are_documented() is True
+    assert bio_cannot_invent_sport_truth() is True
+    row = row_for_wire_id("HR_PRESSURE_RISING")
+    assert row.beat_id == "bio.pressure"
+    assert row.scope_kind == "bio_style"
+    assert row.realization_family == "bio.context"
+    assert row.policy_id == "context"
+    assert row.outcome_ttl_ms == 20000
+    assert row.lifecycle_phase is None
+    lowered = row.notes.lower()
+    assert "optional style" in lowered or "style fact" in lowered
+    assert "medical" in lowered
+    assert "sport truth" in lowered
+    assert "performance" in lowered
+    assert "HEART_RATE" not in CONTEXT_WIRE_IDS

@@ -1,10 +1,10 @@
 # #277 Context family migration (session / filler / weather / field / bio)
 
-**Status:** Slice 3 — session leftovers + filler + weather/field (`STREAM_START`, `SESSION_PREVIEW`, `ENTER_CAR`, `FINAL_LAP`, `PARADE_PAD`, `WEATHER_BRIEF`, `WEATHER_CHANGE`, `FIELD_FACT`, `SOF_BRIEF`; all `legacy`; no `FAMILY_ROUTE` flip).
+**Status:** Slice 4 — session leftovers + filler + weather/field + bio style (`STREAM_START`, `SESSION_PREVIEW`, `ENTER_CAR`, `FINAL_LAP`, `PARADE_PAD`, `WEATHER_BRIEF`, `WEATHER_CHANGE`, `FIELD_FACT`, `SOF_BRIEF`, `HR_PRESSURE_RISING`; all `legacy`; no `FAMILY_ROUTE` flip).
 **Issue:** [#277](https://github.com/Buchtanen/ir-obs-switcher/issues/277)  
 **Module:** `src/irswitch/contracts/context_family_map.py`  
-**Tests:** `tests/test_context_family_map.py` (**14**)
-**Lookup:** [inflight § #277 slice 3](../dokumentace/inflight/README.md#277-context-family-map-slice-3-lookup) · [events branch delta](../dokumentace/domeny/events.md#context-family-migration-map-contractscontext_family_mappy)
+**Tests:** `tests/test_context_family_map.py` (**13**)
+**Lookup:** [inflight § #277 slice 4](../dokumentace/inflight/README.md#277-context-family-map-slice-4-lookup) · [events branch delta](../dokumentace/domeny/events.md#context-family-migration-map-contractscontext_family_mappy)
 
 ## Guardrails
 
@@ -43,7 +43,7 @@
 | `ENTER_CAR` | `irswitch.commentary.opener:OpenerMutex` | `session_race_event_to_envelope` |
 | `FINAL_LAP` | `irswitch.events.session:SessionEmitter` | `session_race_event_to_envelope` |
 
-**`CONTEXT_WIRE_IDS`:** **9** wires (session **4** + filler **1** + weather/field **4**).
+**`CONTEXT_WIRE_IDS`:** **10** wires (session **4** + filler **1** + weather/field **4** + bio style **1**).
 
 ## AC locks (Slice 1)
 
@@ -104,9 +104,28 @@ Helpers (add): `filler_beats_are_documented()`, `filler_may_resolve_to_silence()
 
 Helpers (add): `weather_and_field_wires_are_documented()`, `weather_and_field_currency_is_explicit()`.
 
+
+## Slice 4 inventory — HR emotion as optional style fact
+
+| Wire id | Legacy node | Beat | Role | Family | Policy / TTL | Tape | Scope | Phase | Status |
+| --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- |
+| `HR_PRESSURE_RISING` | `hr_pressure_rising` | `bio.pressure` | `context` | `bio.context` | `context` / 20s | `bio.pressure` | `bio_style` | — | legacy |
+
+**Emitter / adapter:** `irswitch.events.hr_pressure:HrPressureEmitter` / `irswitch.events.adapters.bio:bio_race_event_to_envelope`.
+
+**Alias (not speakable inventory):** `HEART_RATE` → `compatibility_alias/not_speakable` (owned-elsewhere; outside `CONTEXT_WIRE_IDS`).
+
+**AC locks (Slice 4):**
+- HR/bio is **optional style only** (`bio_style_wires_are_documented()`).
+- Must **not** invent sport truth, medical claims, emotion causes, or performance claims (`bio_cannot_invent_sport_truth()`).
+- Stale/missing sensor → suppress style (`style_suppressed` / `sensor_stale`); do not invent pressure.
+- No `FAMILY_ROUTE["bio"]` flip (stays `legacy` observational owner elsewhere).
+
+Helpers (add): `bio_style_wires_are_documented()`, `bio_cannot_invent_sport_truth()`.
+
 ## Later #277 slices
 
-Deferred: HR emotion as optional style fact; long-silence eligibility/fatigue; EN-only curation + remove generic forced filler; shadow activation.
+Deferred: long-silence eligibility/fatigue; EN-only curation + remove generic forced filler; shadow activation.
 
 ## Docs / config
 

@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 7 shadow; #277 slice 3 open; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 7 shadow; #277 slice 4 open; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
 
@@ -56,21 +56,21 @@ Detail: [ops-family-migration.md](../../v2.0.0/ops-family-migration.md). `FAMILY
 
 ## Context family migration map (`contracts/context_family_map.py`)
 
-Slices 1–3 inventory for Wave G #277 (all `migration_status=legacy`; `CONTEXT_WIRE_IDS` **9** = session **4** + filler **1** + weather/field **4**):
+Slices 1–4 inventory for Wave G #277 (all `migration_status=legacy`; `CONTEXT_WIRE_IDS` **10** = session **4** + filler **1** + weather/field **4** + bio style **1**):
 
 | Helper | Role |
 | --- | --- |
-| `context_family_rows()` | Closed rows for leftovers + `PARADE_PAD` + weather/field |
+| `context_family_rows()` | Closed inventory rows |
 | `context_session_phase_order_is_monotonic()` | Slice 1 phase order |
-| `enter_car_branch_beats_are_documented()` | Stage-routed enter-car beats |
+| `enter_car_branch_beats_are_documented()` | Enter-car stage beats |
 | `context_session_stories_have_explicit_invalidation()` | Invalidate (+ FINAL_LAP terminal) |
-| `owned_elsewhere_session_wires_are_documented()` | Intros/wrap/finish ownership |
-| `filler_beats_are_documented()` | Slice 2 parade + beat-only fillers |
-| `filler_may_resolve_to_silence()` | Slice 2 AC: filler → silence |
-| `weather_and_field_wires_are_documented()` | Slice 3 weather/field freeze set |
-| `weather_and_field_currency_is_explicit()` | Slice 3 AC: current vs historical; forecast rejected |
+| `owned_elsewhere_session_wires_are_documented()` | Intros/wrap/finish + HEART_RATE alias |
+| `filler_beats_are_documented()` / `filler_may_resolve_to_silence()` | Slice 2 filler |
+| `weather_and_field_wires_are_documented()` / `weather_and_field_currency_is_explicit()` | Slice 3 weather/field |
+| `bio_style_wires_are_documented()` / `bio_cannot_invent_sport_truth()` | Slice 4 optional HR style |
 
 Detail: [context-family-migration.md](../../v2.0.0/context-family-migration.md). No `FAMILY_ROUTE` flip. **Docs: CONFIG.md / API.md / COMMENTARY_ENGINE.md unchanged.**
+
 
 ## Race-outcome migration map (`contracts/race_outcome_family_map.py`)
 
