@@ -147,17 +147,21 @@ def _opportunities_queue_projection(status: RuntimeStatus) -> dict[str, int]:
 
     raw = status.opportunity_queue_counts
     required = ("depth", "capacity", "expired", "evicted")
-    if not isinstance(raw, dict) or any(
-        isinstance(raw.get(key), bool) or not isinstance(raw.get(key), int) or int(raw.get(key)) < 0
-        for key in required
-    ):
-        return {
-            "depth": 0,
-            "capacity": int(OPPORTUNITY_CAPACITY),
-            "expired": 0,
-            "evicted": 0,
-        }
-    return {key: int(raw[key]) for key in required}
+    defaults = {
+        "depth": 0,
+        "capacity": int(OPPORTUNITY_CAPACITY),
+        "expired": 0,
+        "evicted": 0,
+    }
+    if not isinstance(raw, dict):
+        return defaults
+    projected: dict[str, int] = {}
+    for key in required:
+        value = raw.get(key)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            return defaults
+        projected[key] = value
+    return projected
 
 
 def _empty_tape_drops_by_priority() -> dict[str, int]:

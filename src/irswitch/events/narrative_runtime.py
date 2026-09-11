@@ -13,7 +13,7 @@ from collections import deque
 from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict
 
 from irswitch.commentary.mailbox import AdmissionResult, NarrativeMailbox
 from irswitch.commentary.tape_writer import NarrativeTapeWriter
@@ -57,6 +57,15 @@ LaneState = Literal["idle", "building", "committed", "speaking", "stopping"]
 Disposition = Literal["handled", "ignored_stale_or_inapplicable", "rejected_busy"]
 
 MAX_PLANS_PER_CYCLE = 2
+
+
+class _TapeCounterStatusFields(TypedDict):
+    tape_path: str | None
+    tape_size: int | None
+    tape_drops: int | None
+    tape_drops_by_priority: dict[str, int] | None
+    tape_purpose_counts: tuple[dict[str, object], ...] | None
+
 
 EffectWorker = Callable[
     [dict[str, Any]], Awaitable[NarrativeCommand | Sequence[NarrativeCommand] | None]
@@ -471,6 +480,7 @@ class NarrativeRuntime:
             assert component is not None
             if component.last_attempt is not None:
                 llm_last_attempt = dict(component.last_attempt)
+        tape_counters = self._tape_counter_status_fields()
         return RuntimeStatus(
             runtime_state=self._runtime,
             lane=self._lane,
@@ -527,7 +537,11 @@ class NarrativeRuntime:
             episode_counts=self._episode_counts_snapshot(),
             by_tape_channel=self._by_tape_channel_snapshot(),
             opportunity_queue_counts=self._opportunity_queue_counts_snapshot(),
-            **self._tape_counter_status_fields(),
+            tape_path=tape_counters["tape_path"],
+            tape_size=tape_counters["tape_size"],
+            tape_drops=tape_counters["tape_drops"],
+            tape_drops_by_priority=tape_counters["tape_drops_by_priority"],
+            tape_purpose_counts=tape_counters["tape_purpose_counts"],
             llm_attached=llm_attached,
             llm_generation=llm_generation,
             llm_model=llm_model,
@@ -1700,30 +1714,26 @@ class NarrativeRuntime:
             )
             self._decision_ring.append(entry)
 
-    def _tape_counter_status_fields(self) -> dict[str, object]:
+    def _tape_counter_status_fields(self) -> _TapeCounterStatusFields:
+        empty: _TapeCounterStatusFields = {
+            "tape_path": None,
+            "tape_size": None,
+            "tape_drops": None,
+            "tape_drops_by_priority": None,
+            "tape_purpose_counts": None,
+        }
         writer = self._tape_writer
         if writer is None:
-            return {
-                "tape_path": None,
-                "tape_size": None,
-                "tape_drops": None,
-                "tape_drops_by_priority": None,
-                "tape_purpose_counts": None,
-            }
+            return empty
         try:
             snapshot = writer.runtime_status_snapshot()
         except Exception:
-            return {
-                "tape_path": None,
-                "tape_size": None,
-                "tape_drops": None,
-                "tape_drops_by_priority": None,
-                "tape_purpose_counts": None,
-            }
+            return empty
         by_priority = snapshot.get("dropsByPriority")
         purpose = snapshot.get("purposeCounts")
+        path_raw = snapshot.get("path")
         return {
-            "tape_path": snapshot.get("path"),
+            "tape_path": path_raw if isinstance(path_raw, str) else None,
             "tape_size": int(snapshot.get("size") or 0),
             "tape_drops": int(snapshot.get("drops") or 0),
             "tape_drops_by_priority": (

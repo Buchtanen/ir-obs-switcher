@@ -67,6 +67,7 @@ def coalesce_key_for(
         source: Mapping[str, Any] = token_map if root == "token" else payload_map
         value: object = source.get(key)
         if key == "affectedDetectorIds":
-            value = tuple(value or ())
+            ids = value if isinstance(value, (list, tuple)) else ()
+            value = tuple(ids)
         values.append(value)
     return tuple(values)
