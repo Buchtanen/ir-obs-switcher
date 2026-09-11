@@ -1477,3 +1477,17 @@ Expected before resuming: worktree on integration branch `codex/commentary-story
 | Evidence | feat `13ab3d5`; tip `13ab3d5`; PR [#295](https://github.com/Buchtanen/ir-obs-switcher/pull/295) FF-merged; **no master PR** |
 | Checkbox | Public-liveness TTS/tape health **flipped** |
 
+
+
+### #273 session-plan continuation verify lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| SessionPlan | timeline identity goldens + live APPLY_CONTEXT projection |
+| Components | llm/tts generations + reasons; TTS quarantine; tape dropsByPriority |
+| Public enums | `status_stopped.json`; `error_mailbox_overloaded.json`; `error_admission_timeout.json` |
+| Decisions/validate | `candidateOrder`; `actorBindings` / `evaluationAtMonoMs` |
+| Evidence | tip `7d5ca50` (stopped golden); prior TTS/tape feat `13ab3d5`; **no master PR** |
+| Checkboxes | Public/session-plan continuation **all three flipped** |
+
