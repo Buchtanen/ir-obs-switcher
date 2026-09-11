@@ -4,7 +4,7 @@ Maps wire identifiers for lap/sector/PB/pace/hot/projected/invalid lap and
 practice→qualifying→race session intros/recaps onto legacy emitters, adapters,
 beat/story routes, predicates, realization families, policy TTL and tape channels.
 
-Slices 1–7 record every family as ``legacy``. They do **not** rewrite frozen
+Slices 1–7 recorded inventory as ``legacy``; Slice 8 flips creatable rows to observational ``shadow``. They do **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 """
 
@@ -500,7 +500,7 @@ def _story_routes(beat: dict[str, Any]) -> tuple[str, ...]:
 
 
 def timing_family_rows() -> tuple[TimingFamilyRow, ...]:
-    """Return the closed timing migration inventory (currently all legacy)."""
+    """Return the closed timing migration inventory (Slice 8: observational shadow)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -565,7 +565,7 @@ def timing_family_rows() -> tuple[TimingFamilyRow, ...]:
                 can_create=can_create,
                 polarity=static.polarity,
                 scope_kind=static.scope_kind,
-                migration_status="legacy",
+                migration_status="shadow",
                 session_stage=static.session_stage,
                 requires_active_lineage=static.requires_active_lineage,
                 en_pattern_ids=static.en_pattern_ids,

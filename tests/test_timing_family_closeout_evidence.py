@@ -24,12 +24,12 @@ def test_closeout_evidence_covers_every_timing_wire() -> None:
 
 def test_closeout_evidence_records_latency_and_fail_soft() -> None:
     for item in timing_family_closeout_evidence():
-        assert item.migration_status == "legacy"
+        assert item.migration_status == "shadow"
         assert item.can_create is True
         assert item.en_pattern_count >= 4
         assert item.replay_case_count >= 1
         assert item.shadow_family
-        assert item.shadow_route in {"shadow", "legacy"}
+        assert item.shadow_route == "shadow"
         assert item.compare_latency_ms is not None and item.compare_latency_ms >= 0
         assert item.fail_soft_reason == "observation_failed"
 
@@ -37,4 +37,6 @@ def test_closeout_evidence_records_latency_and_fail_soft() -> None:
 def test_remaining_legacy_disposition_covers_inventory() -> None:
     disposition = remaining_legacy_disposition()
     assert set(disposition) == set(TIMING_WIRE_IDS)
-    assert all("legacy" in text.lower() for text in disposition.values())
+    assert all(
+        "shadow" in text.lower() or "deferred" in text.lower() for text in disposition.values()
+    )

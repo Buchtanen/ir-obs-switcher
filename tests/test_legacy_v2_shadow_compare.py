@@ -56,9 +56,9 @@ def test_lap_family_routes_to_shadow_via_private_table() -> None:
 
 def test_unmigrated_families_stay_legacy_inside_branch() -> None:
     migrated = {name for name, route in FAMILY_ROUTE.items() if route != "legacy"}
-    assert migrated == {"lap", "position", "session"}
+    assert migrated == {"lap", "position", "session", "timing"}
     unmigrated = unmigrated_families()
-    assert "timing" in unmigrated
+    assert "timing" not in unmigrated
     assert "battle" in unmigrated
     assert "pit" in unmigrated
     assert "position" not in unmigrated
@@ -265,6 +265,19 @@ def test_removal_manifest_entries_name_single_v2_owner_proof() -> None:
 
     assert "src/irswitch/events/legacy_v2_shadow_compare.py" in REMOVAL_MANIFEST_ENTRIES
     assert "FAMILY_ROUTE" in REMOVAL_MANIFEST_ENTRIES
+
+
+def test_timing_family_wires_route_to_shadow_families() -> None:
+    from irswitch.contracts.timing_family_map import TIMING_WIRE_IDS
+    from irswitch.events.legacy_v2_shadow_compare import family_for_event_type, route_for_family
+
+    assert route_for_family("timing") == "shadow"
+    assert route_for_family("lap") == "shadow"
+    assert route_for_family("session") == "shadow"
+    for wire_id in TIMING_WIRE_IDS:
+        family = family_for_event_type(wire_id)
+        assert family in {"lap", "timing", "session"}
+        assert route_for_family(family) == "shadow"
 
 
 def test_race_outcome_wires_route_to_shadow_families() -> None:

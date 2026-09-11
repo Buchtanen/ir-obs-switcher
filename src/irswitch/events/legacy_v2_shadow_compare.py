@@ -37,7 +37,7 @@ Aspect = Literal["event", "episode", "director"]
 # legacy owner inside the branch; ``v2`` reserved for cutover checkpoints.
 FAMILY_ROUTE: Mapping[str, Route] = {
     "lap": "shadow",
-    "timing": "legacy",
+    "timing": "shadow",  # #275 observational compare for sector/pace/attempt
     "battle": "legacy",
     "position": "shadow",  # #274 race-outcome pass/gain/loss/leader
     "pit": "legacy",
@@ -120,6 +120,21 @@ def family_for_event_type(event_type: str) -> str:
     """Map a wire ``event_type`` onto a private family key."""
 
     token = str(event_type or "").strip().upper()
+    # #275 timing inventory before generic incident/unknown traps.
+    if token == "INVALID_LAP":
+        return "timing"
+    if token in {
+        "SECTOR_SPLIT",
+        "SECTOR_BEST",
+        "PERSONAL_BEST",
+        "GAIN_FOUND",
+        "TIME_LOST",
+        "HOT_LAP",
+        "PROJECTED_LAP",
+    }:
+        return "timing"
+    if token == "QUALI_RECAP" or token.startswith("SESSION_INTRO"):
+        return "session"
     if token.startswith("LAP") or token in {"LAP_COMPLETE", "LAP_STARTED"}:
         return "lap"
     if token.startswith("SECTOR") or token.startswith("TIMING") or "SPLIT" in token:
@@ -138,7 +153,7 @@ def family_for_event_type(event_type: str) -> str:
         return "pit"
     if token.startswith("BIO") or "DRIVER" in token:
         return "bio"
-    if "INCIDENT" in token or "FLAG" in token or "INVALID_LAP" in token:
+    if "INCIDENT" in token or "FLAG" in token or "INVALID" in token:
         return "incident"
     # Hero/checkered finish is a session-family race outcome (#274).
     if token == "FINISH":

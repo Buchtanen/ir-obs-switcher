@@ -347,3 +347,13 @@ Race-outcome family migration (#274) activates **observational** shadow compare 
 API.md endpoints. Live audible cutover remains a later cutover wave; the
 temporary harness stays on the final-PR exclusion list with #272.
 
+
+
+## Wave G / #275 timing-family shadow (branch harness)
+
+Timing-family migration (#275) activates **observational** shadow compare for
+`timing` (plus already-shadow `lap` / `session` intros-recaps) via the private
+in-module `FAMILY_ROUTE` table in `events/legacy_v2_shadow_compare.py`. This is
+**not** `graph_runtime` `legacy|shadow|active` speech ownership and does **not**
+add CONFIG.md keys or API.md endpoints. Live audible cutover remains deferred;
+the temporary harness stays on the final-PR exclusion list with #272.

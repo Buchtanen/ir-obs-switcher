@@ -299,7 +299,7 @@ def restart_rewind_replay_cases_are_complete() -> bool:
     if inherit_wires != {"PERSONAL_BEST", "QUALI_RECAP"}:
         return False
 
-    # Inventory rows still legacy; this slice does not activate speech.
-    if any(row.migration_status != "legacy" for row in timing_family_rows()):
+    # Inventory remains speakable/creatable; migration_status may be legacy or shadow.
+    if any(row.migration_status not in {"legacy", "shadow"} for row in timing_family_rows()):
         return False
     return True

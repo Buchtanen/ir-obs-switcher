@@ -1,35 +1,34 @@
 # #275 Timing family migration (timing + session intros/recaps)
 
-**Status:** Slice 7 — closeout evidence (coverage/latency/fail-soft) recorded; all wires remain `legacy` (no `FAMILY_ROUTE` flip).  
+**Status:** Slice 8 — observational `shadow` activation (`FAMILY_ROUTE["timing"]=shadow`; inventory `migration_status=shadow`; no live `v2` speech).
 **Issue:** [#275](https://github.com/Buchtanen/ir-obs-switcher/issues/275)  
 **Module:** `src/irswitch/contracts/timing_family_map.py` + `timing_family_replay_cases.py` + `timing_family_closeout_evidence.py`  
 **Tests:** `tests/test_timing_family_map.py` + `tests/test_timing_family_replay_cases.py` + `tests/test_timing_family_closeout_evidence.py`  
-**Lookup:** [inflight § #275](../dokumentace/inflight/README.md#275-timing-family-map-slice-6-lookup) · [events branch delta](../dokumentace/domeny/events.md#timing-family-migration-map-contractstiming_family_mappy)
+**Lookup:** [inflight § #275](../dokumentace/inflight/README.md#275-timing-family-map-slice-8-lookup) · [events branch delta](../dokumentace/domeny/events.md#timing-family-migration-map-contractstiming_family_mappy)
 
 ## Guardrails
 
 - Does **not** rewrite frozen `docs/v2.0.0/machine/*` hashes.
-- Does **not** flip `FAMILY_ROUTE`.
-- Does **not** cut over live `v2` speech.
+- Flips private `FAMILY_ROUTE["timing"]` to **shadow** only (observation). Does **not** cut over live `v2` speech.
 - Integration-only; no master PR until cutover (#279).
 
 ## Slice 1–4 inventory
 
 | Wire id | Legacy node | Beat | Role | Family | Policy / TTL | Tape | Scope | Stage | Lineage | Status |
 | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- | --- |
-| `LAP_COMPLETE` | `lap_complete` | `timing.lap.completed` | result | `timing.lap_result` | result / 30s | `race.timing.lap` | `lap_sf` | — | — | legacy |
-| `SECTOR_SPLIT` | `sector_split` | `timing.sector.split` | update | `timing.sector` | transient / 6s | `race.timing.sector` | `sector` | — | — | legacy |
-| `SECTOR_BEST` | `—` | `timing.sector.best` | result | `timing.sector` | result / 30s | `race.timing.sector` | `sector` | — | — | legacy |
-| `PERSONAL_BEST` | `personal_best` | `timing.lap.personal_best` | result | `timing.lap_result` | result / 30s | `race.timing.lap` | `lap_pb` | — | — | legacy |
-| `GAIN_FOUND` | `gain_found` | `timing.pace.gain` | update | `timing.delta` | transient / 6s | `race.timing.delta` | `pace_delta` | — | — | legacy |
-| `TIME_LOST` | `time_lost` | `timing.pace.loss` | update | `timing.delta` | transient / 6s | `race.timing.delta` | `pace_delta` | — | — | legacy |
-| `HOT_LAP` | `hot_lap` | `timing.lap.hot` | opening | `timing.attempt` | live_story / 10s | `race.timing.attempt` | `lap_attempt` | — | — | legacy |
-| `PROJECTED_LAP` | `projected_lap` | `timing.lap.projected` | update | `timing.projection` | live_story / 10s | `race.timing.attempt` | `lap_projection` | — | — | legacy |
-| `INVALID_LAP` | `invalid_lap` | `incident.invalid_lap` | result | `incident.invalid_lap` | result / 30s | `race.incident.invalid_lap` | `invalid_lap` | — | — | legacy |
-| `SESSION_INTRO_PRACTICE` | `session_intro_practice` | `session.intro.practice` | opening | `session.intro` | context / 20s | `session.lifecycle` | `session_intro` | practice | active | legacy |
-| `SESSION_INTRO_QUALIFY` | `session_intro_qualify` | `session.intro.qualifying` | opening | `session.intro` | context / 20s | `session.lifecycle` | `session_intro` | qualifying | active | legacy |
-| `SESSION_INTRO_RACE` | `session_intro_race` | `session.intro.race` | opening | `session.intro` | context / 20s | `session.lifecycle` | `session_intro` | race | active | legacy |
-| `QUALI_RECAP` | `quali_recap` | `session.qualifying_recap` | outcome | `session.recap` | result / 30s | `session.qualifying.recap` | `session_recap` | race | active | legacy |
+| `LAP_COMPLETE` | `lap_complete` | `timing.lap.completed` | result | `timing.lap_result` | result / 30s | `race.timing.lap` | `lap_sf` | — | — | shadow |
+| `SECTOR_SPLIT` | `sector_split` | `timing.sector.split` | update | `timing.sector` | transient / 6s | `race.timing.sector` | `sector` | — | — | shadow |
+| `SECTOR_BEST` | `—` | `timing.sector.best` | result | `timing.sector` | result / 30s | `race.timing.sector` | `sector` | — | — | shadow |
+| `PERSONAL_BEST` | `personal_best` | `timing.lap.personal_best` | result | `timing.lap_result` | result / 30s | `race.timing.lap` | `lap_pb` | — | — | shadow |
+| `GAIN_FOUND` | `gain_found` | `timing.pace.gain` | update | `timing.delta` | transient / 6s | `race.timing.delta` | `pace_delta` | — | — | shadow |
+| `TIME_LOST` | `time_lost` | `timing.pace.loss` | update | `timing.delta` | transient / 6s | `race.timing.delta` | `pace_delta` | — | — | shadow |
+| `HOT_LAP` | `hot_lap` | `timing.lap.hot` | opening | `timing.attempt` | live_story / 10s | `race.timing.attempt` | `lap_attempt` | — | — | shadow |
+| `PROJECTED_LAP` | `projected_lap` | `timing.lap.projected` | update | `timing.projection` | live_story / 10s | `race.timing.attempt` | `lap_projection` | — | — | shadow |
+| `INVALID_LAP` | `invalid_lap` | `incident.invalid_lap` | result | `incident.invalid_lap` | result / 30s | `race.incident.invalid_lap` | `invalid_lap` | — | — | shadow |
+| `SESSION_INTRO_PRACTICE` | `session_intro_practice` | `session.intro.practice` | opening | `session.intro` | context / 20s | `session.lifecycle` | `session_intro` | practice | active | shadow |
+| `SESSION_INTRO_QUALIFY` | `session_intro_qualify` | `session.intro.qualifying` | opening | `session.intro` | context / 20s | `session.lifecycle` | `session_intro` | qualifying | active | shadow |
+| `SESSION_INTRO_RACE` | `session_intro_race` | `session.intro.race` | opening | `session.intro` | context / 20s | `session.lifecycle` | `session_intro` | race | active | shadow |
+| `QUALI_RECAP` | `quali_recap` | `session.qualifying_recap` | outcome | `session.recap` | result / 30s | `session.qualifying.recap` | `session_recap` | race | active | shadow |
 
 Helpers: `timing_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `lap_complete_is_not_race_finish()`, `gain_and_loss_polarities_are_distinct()`, `invalid_lap_scope_is_explicit()`, `session_stage_order_is_monotonic()`, `inherited_facts_use_active_lineage_only()`.
 
@@ -86,6 +85,17 @@ Closed inventory in `timing_family_replay_cases.py` (no live speech / no `FAMILY
 Helper: `restart_rewind_replay_cases_are_complete()`.
 
 
+
+## Shadow activation (Slice 8)
+
+- `FAMILY_ROUTE["timing"]` → `shadow` (sector/pace/attempt/invalid-lap inventory).
+- `lap` + `session` remain `shadow` (lap complete + session intros/recaps).
+- Inventory `migration_status` → `shadow` for all 13 creatable wires.
+- Event routing maps timing inventory wires onto `lap` / `timing` / `session` before incident/unknown traps.
+- Fail-soft + latency evidence remains in `timing_family_closeout_evidence.py`.
+- **CONFIG.md / API.md:** no change (private in-module route table only).
+- **COMMENTARY_ENGINE.md:** documents observational #275 timing shadow harness.
+
 ## Closeout evidence (Slice 7)
 
 Module: `timing_family_closeout_evidence.py`.
@@ -94,9 +104,11 @@ Module: `timing_family_closeout_evidence.py`.
 - Shadow/legacy route + compare latency via `observe_family_safely` / `compare_event_decisions`.
 - Fail-soft: forced observation failure yields `observation_failed` without raising.
 - Helper: `timing_family_closeout_evidence_is_complete()`.
-- **Still deferred:** live `FAMILY_ROUTE` / speech activation and COMMENTARY_ENGINE/CONFIG/API behavior docs.
+- **Activated (observational):** `FAMILY_ROUTE["timing"]` → `shadow`; COMMENTARY_ENGINE documents harness.
+- **Still deferred:** live `v2` speech cutover.
+- **Docs: CONFIG.md / API.md unchanged** (private harness only).
 
-**Remaining legacy disposition:** all 13 timing wires remain `migration_status=legacy` until a dedicated activation slice (shadow + fail-soft + COMMENTARY_ENGINE/CONFIG/API) lands.
+**Remaining disposition:** all 13 wires are `migration_status=shadow` (observational). Live `v2` speech ownership remains deferred; CONFIG.md/API.md unchanged (no new keys/endpoints).
 
 ## Docs / config
 

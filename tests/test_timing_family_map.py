@@ -226,24 +226,24 @@ def test_map_covers_every_timing_wire_id_exactly_once() -> None:
     assert len(rows) == len(set(TIMING_WIRE_IDS)) == 13
 
 
-def test_every_row_is_legacy_before_shadow_cutover() -> None:
+def test_every_creatable_row_is_shadow_after_activation() -> None:
     assert migration_status_by_wire_id() == {
-        "LAP_COMPLETE": "legacy",
-        "SECTOR_SPLIT": "legacy",
-        "SECTOR_BEST": "legacy",
-        "PERSONAL_BEST": "legacy",
-        "GAIN_FOUND": "legacy",
-        "TIME_LOST": "legacy",
-        "HOT_LAP": "legacy",
-        "PROJECTED_LAP": "legacy",
-        "INVALID_LAP": "legacy",
-        "SESSION_INTRO_PRACTICE": "legacy",
-        "SESSION_INTRO_QUALIFY": "legacy",
-        "SESSION_INTRO_RACE": "legacy",
-        "QUALI_RECAP": "legacy",
+        "LAP_COMPLETE": "shadow",
+        "SECTOR_SPLIT": "shadow",
+        "SECTOR_BEST": "shadow",
+        "PERSONAL_BEST": "shadow",
+        "GAIN_FOUND": "shadow",
+        "TIME_LOST": "shadow",
+        "HOT_LAP": "shadow",
+        "PROJECTED_LAP": "shadow",
+        "INVALID_LAP": "shadow",
+        "SESSION_INTRO_PRACTICE": "shadow",
+        "SESSION_INTRO_QUALIFY": "shadow",
+        "SESSION_INTRO_RACE": "shadow",
+        "QUALI_RECAP": "shadow",
     }
-    assert len(rows_by_migration_status("legacy")) == 13
-    assert rows_by_migration_status("shadow") == ()
+    assert len(rows_by_migration_status("shadow")) == 13
+    assert rows_by_migration_status("legacy") == ()
     assert rows_by_migration_status("v2") == ()
 
 

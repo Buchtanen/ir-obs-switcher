@@ -1,9 +1,8 @@
 """#275 closeout evidence for timing-family migration inventory.
 
 Records per-family coverage, restart/rewind replay counts, shadow/legacy
-routes, compare latency and fail-soft observation outcomes without
-rewriting frozen ``docs/v2.0.0/machine/*`` hashes or flipping
-``FAMILY_ROUTE`` / live speech ownership.
+routes, compare latency and fail-soft observation outcomes without rewriting frozen ``docs/v2.0.0/machine/*`` hashes or cutting over
+live ``v2`` speech ownership (observational ``shadow`` only).
 """
 
 from __future__ import annotations
@@ -99,12 +98,12 @@ def _timed_match(family: str, wire_id: str):
 
 
 def remaining_legacy_disposition() -> dict[str, str]:
-    """Human-readable disposition for timing wires still outside v2 speech ownership."""
+    """Human-readable disposition: shadow observe on; live v2 speech still deferred."""
 
     return dict.fromkeys(
         TIMING_WIRE_IDS,
-        "inventory+replay complete; remains legacy speak path until dedicated "
-        "timing activation flips FAMILY_ROUTE / live ownership",
+        "observational shadow active; live v2 speech ownership deferred "
+        "(legacy emit path remains audible until cutover)",
     )
 
 
@@ -121,7 +120,7 @@ def timing_family_closeout_evidence_is_complete() -> bool:
     if set(disposition) != set(TIMING_WIRE_IDS):
         return False
     for item in evidence:
-        if item.migration_status != "legacy":
+        if item.migration_status != "shadow":
             return False
         if not item.can_create:
             return False
@@ -129,7 +128,7 @@ def timing_family_closeout_evidence_is_complete() -> bool:
             return False
         if item.replay_case_count < 1:
             return False
-        if item.shadow_family is None or item.shadow_route is None:
+        if item.shadow_family is None or item.shadow_route != "shadow":
             return False
         if item.compare_latency_ms is None or item.compare_latency_ms < 0:
             return False
