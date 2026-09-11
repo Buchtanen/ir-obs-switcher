@@ -77,6 +77,23 @@ Lookup: [inflight § #278 slice 3](../inflight/README.md#278-vertical-slice-tran
 
 Lookup: [inflight § #278 slice 4](../inflight/README.md#278-vertical-slice-scoring-runtime-slice-4-lookup) · [dokumentace index § #278](../README.md).
 
+## #278 vertical-slice silence runtime (Slice 5)
+
+**Status:** offline F01/F10/F17 drivers on branch `cursor/vertical-slice-silence-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Artifact | Path |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_silence_runtime.py`](../../../tests/test_vertical_slice_silence_runtime.py) (**6** tests: **3** parametrized machine projection + F01/F10/F17 runtime drivers) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **18/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 5](../../v2.0.0/vertical-slice-acceptance.md#slice-5--f01f10f17-stream--silence-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F01/F10/F17 rows; hashes **unchanged**) |
+
+**Slice 5 locks:** F01 stream-before-session keeps null identity and arms silence only after terminal; F10 24+12 silence pressure selects filler and missing-fact path rearms full interval; F17 lobby filler stays stream-scoped with exact two facts and missing-track guard rearm; machine projection still matches frozen expectations/calcs; gap inventory **18/44** wired, **26** unwired.
+
+**Explicit non-goals:** no rewrite of frozen `machine/*` hashes; **`CONFIG.md` / `API.md` unchanged**; no live §24.9 GO.
+
+Lookup: [inflight § #278 slice 5](../inflight/README.md#278-vertical-slice-silence-runtime-slice-5-lookup) · [dokumentace index § #278](../README.md).
+
 ## Related
 
 [RELEASE_POLICY.md](../../../RELEASE_POLICY.md), [scripts/README.md](../../../scripts/README.md) (`check_semver_label.py`), [VERSIONING.md](../../../VERSIONING.md), skill `pr-semver-label`.

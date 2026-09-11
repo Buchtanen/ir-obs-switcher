@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 4 — offline director scoring drivers for F05/F06/F07 (no live Windows §24.9 GO).
+**Status:** Slice 5 — offline stream + silence drivers for F01/F10/F17 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -59,6 +59,20 @@
 **AC locks (Slice 4):**
 - Machine projection for F05/F06/F07 still matches frozen expectations/calcs (`score_70` / `score_76` / margin boundaries).
 - Runtime drivers prove threshold open without V4 priority term, related successor over weather filler, and inclusive switch margin (82 holds / 84 switches).
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+## Slice 5 — F01/F10/F17 stream + silence runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F01` (stream before session), `F10` (long-silence filler threshold), `F17` (lobby stream-scope filler) |
+| Pytest | `tests/test_vertical_slice_silence_runtime.py` |
+| Inventory | **18/44** wired; **26** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 5):**
+- Machine projection for F01/F10/F17 still matches frozen expectations/calcs (`score_36` / threshold gte).
+- Runtime drivers prove null session identity on stream start, 24+12 silence pressure selecting filler, and lobby filler limited to stream facts with missing-track rearm.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices
