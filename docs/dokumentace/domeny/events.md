@@ -56,18 +56,21 @@ Detail: [ops-family-migration.md](../../v2.0.0/ops-family-migration.md). `FAMILY
 
 ## Context family migration map (`contracts/context_family_map.py`)
 
-Slice 1 inventory for Wave G #277 (all `migration_status=legacy`; `CONTEXT_WIRE_IDS` **4** = session/stream leftovers only):
+Slices 1–2 inventory for Wave G #277 (all `migration_status=legacy`; `CONTEXT_WIRE_IDS` **5** = session leftovers **4** + filler **1** `PARADE_PAD`):
 
 | Helper | Role |
 | --- | --- |
-| `context_family_rows()` | Closed rows for `STREAM_START` / `SESSION_PREVIEW` / `ENTER_CAR` / `FINAL_LAP` |
+| `context_family_rows()` | Closed rows for session leftovers + `PARADE_PAD` |
 | `context_session_phase_order_is_monotonic()` | Slice 1: stream_start → preview → enter_car → final_lap |
 | `enter_car_branch_beats_are_documented()` | Stage-routed enter-car beats |
 | `context_session_stories_have_explicit_invalidation()` | Invalidate (+ FINAL_LAP terminal) |
 | `owned_elsewhere_session_wires_are_documented()` | Intros/wrap/finish stay on timing/ops maps |
+| `filler_beats_are_documented()` | Slice 2: parade wire + beat-only filler set |
+| `filler_may_resolve_to_silence()` | Slice 2 AC: filler may yield silence |
+
+Beat-only fillers (no freeze wire): `filler.out_lap`, `filler.in_lap`, `filler.garage`, `filler.lobby`, `filler.quiet_track`.
 
 Detail: [context-family-migration.md](../../v2.0.0/context-family-migration.md). No `FAMILY_ROUTE` flip. **Docs: CONFIG.md / API.md / COMMENTARY_ENGINE.md unchanged.**
-
 
 ## Race-outcome migration map (`contracts/race_outcome_family_map.py`)
 

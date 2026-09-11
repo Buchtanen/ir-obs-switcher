@@ -1,13 +1,14 @@
-"""#277 context family migration map — session/stream leftovers (Slice 1).
+"""#277 context family migration map — session/stream leftovers + filler (Slices 1–2).
 
-Maps remaining non-race session/stream wire identifiers onto legacy emitters,
-adapters, beat/story routes, predicates, realization families, policy TTL and
-tape channels.
+Maps remaining non-race session/stream and filler wire identifiers onto legacy
+emitters, adapters, beat/story routes, predicates, realization families, policy
+TTL and tape channels.
 
-Slice 1 records these wires as ``legacy``. It does **not** rewrite frozen
-``docs/v2.0.0/machine/*`` hashes and does **not** flip ``FAMILY_ROUTE``.
+Slices 1–2 record these wires as ``legacy``. They do **not** rewrite frozen
+``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 Session intros/recaps stay owned by the timing map; session wrap/checkered/finish
-stay owned by the ops / race-outcome maps.
+stay owned by the ops / race-outcome maps. Beat-only silence fillers are
+documented without inventing freeze wires.
 """
 
 from __future__ import annotations
@@ -26,8 +27,17 @@ ScopeKind = Literal[
     "session_preview",
     "enter_car",
     "final_lap",
+    "filler_parade",
 ]
 LifecyclePhase = Literal["stream_start", "preview", "enter_car", "final_lap"]
+FillerKind = Literal[
+    "out_lap",
+    "in_lap",
+    "parade_lap",
+    "garage",
+    "lobby",
+    "quiet_track",
+]
 
 # Slice 1 inventory: stream/session leftovers not owned by timing/ops maps.
 CONTEXT_SESSION_WIRE_IDS: tuple[str, ...] = (
@@ -37,7 +47,38 @@ CONTEXT_SESSION_WIRE_IDS: tuple[str, ...] = (
     "FINAL_LAP",
 )
 
-CONTEXT_WIRE_IDS: tuple[str, ...] = CONTEXT_SESSION_WIRE_IDS
+# Slice 2 inventory: parade pad is the only freeze wire for filler impulses.
+CONTEXT_FILLER_WIRE_IDS: tuple[str, ...] = ("PARADE_PAD",)
+
+CONTEXT_WIRE_IDS: tuple[str, ...] = CONTEXT_SESSION_WIRE_IDS + CONTEXT_FILLER_WIRE_IDS
+
+# Silence-clock filler beats (policy filler). Parade also binds PARADE_PAD.
+CONTEXT_FILLER_BEAT_IDS: tuple[str, ...] = (
+    "filler.out_lap",
+    "filler.in_lap",
+    "filler.parade_lap",
+    "filler.garage",
+    "filler.lobby",
+    "filler.quiet_track",
+)
+
+# Beat-only fillers — no dedicated freeze wire; selected by silence_clock or fail to silence.
+CONTEXT_FILLER_BEAT_ONLY_IDS: tuple[str, ...] = (
+    "filler.out_lap",
+    "filler.in_lap",
+    "filler.garage",
+    "filler.lobby",
+    "filler.quiet_track",
+)
+
+CONTEXT_FILLER_KIND_BY_BEAT_ID: dict[str, FillerKind] = {
+    "filler.out_lap": "out_lap",
+    "filler.in_lap": "in_lap",
+    "filler.parade_lap": "parade_lap",
+    "filler.garage": "garage",
+    "filler.lobby": "lobby",
+    "filler.quiet_track": "quiet_track",
+}
 
 # Documented ownership outside this map (do not duplicate inventory rows).
 CONTEXT_OWNED_ELSEWHERE: dict[str, str] = {
@@ -174,6 +215,24 @@ _STATIC: dict[str, _StaticSource] = {
             "checkered or hero finish from final-lap alone."
         ),
     ),
+    "PARADE_PAD": _StaticSource(
+        legacy_node_id="parade_pad",
+        race_event_name="parade_pad",
+        emitter_module="irswitch.race.grid_story:GridStoryFsm",
+        adapter_module="irswitch.race.grid_story:GridStoryFsm",
+        lifecycle_phase=None,
+        scope_kind="filler_parade",
+        invalidate_reasons=("stream_ended", "session_reset", "green_or_racing", "parade_cap"),
+        terminal_reasons=(),
+        notes=(
+            "Only freeze wire for filler impulses (GridStory parade pads). Beat "
+            "filler.parade_lap also admits LONG_SILENCE_ELAPSED. Beat-only silence "
+            "fillers stay outside CONTEXT_WIRE_IDS: out_lap, in_lap, garage, lobby, "
+            "quiet_track (selected by silence_clock or fail to silence / "
+            "no_candidate / source_guard_failed). Never force generic filler speech "
+            "when facts are missing — silence is a valid outcome."
+        ),
+    ),
 }
 
 
@@ -256,7 +315,7 @@ def _resolve_beat_ids(
 
 
 def context_family_rows() -> tuple[ContextFamilyRow, ...]:
-    """Return the closed context migration inventory (Slice 1: session/stream leftovers, legacy)."""
+    """Return the closed context migration inventory (Slices 1–2: session leftovers + filler, legacy)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -402,3 +461,53 @@ def owned_elsewhere_session_wires_are_documented() -> bool:
         "FINISH",
     }
     return required <= owned_ids
+
+
+def filler_beats_are_documented() -> bool:
+    """Slice 2 helper: parade wire + beat-only filler set stays closed and named."""
+
+    if CONTEXT_FILLER_WIRE_IDS != ("PARADE_PAD",):
+        return False
+    if set(CONTEXT_FILLER_BEAT_ONLY_IDS) | {"filler.parade_lap"} != set(CONTEXT_FILLER_BEAT_IDS):
+        return False
+    if set(CONTEXT_FILLER_KIND_BY_BEAT_ID) != set(CONTEXT_FILLER_BEAT_IDS):
+        return False
+    row = row_for_wire_id("PARADE_PAD")
+    if row.beat_id != "filler.parade_lap":
+        return False
+    if row.scope_kind != "filler_parade":
+        return False
+    if row.realization_family != "filler.track_state":
+        return False
+    if row.policy_id != "filler":
+        return False
+    if not row.invalidate_reasons:
+        return False
+    lowered = row.notes.lower()
+    if "silence" not in lowered:
+        return False
+    if "out_lap" not in lowered or "in_lap" not in lowered:
+        return False
+    if "garage" not in lowered or "lobby" not in lowered:
+        return False
+    if "quiet_track" not in lowered and "quiet track" not in lowered:
+        return False
+    return True
+
+
+def filler_may_resolve_to_silence() -> bool:
+    """AC helper: filler inventory admits silence instead of forced speech."""
+
+    if not filler_beats_are_documented():
+        return False
+    row = row_for_wire_id("PARADE_PAD")
+    lowered = row.notes.lower()
+    if "never force" not in lowered and "not force" not in lowered:
+        return False
+    if "silence" not in lowered:
+        return False
+    # Beat-only fillers must remain outside CONTEXT_WIRE_IDS (no invented wires).
+    if set(CONTEXT_FILLER_BEAT_ONLY_IDS) & set(CONTEXT_WIRE_IDS):
+        return False
+    return True
+
