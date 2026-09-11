@@ -1,10 +1,10 @@
 # #276 Ops family migration (pit / incident / flag / recovery)
 
-**Status:** Slice 4 — pit + incident/aftermath/recovery + `SESSION_FLAG` + checkered / hero finish / session wrap inventory (Slices 1–4; all `legacy`; no `FAMILY_ROUTE` flip).  
+**Status:** Slice 5 — pit + incident/aftermath/recovery + `SESSION_FLAG` + checkered / hero finish / session wrap inventory + unknown/tow/teleport outcome contract (Slices 1–5; all `legacy`; no `FAMILY_ROUTE` flip).  
 **Issue:** [#276](https://github.com/Buchtanen/ir-obs-switcher/issues/276)  
 **Module:** `src/irswitch/contracts/ops_family_map.py`  
-**Tests:** `tests/test_ops_family_map.py` (**15**)  
-**Lookup:** [inflight § #276 slice 1](../dokumentace/inflight/README.md#276-ops-family-map-slice-1-lookup) · [inflight § #276 slice 2](../dokumentace/inflight/README.md#276-ops-family-map-slice-2-lookup) · [inflight § #276 slice 3](../dokumentace/inflight/README.md#276-ops-family-map-slice-3-lookup) · [inflight § #276 slice 4](../dokumentace/inflight/README.md#276-ops-family-map-slice-4-lookup) · [events branch delta](../dokumentace/domeny/events.md#ops-family-migration-map-contractsops_family_mappy)
+**Tests:** `tests/test_ops_family_map.py` (**16**)  
+**Lookup:** [inflight § #276 slice 1](../dokumentace/inflight/README.md#276-ops-family-map-slice-1-lookup) · [inflight § #276 slice 2](../dokumentace/inflight/README.md#276-ops-family-map-slice-2-lookup) · [inflight § #276 slice 3](../dokumentace/inflight/README.md#276-ops-family-map-slice-3-lookup) · [inflight § #276 slice 4](../dokumentace/inflight/README.md#276-ops-family-map-slice-4-lookup) · [inflight § #276 slice 5](../dokumentace/inflight/README.md#276-ops-family-map-slice-5-lookup) · [events branch delta](../dokumentace/domeny/events.md#ops-family-migration-map-contractsops_family_mappy)
 
 ## Guardrails
 
@@ -78,11 +78,30 @@
 | `FINISH` | `irswitch.events.lifecycle_edges:LifecycleTriggerBank` | LifecycleTriggerBank direct |
 | `SESSION_WRAP` | `irswitch.race.narrative:StreamNarrativeFsm` | FSM direct (same module) |
 
-**`OPS_WIRE_IDS`:** **13** wires (6 pit + 3 incident + 1 flag + 3 closeout).
+**`OPS_WIRE_IDS`:** **13** wires (6 pit + 3 incident + 1 flag + 3 closeout). No new freeze wires in Slice 5.
 
-Helpers: `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`, `incident_cycle_phase_order_is_monotonic()`, `incident_stories_have_explicit_terminals()`, `incident_branch_beats_are_documented()`, `session_flag_branch_beats_are_documented()`, `session_wrap_branch_beats_are_documented()`, `closeout_stories_are_separated()`.
+## Slice 5 — unknown / tow / teleport outcome contract
 
-## AC locks (Slices 1–4)
+Taxonomy constants (no dedicated wires; dispositions on existing inventory):
+
+| Constant | Reason ids |
+| --- | --- |
+| `OPS_UNKNOWN_OUTCOME_REASON_IDS` | `unknown_delta_explicit`, `unknown_exit_explicit`, `unknown_motion_explicit`, `unknown_flag_explicit`, `unknown_checkered_explicit`, `unknown_finish_explicit`, `unknown_wrap_explicit` |
+| `OPS_TOW_OUTCOME_REASON_IDS` | `hero_towing`, `tow_keeps_stalled`, `tow_blocks_recovery` |
+| `OPS_TELEPORT_OUTCOME_REASON_IDS` | `hero_teleport`, `esc_teleport`, `teleport_invalidates_motion` |
+
+**Locks:**
+
+- Every ops wire invalidates on `hero_teleport`.
+- Every terminal wire includes an `unknown_*_explicit` reason from `OPS_UNKNOWN_OUTCOME_REASON_IDS` (`PIT_EXIT` now includes `unknown_exit_explicit`).
+- `INCIDENT_AFTERMATH` / `BACK_UNDER_WAY` encode tow (+ recovery teleport) invalidation; notes forbid invention.
+- Row notes keep unknown / never-invent language across the inventory.
+
+Helper: `unknown_tow_teleport_outcomes_are_defined()`.
+
+Helpers (full): `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`, `incident_cycle_phase_order_is_monotonic()`, `incident_stories_have_explicit_terminals()`, `incident_branch_beats_are_documented()`, `session_flag_branch_beats_are_documented()`, `session_wrap_branch_beats_are_documented()`, `closeout_stories_are_separated()`, `unknown_tow_teleport_outcomes_are_defined()`.
+
+## AC locks (Slices 1–5)
 
 - **Pit phase order** — `entry → lane → stopped → released → exit → outcome`.
 - **Pit explicit terminals** — only `PIT_EXIT` / `PIT_OUTCOME` carry `terminal_reasons`; every pit wire has `invalidate_reasons`.
@@ -92,12 +111,13 @@ Helpers: `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`,
 - **SESSION_FLAG branch beats** — primary `session.flag.yellow`; branch list `session.flag.yellow`, `session.flag.green`, `session.checkered` documented in row notes; checkered ≠ hero finish / session wrap; unknown not invented.
 - **Closeout separation** — `SESSION_CHECKERED` / `FINISH` / `SESSION_WRAP` keep distinct scopes + families; finish tape ≠ checkered; wrap tape ≠ finish; notes cross-reference; flag checkered branch remains on `SESSION_FLAG`.
 - **SESSION_WRAP branch beats** — primary `session.wrap.practice`; branch list `session.wrap.practice`, `session.wrap.qualifying`, `session.wrap.race` documented in row notes.
+- **Unknown / tow / teleport** — taxonomy constants defined; every wire invalidates on `hero_teleport`; terminals include `unknown_*_explicit`; aftermath/recovery encode tow (+ recovery teleport); notes forbid invention; `OPS_WIRE_IDS` still **13**.
 
 ## Later #276 slices
 
-Deferred: tow/teleport outcomes; EN patterns + adversarial tests; shadow activation.
+Deferred: EN patterns + adversarial tests; shadow activation.
 
 ## Docs / config
 
 - **Docs:** this page + `docs/v2.0.0/README.md` + `docs/dokumentace/{README,inflight/README,domeny/events}.md`.
-- **Docs: CONFIG.md / API.md unchanged** (inventory-only).
+- **Docs: CONFIG.md / API.md unchanged** (inventory-only; no new freeze wires).
