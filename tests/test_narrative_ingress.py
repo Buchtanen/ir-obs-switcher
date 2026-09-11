@@ -672,6 +672,165 @@ def test_project_runtime_status_facts_live_after_context() -> None:
     }
 
 
+def _admit_and_reduce(
+    *,
+    runtime: NarrativeRuntime,
+    timeline: dict,
+    fact_view: dict,
+    prefix: str,
+    fanout: int,
+    enqueued_mono_ms: int,
+) -> None:
+    from test_narrative_context_batch import _event
+
+    from irswitch.events.narrative_ingress import NarrativeIngress
+
+    mailbox = runtime._mailbox  # noqa: SLF001 — shared mailbox identity for admit/reduce
+    ingress = NarrativeIngress(mailbox)
+    result = ingress.admit_context_publication(
+        timeline=timeline,
+        fact_view=fact_view,
+        events=(_event(0, fanout=fanout, fact_revision=int(fact_view["viewRevision"])),),
+        fanout_stream_sequence=fanout,
+        command_id_prefix=prefix,
+        enqueued_mono_ms=enqueued_mono_ms,
+    )
+    assert result.accepted
+    reduced = runtime.reduce_next()
+    assert reduced is not None
+
+
+def test_project_runtime_status_facts_degraded_after_capacity_eviction() -> None:
+    """#273 facts become degraded+fact_capacity_evicted after lossy compaction."""
+    from test_narrative_context_batch import _fact_view, _timeline
+
+    from irswitch.commentary.mailbox import NarrativeMailbox
+
+    mailbox = NarrativeMailbox()
+    runtime = NarrativeRuntime(mailbox=mailbox)
+    runtime.enable()
+    fact_view = _fact_view(2, revision=12)
+    fact_view["historyComplete"] = False
+    _admit_and_reduce(
+        runtime=runtime,
+        timeline=_timeline(),
+        fact_view=fact_view,
+        prefix="facts:evicted",
+        fanout=31,
+        enqueued_mono_ms=6_000,
+    )
+    facts = project_runtime_status(runtime.status())["components"]["facts"]
+    assert facts == {
+        "status": "degraded",
+        "reason": "fact_capacity_evicted",
+        "viewRevision": 12,
+        "active": 2,
+        "historicalSummaries": 0,
+        "historyComplete": False,
+    }
+
+
+def test_project_runtime_status_facts_unavailable_while_capacity_exhausted() -> None:
+    """#273 facts are unavailable+fact_capacity_exhausted until a coherent view fits."""
+    from test_narrative_context_batch import _fact_view, _timeline
+
+    from irswitch.commentary.mailbox import NarrativeMailbox
+
+    mailbox = NarrativeMailbox()
+    runtime = NarrativeRuntime(mailbox=mailbox)
+    runtime.enable()
+    # FactView contract has no diagnostics; FactLedger exhaustion is latched via
+    # note_fact_capacity (library hook for upstream wiring).
+    runtime.note_fact_capacity("fact_capacity_exhausted")
+    facts = project_runtime_status(runtime.status())["components"]["facts"]
+    assert facts["status"] == "unavailable"
+    assert facts["reason"] == "fact_capacity_exhausted"
+    assert facts["historyComplete"] is False
+
+    recovered = _fact_view(1, revision=14)
+    recovered["historyComplete"] = False
+    _admit_and_reduce(
+        runtime=runtime,
+        timeline=_timeline(revision=4),
+        fact_view=recovered,
+        prefix="facts:exhausted-clear",
+        fanout=33,
+        enqueued_mono_ms=7_100,
+    )
+    facts = project_runtime_status(runtime.status())["components"]["facts"]
+    assert facts == {
+        "status": "degraded",
+        "reason": "fact_capacity_evicted",
+        "viewRevision": 14,
+        "active": 1,
+        "historicalSummaries": 0,
+        "historyComplete": False,
+    }
+
+
+def test_project_runtime_status_facts_ready_only_on_new_lossless_run() -> None:
+    """#273 only a new narrative run without capacity loss restores facts ready."""
+    from test_narrative_context_batch import _fact_view, _timeline
+
+    from irswitch.commentary.mailbox import NarrativeMailbox
+
+    mailbox = NarrativeMailbox()
+    runtime = NarrativeRuntime(mailbox=mailbox)
+    runtime.enable()
+    evicted = _fact_view(1, revision=15)
+    evicted["historyComplete"] = False
+    _admit_and_reduce(
+        runtime=runtime,
+        timeline=_timeline(),
+        fact_view=evicted,
+        prefix="facts:run-evict",
+        fanout=41,
+        enqueued_mono_ms=8_000,
+    )
+    assert (
+        project_runtime_status(runtime.status())["components"]["facts"]["status"] == "degraded"
+    )
+
+    closed = _timeline(revision=5)
+    closed["narrativeRunActive"] = False
+    _admit_and_reduce(
+        runtime=runtime,
+        timeline=closed,
+        fact_view=_fact_view(1, revision=16),
+        prefix="facts:run-close",
+        fanout=42,
+        enqueued_mono_ms=8_100,
+    )
+    # Latch survives run close; still degraded until a new lossless open.
+    assert (
+        project_runtime_status(runtime.status())["components"]["facts"]["reason"]
+        == "fact_capacity_evicted"
+    )
+
+    reopened = _timeline(revision=6)
+    reopened["narrativeRunActive"] = True
+    reopened["streamEpoch"] = 2
+    lossless = _fact_view(1, revision=17)
+    lossless["streamEpoch"] = 2
+    _admit_and_reduce(
+        runtime=runtime,
+        timeline=reopened,
+        fact_view=lossless,
+        prefix="facts:run-open",
+        fanout=43,
+        enqueued_mono_ms=8_200,
+    )
+    facts = project_runtime_status(runtime.status())["components"]["facts"]
+    assert facts == {
+        "status": "ready",
+        "reason": None,
+        "viewRevision": 17,
+        "active": 1,
+        "historicalSummaries": 0,
+        "historyComplete": True,
+    }
+
+
 def test_project_runtime_status_detectors_disabled_from_bank() -> None:
     """#273/#284 detectors.disabled mirrors DetectorBank disable_for_run reasons."""
     from irswitch.events.detector_bank import DetectorBank

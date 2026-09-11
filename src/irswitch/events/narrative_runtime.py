@@ -211,6 +211,8 @@ class RuntimeStatus:
     fact_view_revision: int | None
     fact_active_count: int
     fact_historical_summary_count: int
+    fact_capacity_evicted: bool
+    fact_capacity_exhausted: bool
     detector_disabled: tuple[dict[str, str], ...]
     config_valid: bool | None
     component_health: dict[str, str]
@@ -388,6 +390,8 @@ class NarrativeRuntime:
         self._live_verify_frame_attached = False
         self._fact_active_count = 0
         self._fact_historical_summary_count = 0
+        self._fact_capacity_evicted = False
+        self._fact_capacity_exhausted = False
         self._director_world: DirectorWorld | None = None
         self._director_candidates: tuple[DirectorCandidate, ...] = ()
         self._director_manual_seed = False
@@ -420,8 +424,34 @@ class NarrativeRuntime:
         refs = fact_view.get("compactedSummaryRefs")
         self._fact_active_count = len(facts) if isinstance(facts, list) else 0
         self._fact_historical_summary_count = len(refs) if isinstance(refs, list) else 0
+        # A publishable FactView clears exhaustion; eviction stays latched for the run.
+        if self._fact_capacity_exhausted and isinstance(facts, list):
+            self._fact_capacity_exhausted = False
         if "historyComplete" in fact_view:
-            self._history_complete = bool(fact_view["historyComplete"])
+            history_complete = bool(fact_view["historyComplete"])
+            if not history_complete:
+                self._fact_capacity_evicted = True
+                self._history_complete = False
+            elif self._fact_capacity_evicted:
+                # Prior loss cannot be reconstructed within the run.
+                self._history_complete = False
+            else:
+                self._history_complete = True
+
+    def note_fact_capacity(self, *diagnostics: str) -> None:
+        """Latch FactLedger capacity diagnostics into facts component health (#273).
+
+        FactView itself cannot carry diagnostics (frozen field set). Upstream
+        FactLedger wiring calls this when eviction/exhaustion is observed.
+        """
+
+        if "fact_capacity_exhausted" in diagnostics:
+            self._fact_capacity_exhausted = True
+            self._fact_capacity_evicted = True
+            self._history_complete = False
+        elif "fact_capacity_evicted" in diagnostics:
+            self._fact_capacity_evicted = True
+            self._history_complete = False
 
     def attach_supervisor_heartbeat(
         self,
@@ -495,6 +525,8 @@ class NarrativeRuntime:
             fact_view_revision=self._fact_view_revision,
             fact_active_count=int(self._fact_active_count),
             fact_historical_summary_count=int(self._fact_historical_summary_count),
+            fact_capacity_evicted=bool(self._fact_capacity_evicted),
+            fact_capacity_exhausted=bool(self._fact_capacity_exhausted),
             detector_disabled=self._detector_disabled_snapshot(),
             config_valid=self._config_valid,
             component_health=health,
@@ -1197,13 +1229,12 @@ class NarrativeRuntime:
         timeline = part.batch.timeline
         self._timeline_revision = int(timeline["timelineRevision"])
         fact_view = part.batch.fact_view
-        self._fact_view_revision = int(fact_view["viewRevision"])
-        self._ingest_fact_view_counts(fact_view)
-        self._broadcast_epoch = int(timeline.get("broadcastEpoch", self._broadcast_epoch))
         prev_epoch = int(self._stream_epoch)
         prev_run_active = bool(self._narrative_run_active)
         next_epoch = int(timeline.get("streamEpoch", self._stream_epoch))
         self._stream_epoch = next_epoch
+        # Clear fact-capacity latches on run open before ingesting this batch's
+        # FactView (which may immediately re-latch eviction/exhaustion).
         if "narrativeRunActive" in timeline:
             next_run_active = bool(timeline["narrativeRunActive"])
             if prev_run_active and not next_run_active:
@@ -1214,7 +1245,13 @@ class NarrativeRuntime:
                 if next_epoch != prev_epoch:
                     transition_effects.append(f"stream_epoch_allocated:{next_epoch}")
                 self._plans_in_cycle = 0
+                self._fact_capacity_evicted = False
+                self._fact_capacity_exhausted = False
+                self._history_complete = True
             self._narrative_run_active = next_run_active
+        self._fact_view_revision = int(fact_view["viewRevision"])
+        self._ingest_fact_view_counts(fact_view)
+        self._broadcast_epoch = int(timeline.get("broadcastEpoch", self._broadcast_epoch))
         obs_state = timeline.get("obsState")
         if obs_state is None and "streamState" in timeline:
             obs_state = timeline.get("streamState")

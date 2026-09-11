@@ -566,12 +566,24 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
                 ),
             },
             "facts": {
-                "status": "ready",
-                "reason": None,
+                "status": (
+                    "unavailable"
+                    if status.fact_capacity_exhausted
+                    else "degraded"
+                    if status.fact_capacity_evicted
+                    else "ready"
+                ),
+                "reason": (
+                    "fact_capacity_exhausted"
+                    if status.fact_capacity_exhausted
+                    else "fact_capacity_evicted"
+                    if status.fact_capacity_evicted
+                    else None
+                ),
                 "viewRevision": int(status.fact_view_revision or 0),
                 "active": int(status.fact_active_count),
                 "historicalSummaries": int(status.fact_historical_summary_count),
-                "historyComplete": history_complete,
+                "historyComplete": history_complete and not status.fact_capacity_evicted,
             },
         },
         "recovery": {
