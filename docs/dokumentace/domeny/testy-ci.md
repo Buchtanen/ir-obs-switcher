@@ -246,3 +246,16 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 
 **Slice 15 locks:** F16 close run 3, commentary disabled, complete trailer, manual independence, allocate run 4, incomplete history, one enabled mid-stream, no state leak; machine projection still matches frozen expectations; gap inventory **36/44** wired, **8** unwired.
 
+## #278 vertical-slice TTS timeout runtime (Slice 16)
+
+**Status:** offline F26 drivers on branch `cursor/vertical-slice-tts-timeout-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Contract | Value |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_tts_timeout_runtime.py`](../../../tests/test_vertical_slice_tts_timeout_runtime.py) (**2** tests: **1** parametrized machine projection + F26 runtime driver) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **37/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 16](../../v2.0.0/vertical-slice-acceptance.md#slice-16--f26-unresponsive-tts-lane-watchdog-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F26 row; hashes **unchanged**) |
+
+**Slice 16 locks:** F26 start-timeout unconsumed, playback-timeout consumed, stop-timeout quarantine, admission blocked, late no-op, higher-generation restore; machine projection still matches frozen expectations; gap inventory **37/44** wired, **7** unwired.
+

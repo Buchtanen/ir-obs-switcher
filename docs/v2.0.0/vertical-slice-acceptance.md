@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 15 — offline disable/re-enable-within-broadcast drivers for F16 (no live Windows §24.9 GO).
+**Status:** Slice 16 — offline unresponsive-TTS lane-watchdog drivers for F26 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -217,6 +217,21 @@
 **AC locks (Slice 15):**
 - Machine projection for F16 still matches frozen expectations.
 - Runtime drivers prove close run 3, commentary disabled, complete trailer flush, manual independence while disabled, allocate run 4 / stream epoch 2, incomplete history across the gap, one enabled mid-stream, and no state leak into the new run.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+
+## Slice 16 — F26 unresponsive-TTS lane-watchdog runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F26` (unresponsive TTS cannot strand or overlap the lane) |
+| Pytest | `tests/test_vertical_slice_tts_timeout_runtime.py` |
+| Inventory | **37/44** wired; **7** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 16):**
+- Machine projection for F26 still matches frozen expectations.
+- Runtime drivers prove start-timeout unconsumed, playback-timeout consumed, stop-timeout quarantine, admission blocked under quarantine, late callback no-ops, and higher-generation restore.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices
