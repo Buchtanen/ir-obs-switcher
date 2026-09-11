@@ -30,7 +30,7 @@ def test_per_family_coverage_semantic_and_latency_evidence() -> None:
     by_wire = {row.wire_id: row for row in evidence}
     assert set(by_wire) == {row.wire_id for row in race_outcome_family_rows()}
 
-    for wire_id, row in by_wire.items():
+    for _wire_id, row in by_wire.items():
         if not row.can_create:
             assert row.migration_status == "legacy"
             assert row.verifier_pair_count == 0
