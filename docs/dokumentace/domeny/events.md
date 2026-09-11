@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 7 shadow; #277 slice 7 inventory shadow; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 CLOSED; #277 **CLOSED** slice 7 inventory shadow; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
 
@@ -59,7 +59,7 @@ Detail: [ops-family-migration.md](../../v2.0.0/ops-family-migration.md). `FAMILY
 
 ## Context family migration map (`contracts/context_family_map.py` + `contracts/context_family_activation_evidence.py`)
 
-Slices 1–7 inventory for Wave G #277 (all `migration_status=shadow`; `CONTEXT_WIRE_IDS` **10** + long-silence impulse + EN pattern inventory **68**; **no** `FAMILY_ROUTE` flip):
+Slices 1–7 inventory for Wave G #277 (**CLOSED** on tip; all `migration_status=shadow`; `CONTEXT_WIRE_IDS` **10** + long-silence impulse + EN pattern inventory **68**; **no** `FAMILY_ROUTE` flip):
 
 | Helper | Role |
 | --- | --- |
