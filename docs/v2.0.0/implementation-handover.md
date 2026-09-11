@@ -1449,3 +1449,18 @@ Expected before resuming: worktree on integration branch `codex/commentary-story
 | Evidence | feat SHA `b751d70`; prior mypy tip `d0f3863`; n12 shadow-cutover test fix `4a5c57b`; tip `b751d70`; PR [#294](https://github.com/Buchtanen/ir-obs-switcher/pull/294) **FF-merged**; **no master PR** |
 | Scope | Branch-only; atomic task **done**; #273 main atomic list complete — remaining open AC/design-freeze items only |
 
+
+
+### #273 status-identity verify lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| Evidence tip | `86b5b0f` (no new feat SHA — verify-only) |
+| Timeline | `broadcastEpoch`, retained `streamEpoch`, required `narrativeRunActive`; OBS `streamActive` independent |
+| Mailbox | fixed capacity in status; no public INI capacity key (`CONFIG.md`) |
+| Goldens | `status_identity_disabled.json`, `status_identity_after_context.json` |
+| Tests | 162 related passed (`identity`/`streamActive`/`mailbox_capacity`/`broadcastEpoch`/`narrative_run` filter) |
+| Checkboxes | Status identity addition **all three flipped** |
+| Scope | Branch-only verify; **no master PR** |
+
