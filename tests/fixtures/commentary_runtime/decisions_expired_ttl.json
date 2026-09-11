@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "commentary-runtime/2",
+  "runtime": true,
+  "decisions": [
+    {
+      "reducerSequence": 430,
+      "atMonoMs": 95000,
+      "decision": "expired",
+      "reason": "expired_ttl",
+      "beatId": "battle.approach",
+      "episodeId": "battle-ahead:3:17:22:4",
+      "opportunityId": "opp:401",
+      "tapeChannel": "race.battle.closing",
+      "candidateSource": "event_opportunity",
+      "candidateOrder": {
+        "reducerSequence": 417,
+        "sourceOrdinal": 0
+      },
+      "relation": "updates_active_episode",
+      "urgency": "story",
+      "score": 0.0,
+      "threshold": 35.0,
+      "runnerUp": null,
+      "terminalReason": "expired_ttl"
+    }
+  ]
+}

@@ -436,6 +436,8 @@ class OpportunityStep:
     opportunity: EventOpportunity | None = None
     superseded_id: str | None = None
     evicted_id: str | None = None
+    beat_id: str | None = None
+    relation: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -590,7 +592,15 @@ class OpportunityQueue:
             if now < row.opportunity.expires_mono_ms:
                 continue
             self._terminal(row, "expired", "expired_ttl")
-            steps.append(OpportunityStep(reason="expired", opportunity=row.opportunity))
+            beat_id = row.beat_ids[0] if row.beat_ids else None
+            steps.append(
+                OpportunityStep(
+                    reason="expired",
+                    opportunity=row.opportunity,
+                    beat_id=beat_id,
+                    relation=row.relation,
+                )
+            )
         return tuple(steps)
 
     def nearest_validity_deadline(self, now_ms: int) -> int | None:
@@ -641,6 +651,21 @@ class OpportunityQueue:
 
     def channel_counters(self, tape_channel: str) -> ChannelCounters:
         return self._counters.get(tape_channel, ChannelCounters(tape_channel=tape_channel))
+
+    def queue_status_counts(self) -> dict[str, int]:
+        """Bounded status counters for ``queues.opportunities``."""
+
+        expired = 0
+        evicted = 0
+        for counters in self._counters.values():
+            expired += int(counters.expired)
+            evicted += int(counters.evicted)
+        return {
+            "depth": len(self._live),
+            "capacity": int(self.capacity),
+            "expired": expired,
+            "evicted": evicted,
+        }
 
     def tape_channel_status_counts(self) -> dict[str, dict[str, int]]:
         """Map live channel counters into StatusResponse byTapeChannel shape."""

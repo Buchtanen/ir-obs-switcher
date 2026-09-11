@@ -142,6 +142,24 @@ def _by_tape_channel_projection(status: RuntimeStatus) -> dict[str, dict[str, in
     return project_by_tape_channel_status(raw)
 
 
+def _opportunities_queue_projection(status: RuntimeStatus) -> dict[str, int]:
+    """Project bounded ``queues.opportunities`` depth/expiry counters."""
+
+    raw = status.opportunity_queue_counts
+    required = ("depth", "capacity", "expired", "evicted")
+    if not isinstance(raw, dict) or any(
+        isinstance(raw.get(key), bool) or not isinstance(raw.get(key), int) or int(raw.get(key)) < 0
+        for key in required
+    ):
+        return {
+            "depth": 0,
+            "capacity": int(OPPORTUNITY_CAPACITY),
+            "expired": 0,
+            "evicted": 0,
+        }
+    return {key: int(raw[key]) for key in required}
+
+
 def _empty_tape_drops_by_priority() -> dict[str, int]:
     return {"sample": 0, "normal": 0, "critical": 0}
 
@@ -451,12 +469,7 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
                 "capacity": int(status.mailbox_capacity),
                 "overflows": int(status.mailbox_overflows),
             },
-            "opportunities": {
-                "depth": 0,
-                "capacity": int(OPPORTUNITY_CAPACITY),
-                "expired": 0,
-                "evicted": 0,
-            },
+            "opportunities": _opportunities_queue_projection(status),
         },
         "episodes": _episodes_projection(status),
         "catalog": dict(_packaged_catalog_projection()),

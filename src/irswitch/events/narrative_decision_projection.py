@@ -111,6 +111,56 @@ def build_runtime_decision_entry(
     }
 
 
+_TERMINAL_DECISIONS = frozenset({"expired", "discarded", "invalidated"})
+
+
+def build_terminal_decision_entry(
+    *,
+    decision: str,
+    reason: str,
+    terminal_reason: str,
+    reducer_sequence: int,
+    at_mono_ms: int,
+    beat_id: str,
+    episode_id: str,
+    opportunity_id: str | None,
+    tape_channel: str,
+    candidate_source: str,
+    candidate_order: Mapping[str, int],
+    relation: str | None,
+    urgency: str,
+    score: float = 0.0,
+    threshold: float = SELECTION_THRESHOLD,
+) -> dict[str, Any]:
+    """Project one opportunity-terminal row into a commentary-runtime/2 decision."""
+
+    if decision not in _TERMINAL_DECISIONS:
+        raise ContractViolation("terminal decision must be expired|discarded|invalidated")
+    if not terminal_reason:
+        raise ContractViolation("terminalReason is required for terminal decisions")
+    return {
+        "reducerSequence": int(reducer_sequence),
+        "atMonoMs": int(at_mono_ms),
+        "decision": str(decision),
+        "reason": str(reason),
+        "beatId": str(beat_id),
+        "episodeId": str(episode_id),
+        "opportunityId": None if opportunity_id is None else str(opportunity_id),
+        "tapeChannel": str(tape_channel),
+        "candidateSource": str(candidate_source),
+        "candidateOrder": {
+            "reducerSequence": int(candidate_order["reducerSequence"]),
+            "sourceOrdinal": int(candidate_order["sourceOrdinal"]),
+        },
+        "relation": None if relation is None else str(relation),
+        "urgency": str(urgency),
+        "score": float(score),
+        "threshold": float(threshold),
+        "runnerUp": None,
+        "terminalReason": str(terminal_reason),
+    }
+
+
 def project_runtime_decisions(
     decisions: Sequence[Mapping[str, Any]],
     *,

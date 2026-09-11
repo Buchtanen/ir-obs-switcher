@@ -1415,6 +1415,131 @@ def test_project_runtime_decisions_selected_golden() -> None:
     assert projection == expected
 
 
+def test_project_runtime_decisions_story_successor_golden() -> None:
+    """#273: story_successor decisions are first-class beside event_opportunity."""
+    import json
+    from pathlib import Path
+
+    from test_story_director import _cand as _director_cand
+    from test_story_director import _world as _director_world
+
+    from irswitch.events.beat_plan import CandidateOrder
+    from irswitch.events.narrative_decision_projection import (
+        build_runtime_decision_entry,
+        project_runtime_decisions,
+    )
+    from irswitch.events.story_director import StoryDirector
+
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "decisions_story_successor.json"
+        ).read_text(encoding="utf-8")
+    )
+    primary = _director_cand(
+        beat_id="battle.pursuit",
+        episode_id="battle-ahead:3:17:22:4",
+        source="story_successor",
+        relation="continues_focused_episode",
+        opportunity_id=None,
+        tape_channel="race.battle.closing",
+        candidate_order=CandidateOrder(421, 0),
+        continuation_base=70.0,
+        base_priority=70.0,
+    )
+    decision = StoryDirector().evaluate(
+        _director_world(
+            focused_episode_id="battle-ahead:3:17:22:4",
+            now_ms=15_000,
+            impulse="post_beat",
+        ),
+        (primary,),
+    )
+    entry = build_runtime_decision_entry(
+        decision,
+        (primary,),
+        reducer_sequence=422,
+        at_mono_ms=90_410,
+    )
+    assert project_runtime_decisions([entry], runtime=True) == expected
+
+
+def test_build_terminal_decision_entry_expired_ttl_golden() -> None:
+    """#273: expired opportunities project decision=expired + terminalReason."""
+    import json
+    from pathlib import Path
+
+    from irswitch.events.beat_plan import CandidateOrder
+    from irswitch.events.narrative_decision_projection import (
+        build_terminal_decision_entry,
+        project_runtime_decisions,
+    )
+
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "decisions_expired_ttl.json"
+        ).read_text(encoding="utf-8")
+    )
+    entry = build_terminal_decision_entry(
+        decision="expired",
+        reason="expired_ttl",
+        terminal_reason="expired_ttl",
+        reducer_sequence=430,
+        at_mono_ms=95_000,
+        beat_id="battle.approach",
+        episode_id="battle-ahead:3:17:22:4",
+        opportunity_id="opp:401",
+        tape_channel="race.battle.closing",
+        candidate_source="event_opportunity",
+        candidate_order=CandidateOrder(417, 0).to_dict(),
+        relation="updates_active_episode",
+        urgency="story",
+        score=0.0,
+    )
+    assert project_runtime_decisions([entry], runtime=True) == expected
+
+
+def test_project_runtime_status_opportunities_queue_follows_live_counts() -> None:
+    """#273: queues.opportunities exposes live depth/expired/evicted."""
+    import json
+    from pathlib import Path
+
+    from irswitch.events.opportunity_queue import ChannelCounters, OpportunityQueue
+
+    queue = OpportunityQueue()
+    queue._counters["race.battle.closing"] = ChannelCounters(
+        tape_channel="race.battle.closing",
+        expired=3,
+        evicted=1,
+    )
+    queue._counters["race.timing.lap"] = ChannelCounters(
+        tape_channel="race.timing.lap",
+        expired=1,
+        queued=2,
+    )
+    queue._live = [object(), object()]  # type: ignore[list-item]
+    runtime = NarrativeRuntime(opportunity_queue=queue)
+    runtime.enable()
+    opportunities = project_runtime_status(runtime.status())["queues"]["opportunities"]
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "status_opportunities_queue.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert opportunities == expected
+
+
 def test_project_runtime_decisions_clamps_limit_newest_first() -> None:
     from irswitch.events.narrative_decision_projection import project_runtime_decisions
 

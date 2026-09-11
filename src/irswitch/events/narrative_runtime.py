@@ -248,6 +248,7 @@ class RuntimeStatus:
     config_ledger: dict[str, object] | None
     episode_counts: dict[str, int] | None
     by_tape_channel: dict[str, dict[str, int]] | None
+    opportunity_queue_counts: dict[str, int] | None
     # #273 live tape counter projection inputs (None => zero/empty stubs)
     tape_path: str | None
     tape_size: int | None
@@ -525,6 +526,7 @@ class NarrativeRuntime:
             config_ledger=(None if self._config_ledger is None else dict(self._config_ledger)),
             episode_counts=self._episode_counts_snapshot(),
             by_tape_channel=self._by_tape_channel_snapshot(),
+            opportunity_queue_counts=self._opportunity_queue_counts_snapshot(),
             **self._tape_counter_status_fields(),
             llm_attached=llm_attached,
             llm_generation=llm_generation,
@@ -1411,6 +1413,8 @@ class NarrativeRuntime:
         """Return True when plan dispatch may proceed."""
         if self._story_director is None or self._director_world is None:
             return True
+        at_mono_ms = int(self._director_world.now_ms)
+        self._expire_opportunities(now_ms=at_mono_ms, effects=effects)
         decision = self._story_director.evaluate(self._director_world, self._director_candidates)
         effects.append("director_evaluated")
         effects.append(f"director_step:{decision.reason}")
@@ -1653,6 +1657,48 @@ class NarrativeRuntime:
             return None
         snapshot = self._opportunity_queue.tape_channel_status_counts()
         return snapshot or None
+
+    def _opportunity_queue_counts_snapshot(self) -> dict[str, int] | None:
+        if self._opportunity_queue is None:
+            return None
+        return self._opportunity_queue.queue_status_counts()
+
+    def _expire_opportunities(self, *, now_ms: int, effects: list[str]) -> None:
+        """Expire due opportunities and append terminal decision rows."""
+
+        if self._opportunity_queue is None:
+            return
+        from irswitch.events.narrative_decision_projection import build_terminal_decision_entry
+        from irswitch.events.opportunity_queue import RELATION_IDS
+
+        steps = self._opportunity_queue.expire_due(now_ms)
+        if not steps:
+            return
+        effects.append(f"opportunities_expired:{len(steps)}")
+        for step in steps:
+            opportunity = step.opportunity
+            if opportunity is None or step.beat_id is None:
+                continue
+            relation = step.relation
+            if relation in RELATION_IDS:
+                relation = RELATION_IDS[relation]
+            entry = build_terminal_decision_entry(
+                decision="expired",
+                reason="expired_ttl",
+                terminal_reason=str(opportunity.terminal_reason or "expired_ttl"),
+                reducer_sequence=int(self._reducer_sequence),
+                at_mono_ms=int(now_ms),
+                beat_id=str(step.beat_id),
+                episode_id=str(opportunity.episode_id),
+                opportunity_id=str(opportunity.opportunity_id),
+                tape_channel=str(opportunity.tape_channel),
+                candidate_source="event_opportunity",
+                candidate_order=opportunity.candidate_order.to_dict(),
+                relation=relation,
+                urgency=str(opportunity.urgency),
+                score=0.0,
+            )
+            self._decision_ring.append(entry)
 
     def _tape_counter_status_fields(self) -> dict[str, object]:
         writer = self._tape_writer
