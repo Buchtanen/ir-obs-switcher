@@ -40,9 +40,9 @@ FAMILY_ROUTE: Mapping[str, Route] = {
     "timing": "shadow",  # #275 observational compare for sector/pace/attempt
     "battle": "legacy",
     "position": "shadow",  # #274 race-outcome pass/gain/loss/leader
-    "pit": "legacy",
+    "pit": "shadow",  # #276 observational compare for pit cycle
     "bio": "legacy",
-    "incident": "legacy",
+    "incident": "shadow",  # #276 observational compare for incident/flag
     "session": "shadow",  # #274 hero finish / checkered
 }
 
@@ -120,6 +120,14 @@ def family_for_event_type(event_type: str) -> str:
     """Map a wire ``event_type`` onto a private family key."""
 
     token = str(event_type or "").strip().upper()
+    # #276 ops inventory before generic incident/unknown traps.
+    if token.startswith("PIT"):
+        return "pit"
+    if token in {"INCIDENT", "INCIDENT_AFTERMATH", "BACK_UNDER_WAY"}:
+        return "incident"
+    if token == "SESSION_FLAG":
+        # Session-level flag control; checkered/finish/wrap already route via session.
+        return "session"
     # #275 timing inventory before generic incident/unknown traps.
     if token == "INVALID_LAP":
         return "timing"

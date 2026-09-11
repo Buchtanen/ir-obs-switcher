@@ -1,15 +1,15 @@
 # #276 Ops family migration (pit / incident / flag / recovery)
 
-**Status:** Slice 6 — Slices 1–5 inventory + curated EN patterns / TTS slots + adversarial closeout/pit/flag/incident tests (all `legacy`; no `FAMILY_ROUTE` flip).  
+**Status:** Slice 7 — observational `shadow` activation (`FAMILY_ROUTE["pit"|"incident"]=shadow`; inventory `migration_status=shadow`; session closeout already shadow via #274; no live `v2` speech).  
 **Issue:** [#276](https://github.com/Buchtanen/ir-obs-switcher/issues/276)  
 **Module:** `src/irswitch/contracts/ops_family_map.py`  
-**Tests:** `tests/test_ops_family_map.py` (**22**)  
+**Tests:** `tests/test_ops_family_map.py` + `tests/test_ops_family_activation_evidence.py` (**22+3**; shadow compare ops routing covered too)  
 **Lookup:** [inflight § #276 slice 1](../dokumentace/inflight/README.md#276-ops-family-map-slice-1-lookup) · [inflight § #276 slice 2](../dokumentace/inflight/README.md#276-ops-family-map-slice-2-lookup) · [inflight § #276 slice 3](../dokumentace/inflight/README.md#276-ops-family-map-slice-3-lookup) · [inflight § #276 slice 4](../dokumentace/inflight/README.md#276-ops-family-map-slice-4-lookup) · [inflight § #276 slice 5](../dokumentace/inflight/README.md#276-ops-family-map-slice-5-lookup) · [inflight § #276 slice 6](../dokumentace/inflight/README.md#276-ops-family-map-slice-6-lookup) · [events branch delta](../dokumentace/domeny/events.md#ops-family-migration-map-contractsops_family_mappy)
 
 ## Guardrails
 
 - Does **not** rewrite frozen `docs/v2.0.0/machine/*` hashes.
-- Does **not** flip `FAMILY_ROUTE` (pit/incident/flag remain `legacy`).
+- Flips private `FAMILY_ROUTE["pit"]` + `FAMILY_ROUTE["incident"]` to **shadow** only (observation). Session closeout wires already ride `FAMILY_ROUTE["session"]=shadow` from #274. Does **not** cut over live `v2` speech.
 - Does **not** cut over live `v2` speech.
 - Integration-only; no master PR until cutover (#279).
 
@@ -17,20 +17,20 @@
 
 | Wire id | Legacy node | Beat | Role | Family | Policy / TTL | Tape | Scope | Phase | Status |
 | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- |
-| `PIT_ENTRY` | `pit_entry` | `pit.entry` | opening | `pit.lifecycle` | live_story / 10s | `race.pit.cycle` | `pit_cycle` | entry | legacy |
-| `PIT_LANE` | — | `pit.lane` | update | `pit.lifecycle` | live_story / 10s | `race.pit.cycle` | `pit_cycle` | lane | legacy |
-| `PIT_STOPPED` | `pit_stopped` | `pit.stopped` | update | `pit.lifecycle` | live_story / 10s | `race.pit.cycle` | `pit_cycle` | stopped | legacy |
-| `PIT_RELEASED` | — | `pit.released` | update | `pit.lifecycle` | live_story / 10s | `race.pit.cycle` | `pit_cycle` | released | legacy |
-| `PIT_EXIT` | — | `pit.exit` | closure | `pit.lifecycle` | result / 30s | `race.pit.cycle` | `pit_cycle` | exit | legacy |
-| `PIT_OUTCOME` | `pit_outcome` | `pit.outcome` | outcome | `pit.outcome` | result / 30s | `race.pit.outcome` | `pit_outcome` | outcome | legacy |
+| `PIT_ENTRY` | `pit_entry` | `pit.entry` | opening | `pit.lifecycle` | live_story / 10s | `race.pit.cycle` | `pit_cycle` | entry | shadow |
+| `PIT_LANE` | — | `pit.lane` | update | `pit.lifecycle` | live_story / 10s | `race.pit.cycle` | `pit_cycle` | lane | shadow |
+| `PIT_STOPPED` | `pit_stopped` | `pit.stopped` | update | `pit.lifecycle` | live_story / 10s | `race.pit.cycle` | `pit_cycle` | stopped | shadow |
+| `PIT_RELEASED` | — | `pit.released` | update | `pit.lifecycle` | live_story / 10s | `race.pit.cycle` | `pit_cycle` | released | shadow |
+| `PIT_EXIT` | — | `pit.exit` | closure | `pit.lifecycle` | result / 30s | `race.pit.cycle` | `pit_cycle` | exit | shadow |
+| `PIT_OUTCOME` | `pit_outcome` | `pit.outcome` | outcome | `pit.outcome` | result / 30s | `race.pit.outcome` | `pit_outcome` | outcome | shadow |
 
 ## Slice 2 inventory — incident / aftermath / recovery
 
 | Wire id | Legacy node | Beat | Role | Family | Policy / TTL | Tape | Scope | Phase | Status |
 | --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- |
-| `INCIDENT` | `incident` | `incident.off_track` | opening | `incident.event` | result / 30s | `race.incident.event` | `incident_event` | event | legacy |
-| `INCIDENT_AFTERMATH` | `incident_aftermath` | `incident.aftermath` | update | `incident.aftermath` | context / 20s | `race.incident.aftermath` | `incident_aftermath` | aftermath | legacy |
-| `BACK_UNDER_WAY` | `back_under_way` | `incident.recovery` | closure | `incident.recovery` | result / 30s | `race.incident.recovery` | `incident_recovery` | recovery | legacy |
+| `INCIDENT` | `incident` | `incident.off_track` | opening | `incident.event` | result / 30s | `race.incident.event` | `incident_event` | event | shadow |
+| `INCIDENT_AFTERMATH` | `incident_aftermath` | `incident.aftermath` | update | `incident.aftermath` | context / 20s | `race.incident.aftermath` | `incident_aftermath` | aftermath | shadow |
+| `BACK_UNDER_WAY` | `back_under_way` | `incident.recovery` | closure | `incident.recovery` | result / 30s | `race.incident.recovery` | `incident_recovery` | recovery | shadow |
 
 **INCIDENT branch beats:** primary `incident.off_track`; registry also binds `incident.unclassified` for unknown/off-surface classification (`classify_incident_branch` → off_track \| unknown). Missing surface evidence stays unclassified — never invent contact or damage.
 
@@ -46,7 +46,7 @@
 
 | Wire id | Legacy node | Beat | Role | Family | Policy / TTL | Tape | Scope | Status |
 | --- | --- | --- | --- | --- | ---: | --- | --- | --- |
-| `SESSION_FLAG` | `session_flag_yellow` | `session.flag.yellow` | control | `session.flag` | critical / 45s | `race.control.flag` | `flag_control` | legacy |
+| `SESSION_FLAG` | `session_flag_yellow` | `session.flag.yellow` | control | `session.flag` | critical / 45s | `race.control.flag` | `flag_control` | shadow |
 
 **SESSION_FLAG branch beats:** primary `session.flag.yellow`; registry also binds `session.flag.green` and `session.checkered` (`SESSION_FLAG_BRANCH_BEAT_IDS`, `SESSION_FLAG_PRIMARY_BEAT_ID`). `SessionFlagFsm` rising-edge kinds `yellow|green|checkered` map onto those beats; start lights are ignored.
 
@@ -62,9 +62,9 @@
 
 | Wire id | Legacy node | Beat | Role | Family | Policy / TTL | Tape | Scope | Status |
 | --- | --- | --- | --- | --- | ---: | --- | --- | --- |
-| `SESSION_CHECKERED` | `session_checkered` | `session.checkered` | outcome | `session.flag` | critical / 45s | `race.control.flag` | `session_checkered` | legacy |
-| `FINISH` | `finish` | `session.hero_finish` | outcome | `session.finish` | critical / 45s | `race.session.finish` | `hero_finish` | legacy |
-| `SESSION_WRAP` | `session_wrap` | `session.wrap.practice` | closure | `session.wrap` | result / 30s | `session.lifecycle` | `session_wrap` | legacy |
+| `SESSION_CHECKERED` | `session_checkered` | `session.checkered` | outcome | `session.flag` | critical / 45s | `race.control.flag` | `session_checkered` | shadow |
+| `FINISH` | `finish` | `session.hero_finish` | outcome | `session.finish` | critical / 45s | `race.session.finish` | `hero_finish` | shadow |
+| `SESSION_WRAP` | `session_wrap` | `session.wrap.practice` | closure | `session.wrap` | result / 30s | `session.lifecycle` | `session_wrap` | shadow |
 
 **SESSION_WRAP branch beats:** primary `session.wrap.practice`; registry also binds `session.wrap.qualifying` and `session.wrap.race` (`SESSION_WRAP_BRANCH_BEAT_IDS`, `SESSION_WRAP_PRIMARY_BEAT_ID`).
 
@@ -99,7 +99,7 @@ Taxonomy constants (no dedicated wires; dispositions on existing inventory):
 
 Helper: `unknown_tow_teleport_outcomes_are_defined()`.
 
-Helpers (full): `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`, `incident_cycle_phase_order_is_monotonic()`, `incident_stories_have_explicit_terminals()`, `incident_branch_beats_are_documented()`, `session_flag_branch_beats_are_documented()`, `session_wrap_branch_beats_are_documented()`, `closeout_stories_are_separated()`, `unknown_tow_teleport_outcomes_are_defined()`, `en_patterns_and_tts_slots_are_curated()`.
+Helpers (full): `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `pit_cycle_phase_order_is_monotonic()`, `pit_cycle_stories_have_explicit_terminals()`, `incident_cycle_phase_order_is_monotonic()`, `incident_stories_have_explicit_terminals()`, `incident_branch_beats_are_documented()`, `session_flag_branch_beats_are_documented()`, `session_wrap_branch_beats_are_documented()`, `closeout_stories_are_separated()`, `unknown_tow_teleport_outcomes_are_defined()`, `en_patterns_and_tts_slots_are_curated()`, `ops_family_activation_evidence_is_complete()`.
 
 ## AC locks (Slices 1–6)
 
@@ -113,6 +113,7 @@ Helpers (full): `ops_family_rows()`, `row_for_wire_id()`, `rows_by_migration_sta
 - **SESSION_WRAP branch beats** — primary `session.wrap.practice`; branch list `session.wrap.practice`, `session.wrap.qualifying`, `session.wrap.race` documented in row notes.
 - **Unknown / tow / teleport** — taxonomy constants defined; every wire invalidates on `hero_teleport`; terminals include `unknown_*_explicit`; aftermath/recovery encode tow (+ recovery teleport); notes forbid invention; `OPS_WIRE_IDS` still **13**.
 - **EN patterns / TTS** — every wire ≥4 catalog pattern ids + claim surfaces + TTS slots; closeout/pit/flag/incident adversarial separations; `en_patterns_and_tts_slots_are_curated()`.
+- **Observational shadow** — inventory `shadow`; `FAMILY_ROUTE` pit/incident → shadow; fail-soft evidence recorded; no live speech ownership.
 
 ## Slice 6 — EN patterns + adversarial tests
 
@@ -129,7 +130,17 @@ Helper: `en_patterns_and_tts_slots_are_curated()`.
 
 ## Later #276 slices
 
-Deferred: shadow activation; COMMENTARY_ENGINE/CONFIG/API on activation.
+## Slice 7 — observational shadow activation
+
+- Inventory: every ops wire `migration_status=shadow`.
+- `FAMILY_ROUTE["pit"]` / `FAMILY_ROUTE["incident"]` → `shadow` (session already shadow).
+- Routing: `BACK_UNDER_WAY` → `incident`; `SESSION_FLAG` → `session`.
+- Evidence: `ops_family_activation_evidence.py` — EN pattern counts, invalidate/terminal counts, shadow route, fail-soft `observation_failed`.
+- Helper: `ops_family_activation_evidence_is_complete()`.
+
+## Later
+
+Deferred: live `v2` speech cutover; CONFIG.md/API.md keys/endpoints (none for private route table). COMMENTARY_ENGINE documents observational harness.
 
 ## Docs / config
 

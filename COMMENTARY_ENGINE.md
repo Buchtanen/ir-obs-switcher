@@ -357,3 +357,14 @@ in-module `FAMILY_ROUTE` table in `events/legacy_v2_shadow_compare.py`. This is
 **not** `graph_runtime` `legacy|shadow|active` speech ownership and does **not**
 add CONFIG.md keys or API.md endpoints. Live audible cutover remains deferred;
 the temporary harness stays on the final-PR exclusion list with #272.
+
+
+## Wave G / #276 ops-family shadow (branch harness)
+
+Ops-family migration (#276) activates **observational** shadow compare for
+`pit` + `incident` (session closeout already shadow via #274) via the private
+in-module `FAMILY_ROUTE` table in `events/legacy_v2_shadow_compare.py`. This is
+**not** `graph_runtime` `legacy|shadow|active` speech ownership and does **not**
+add CONFIG.md keys or API.md endpoints. Live audible cutover remains deferred;
+the temporary harness stays on the final-PR exclusion list with #272.
+

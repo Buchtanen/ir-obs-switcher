@@ -1,4 +1,4 @@
-"""#276 Slices 1-6 — ops family map (pit/incident/flags/closeout + unknown/tow/teleport + EN patterns)."""
+"""#276 Slices 1-7 — ops family map (pit/incident/flags/closeout + unknown/tow/teleport + EN patterns + observational shadow)."""
 
 from __future__ import annotations
 
@@ -244,10 +244,10 @@ def test_ops_family_rows_cover_full_ops_inventory() -> None:
     assert all(isinstance(row, OpsFamilyRow) for row in rows)
 
 
-def test_every_ops_row_is_legacy_before_shadow_cutover() -> None:
-    assert migration_status_by_wire_id() == dict.fromkeys(OPS_WIRE_IDS, "legacy")
-    assert len(rows_by_migration_status("legacy")) == 13
-    assert rows_by_migration_status("shadow") == ()
+def test_every_ops_row_is_observational_shadow() -> None:
+    assert migration_status_by_wire_id() == dict.fromkeys(OPS_WIRE_IDS, "shadow")
+    assert len(rows_by_migration_status("shadow")) == 13
+    assert rows_by_migration_status("legacy") == ()
     assert rows_by_migration_status("v2") == ()
 
 

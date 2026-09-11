@@ -56,11 +56,13 @@ def test_lap_family_routes_to_shadow_via_private_table() -> None:
 
 def test_unmigrated_families_stay_legacy_inside_branch() -> None:
     migrated = {name for name, route in FAMILY_ROUTE.items() if route != "legacy"}
-    assert migrated == {"lap", "position", "session", "timing"}
+    assert migrated == {"incident", "lap", "pit", "position", "session", "timing"}
     unmigrated = unmigrated_families()
     assert "timing" not in unmigrated
+    assert "pit" not in unmigrated
+    assert "incident" not in unmigrated
     assert "battle" in unmigrated
-    assert "pit" in unmigrated
+    assert "bio" in unmigrated
     assert "position" not in unmigrated
     assert "session" not in unmigrated
     assert all(route_for_family(name) == "legacy" for name in unmigrated)
@@ -308,3 +310,12 @@ def test_position_family_shadow_compare_stays_observation_only() -> None:
     assert result.route == "shadow"
     assert result.matched is True
     assert result.speech_effects == ()
+
+
+def test_ops_wires_route_to_shadow_families() -> None:
+    assert family_for_event_type("PIT_ENTRY") == "pit"
+    assert family_for_event_type("BACK_UNDER_WAY") == "incident"
+    assert family_for_event_type("INCIDENT_AFTERMATH") == "incident"
+    assert family_for_event_type("SESSION_FLAG") == "session"
+    assert route_for_family("pit") == "shadow"
+    assert route_for_family("incident") == "shadow"

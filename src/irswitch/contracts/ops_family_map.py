@@ -1,11 +1,12 @@
-"""#276 ops family migration map — pit + incident + flag + closeout + unknown/tow/teleport + EN patterns (Slices 1–6).
+"""#276 ops family migration map — pit + incident + flag + closeout + unknown/tow/teleport + EN patterns + observational shadow (Slices 1–7).
 
 Maps pit-cycle and incident/aftermath/recovery wire identifiers onto legacy
 emitters, adapters, beat/story routes, predicates, realization families,
 policy TTL and tape channels.
 
-Slices 1–6 record these families as ``legacy``. They do **not** rewrite frozen
-``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
+Slices 1–7 record these families as observational ``shadow``. They do **not** rewrite frozen
+``docs/v2.0.0/machine/*`` hashes and do **not** cut over live ``v2`` speech.
+Private ``FAMILY_ROUTE["pit"]`` / ``FAMILY_ROUTE["incident"]`` flip to ``shadow`` only.
 """
 
 from __future__ import annotations
@@ -773,7 +774,7 @@ def _resolve_beat_ids(
 
 
 def ops_family_rows() -> tuple[OpsFamilyRow, ...]:
-    """Return the closed ops migration inventory (Slices 1–4: pit + incident + flag + closeout, legacy)."""
+    """Return the closed ops migration inventory (Slices 1–7: observational shadow)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -834,7 +835,7 @@ def ops_family_rows() -> tuple[OpsFamilyRow, ...]:
                 pit_phase=static.pit_phase,
                 incident_phase=static.incident_phase,
                 scope_kind=static.scope_kind,
-                migration_status="legacy",
+                migration_status="shadow",
                 invalidate_reasons=static.invalidate_reasons,
                 terminal_reasons=static.terminal_reasons,
                 branch_beat_ids=branch_beat_ids,
