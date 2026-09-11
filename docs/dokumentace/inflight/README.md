@@ -788,7 +788,7 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 | Schema | `docs/v2.0.0/machine/api-contracts.schema.json` tape `{size, purposeCounts}` |
 | Goldens | `status_component_tape_counters.json`; existing tape goldens extended with zero stubs |
 | Tests | `tests/test_narrative_ingress.py` (+2 rows), `tests/test_narrative_tape_queue.py` cumulative drop row |
-| Scope | Branch-only; atomic task open (no checkbox flip); per-`tape_channel` funnel counters remain next slice |
+| Scope | Branch-only; atomic task **done** @ integration `606ac8f` (feat `aed3d1b` + import fix); per-`tape_channel` funnel counters remain next slice |
 
 
 ### #284 #273 ManualAdmissionLatch slice lookup
