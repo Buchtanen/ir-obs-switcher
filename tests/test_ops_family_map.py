@@ -1,4 +1,4 @@
-"""#276 Slices 1-2 — ops family map (pit cycle + incident/aftermath/recovery)."""
+"""#276 Slices 1-3 — ops family map (pit + incident + session flags)."""
 
 from __future__ import annotations
 
@@ -14,11 +14,14 @@ from irswitch.contracts.ops_family_map import (
     INCIDENT_CYCLE_PHASE_ORDER,
     INCIDENT_PRIMARY_BEAT_ID,
     INCIDENT_TERMINAL_WIRE_IDS,
+    OPS_FLAG_WIRE_IDS,
     OPS_INCIDENT_WIRE_IDS,
     OPS_PIT_WIRE_IDS,
     OPS_WIRE_IDS,
     PIT_CYCLE_PHASE_ORDER,
     PIT_TERMINAL_WIRE_IDS,
+    SESSION_FLAG_BRANCH_BEAT_IDS,
+    SESSION_FLAG_PRIMARY_BEAT_ID,
     OpsFamilyRow,
     incident_branch_beats_are_documented,
     incident_cycle_phase_order_is_monotonic,
@@ -29,6 +32,7 @@ from irswitch.contracts.ops_family_map import (
     pit_cycle_stories_have_explicit_terminals,
     row_for_wire_id,
     rows_by_migration_status,
+    session_flag_branch_beats_are_documented,
 )
 from irswitch.contracts.primitives import ContractViolation
 from irswitch.contracts.resources import packaged_schema_bytes
@@ -163,21 +167,37 @@ _EXPECT = {
         'terminal': True,
         'branch_beat_ids': ('incident.recovery',),
     },
+    'SESSION_FLAG': {
+        'beat_id': 'session.flag.yellow',
+        'beat_role': 'control',
+        'policy_id': 'critical',
+        'outcome_ttl_ms': 45000,
+        'pit_phase': None,
+        'incident_phase': None,
+        'scope_kind': 'flag_control',
+        'legacy_node_id': 'session_flag_yellow',
+        'story_routes': ('session_occurrence', 'single_result'),
+        'realization_family': 'session.flag',
+        'terminal': True,
+        'branch_beat_ids': ('session.flag.yellow', 'session.flag.green', 'session.checkered'),
+    },
 }
 
 
-def test_ops_family_rows_cover_pit_and_incident_inventory() -> None:
+def test_ops_family_rows_cover_pit_incident_and_flag_inventory() -> None:
     rows = ops_family_rows()
     assert tuple(row.wire_id for row in rows) == OPS_WIRE_IDS
     assert OPS_WIRE_IDS[: len(OPS_PIT_WIRE_IDS)] == OPS_PIT_WIRE_IDS
-    assert OPS_WIRE_IDS[len(OPS_PIT_WIRE_IDS) :] == OPS_INCIDENT_WIRE_IDS
-    assert len(rows) == 9
+    mid = len(OPS_PIT_WIRE_IDS)
+    assert OPS_WIRE_IDS[mid : mid + len(OPS_INCIDENT_WIRE_IDS)] == OPS_INCIDENT_WIRE_IDS
+    assert OPS_WIRE_IDS[mid + len(OPS_INCIDENT_WIRE_IDS) :] == OPS_FLAG_WIRE_IDS
+    assert len(rows) == 10
     assert all(isinstance(row, OpsFamilyRow) for row in rows)
 
 
 def test_every_ops_row_is_legacy_before_shadow_cutover() -> None:
     assert migration_status_by_wire_id() == dict.fromkeys(OPS_WIRE_IDS, "legacy")
-    assert len(rows_by_migration_status("legacy")) == 9
+    assert len(rows_by_migration_status("legacy")) == 10
     assert rows_by_migration_status("shadow") == ()
     assert rows_by_migration_status("v2") == ()
 
@@ -230,7 +250,7 @@ def test_emitters_and_adapters_are_documented() -> None:
     for row in ops_family_rows():
         assert "." in row.emitter_module and ":" in row.emitter_module
         assert "." in row.adapter_module and ":" in row.adapter_module
-        assert row.policy_id in {"live_story", "result", "context"}
+        assert row.policy_id in {"live_story", "result", "context", "critical"}
         assert row.outcome_ttl_ms is not None and row.outcome_ttl_ms > 0
         assert row.invalidate_reasons
 
@@ -279,6 +299,24 @@ def test_incident_branch_beats_are_documented() -> None:
     row = row_for_wire_id("INCIDENT")
     assert row.beat_id == INCIDENT_PRIMARY_BEAT_ID
     assert row.branch_beat_ids == INCIDENT_BRANCH_BEAT_IDS
+
+
+def test_session_flag_branch_beats_are_documented() -> None:
+    assert OPS_FLAG_WIRE_IDS == ("SESSION_FLAG",)
+    assert SESSION_FLAG_PRIMARY_BEAT_ID == "session.flag.yellow"
+    assert SESSION_FLAG_BRANCH_BEAT_IDS == (
+        "session.flag.yellow",
+        "session.flag.green",
+        "session.checkered",
+    )
+    assert session_flag_branch_beats_are_documented() is True
+    row = row_for_wire_id("SESSION_FLAG")
+    assert row.beat_id == SESSION_FLAG_PRIMARY_BEAT_ID
+    assert row.branch_beat_ids == SESSION_FLAG_BRANCH_BEAT_IDS
+    assert row.scope_kind == "flag_control"
+    assert row.terminal_reasons
+    assert "checkered" in row.notes.lower()
+    assert "hero finish" in row.notes.lower() or "session wrap" in row.notes.lower()
 
 
 def test_row_for_unknown_wire_raises() -> None:

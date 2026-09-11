@@ -1,4 +1,4 @@
-"""#276 ops family migration map — pit + incident inventory (Slices 1–2).
+"""#276 ops family migration map — pit + incident + session-flag inventory (Slices 1–3).
 
 Maps pit-cycle and incident/aftermath/recovery wire identifiers onto legacy
 emitters, adapters, beat/story routes, predicates, realization families,
@@ -27,6 +27,7 @@ ScopeKind = Literal[
     "incident_event",
     "incident_aftermath",
     "incident_recovery",
+    "flag_control",
 ]
 
 # Slice 1 inventory: pit entry → service → exit/outcome cycle.
@@ -46,7 +47,12 @@ OPS_INCIDENT_WIRE_IDS: tuple[str, ...] = (
     "BACK_UNDER_WAY",
 )
 
-OPS_WIRE_IDS: tuple[str, ...] = OPS_PIT_WIRE_IDS + OPS_INCIDENT_WIRE_IDS
+# Slice 3 inventory: session yellow / green / checkered flag branches.
+OPS_FLAG_WIRE_IDS: tuple[str, ...] = (
+    "SESSION_FLAG",
+)
+
+OPS_WIRE_IDS: tuple[str, ...] = OPS_PIT_WIRE_IDS + OPS_INCIDENT_WIRE_IDS + OPS_FLAG_WIRE_IDS
 
 # Historical pit-cycle phase order (service may visit lane and/or stopped/released).
 PIT_CYCLE_PHASE_ORDER: tuple[PitPhase, ...] = (
@@ -77,6 +83,14 @@ INCIDENT_BRANCH_BEAT_IDS: tuple[str, ...] = (
     "incident.unclassified",
 )
 INCIDENT_PRIMARY_BEAT_ID = "incident.off_track"
+
+# SESSION_FLAG freeze binds three peer flag beats; primary is yellow (registry order).
+SESSION_FLAG_BRANCH_BEAT_IDS: tuple[str, ...] = (
+    "session.flag.yellow",
+    "session.flag.green",
+    "session.checkered",
+)
+SESSION_FLAG_PRIMARY_BEAT_ID = "session.flag.yellow"
 
 
 @dataclass(frozen=True, slots=True)
@@ -289,6 +303,36 @@ _STATIC: dict[str, _StaticSource] = {
             "motion evidence stays stalled/unknown (no invention)."
         ),
     ),
+    "SESSION_FLAG": _StaticSource(
+        legacy_node_id="session_flag_yellow",
+        race_event_name=None,
+        emitter_module="irswitch.race.flags:SessionFlagFsm",
+        adapter_module="irswitch.race.flags:SessionFlagFsm",
+        pit_phase=None,
+        incident_phase=None,
+        scope_kind="flag_control",
+        invalidate_reasons=(
+            "stream_ended",
+            "session_reset",
+            "hero_teleport",
+            "flag_cleared",
+            "outside_race_mode",
+        ),
+        terminal_reasons=(
+            "checkered_branch_spoken",
+            "flag_cycle_closed",
+            "unknown_flag_explicit",
+        ),
+        primary_beat_id=SESSION_FLAG_PRIMARY_BEAT_ID,
+        notes=(
+            "Session flag wire; SessionFlagFsm rising-edge kinds yellow|green|checkered map onto "
+            "branch beats session.flag.yellow|session.flag.green|session.checkered. Start lights "
+            "are ignored. Checkered branch must not be treated as hero finish or session wrap "
+            "(those stay separate stories). Missing/unclear flag evidence stays unknown — never "
+            "invent yellow/green/checkered."
+        ),
+    ),
+
 }
 
 
@@ -371,7 +415,7 @@ def _resolve_beat_ids(
 
 
 def ops_family_rows() -> tuple[OpsFamilyRow, ...]:
-    """Return the closed ops migration inventory (Slices 1–2: pit + incident, legacy)."""
+    """Return the closed ops migration inventory (Slices 1–3: pit + incident + flag, legacy)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -533,3 +577,22 @@ def incident_branch_beats_are_documented() -> bool:
     if "unknown" not in lowered and "unclassified" not in lowered:
         return False
     return True
+
+
+def session_flag_branch_beats_are_documented() -> bool:
+    """Slice 3 helper: SESSION_FLAG documents yellow + green + checkered branch beats."""
+
+    row = row_for_wire_id("SESSION_FLAG")
+    if row.beat_id != SESSION_FLAG_PRIMARY_BEAT_ID:
+        return False
+    if row.branch_beat_ids != SESSION_FLAG_BRANCH_BEAT_IDS:
+        return False
+    lowered = row.notes.lower()
+    if "yellow" not in lowered or "green" not in lowered or "checkered" not in lowered:
+        return False
+    if "hero finish" not in lowered and "session wrap" not in lowered:
+        return False
+    if not row.invalidate_reasons or not row.terminal_reasons:
+        return False
+    return True
+
