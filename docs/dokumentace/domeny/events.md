@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 7 shadow; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 7 shadow; #277 slice 1 open; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
 
@@ -51,6 +51,22 @@ Slices 1–6 inventory for Wave G #276 (all `migration_status=shadow`; `OPS_WIRE
 **Slice 5 taxonomy:** `OPS_UNKNOWN_OUTCOME_REASON_IDS` (incl. `unknown_exit_explicit` + prior `unknown_*_explicit`); `OPS_TOW_OUTCOME_REASON_IDS` (`hero_towing`, `tow_keeps_stalled`, `tow_blocks_recovery`); `OPS_TELEPORT_OUTCOME_REASON_IDS` (`hero_teleport`, `esc_teleport`, `teleport_invalidates_motion`). Every ops wire invalidates on `hero_teleport`; terminals include an `unknown_*_explicit` reason (`PIT_EXIT` → `unknown_exit_explicit`); `INCIDENT_AFTERMATH` / `BACK_UNDER_WAY` encode tow (+ recovery teleport) invalidation with notes that forbid invention.
 
 Detail: [ops-family-migration.md](../../v2.0.0/ops-family-migration.md). `FAMILY_ROUTE` pit/incident → shadow (observational). **Docs: CONFIG.md / API.md unchanged.**
+
+
+
+## Context family migration map (`contracts/context_family_map.py`)
+
+Slice 1 inventory for Wave G #277 (all `migration_status=legacy`; `CONTEXT_WIRE_IDS` **4** = session/stream leftovers only):
+
+| Helper | Role |
+| --- | --- |
+| `context_family_rows()` | Closed rows for `STREAM_START` / `SESSION_PREVIEW` / `ENTER_CAR` / `FINAL_LAP` |
+| `context_session_phase_order_is_monotonic()` | Slice 1: stream_start → preview → enter_car → final_lap |
+| `enter_car_branch_beats_are_documented()` | Stage-routed enter-car beats |
+| `context_session_stories_have_explicit_invalidation()` | Invalidate (+ FINAL_LAP terminal) |
+| `owned_elsewhere_session_wires_are_documented()` | Intros/wrap/finish stay on timing/ops maps |
+
+Detail: [context-family-migration.md](../../v2.0.0/context-family-migration.md). No `FAMILY_ROUTE` flip. **Docs: CONFIG.md / API.md / COMMENTARY_ENGINE.md unchanged.**
 
 
 ## Race-outcome migration map (`contracts/race_outcome_family_map.py`)
