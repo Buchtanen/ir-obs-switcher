@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 22 — offline mixed-boundary config drivers for F36 (no live Windows §24.9 GO).
+**Status:** Slice 23 — offline refreshed recovery-barrier drivers for F19 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -328,7 +328,22 @@
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 
+## Slice 23 — F19 refreshed recovery barrier runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F19` (refreshed recovery barrier jumps over stale queued context) |
+| Pytest | `tests/test_vertical_slice_recovery_barrier_runtime.py` |
+| Inventory | **44/44** wired; **0** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 23):**
+- Machine projection for F19 still matches frozen expectations.
+- Runtime drivers prove in-place recovery refresh jumps to revision 110, expands the loss range, invents no opportunities for lost revisions, treats queued revisions 105–109 as stale audited no-ops, applies revision 111 normally, and replays equivalently.
+- NarrativeRuntime now latches recovery history incompleteness and ignores older/equal context revisions after the barrier projection.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+
 ## Later slices
 
-- Runtime NarrativeRuntime drivers for remaining F scenarios (F19).
-- Live Windows/iRSDK/OBS/Ollama/TTS §24.9 gates.
+- Live Windows/iRSDK/OBS/Ollama/TTS §24.9 gates (offline F inventory complete).

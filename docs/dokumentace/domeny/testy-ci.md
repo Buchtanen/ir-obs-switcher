@@ -339,3 +339,17 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 | Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F36 row; hashes **unchanged**) |
 
 **Slice 22 locks:** F36 gen6 plan freeze across gen7 install, exact boundary groups with redacted utterance patch, no old-generation TTS backend fallback, effective/desired manifest hashes after available boundaries, explicit barrier config-transition loss, pending recomputation on gen8 revert, invalid reload with no generation + atomic automatic disable while preserving last valid manual TTS backend; machine projection still matches frozen expectations; gap inventory **43/44** wired, **1** unwired.
+
+
+## #278 vertical-slice recovery barrier runtime (Slice 23)
+
+**Status:** offline F19 drivers on branch `cursor/vertical-slice-recovery-barrier-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Artifact | Path |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_recovery_barrier_runtime.py`](../../../tests/test_vertical_slice_recovery_barrier_runtime.py) (**2** tests: **1** parametrized machine projection + F19 runtime driver) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **44/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 23](../../v2.0.0/vertical-slice-acceptance.md#slice-23--f19-refreshed-recovery-barrier-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F19 row; hashes **unchanged**) |
+
+**Slice 23 locks:** F19 in-place recovery refresh jumps to revision 110, expands loss range, invents no lost opportunities, treats queued revisions 105–109 as stale audited no-ops, applies revision 111, and replays equivalently; NarrativeRuntime latches recovery history incompleteness; machine projection still matches frozen expectations; gap inventory **44/44** wired, **0** unwired.
