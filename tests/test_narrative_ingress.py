@@ -2045,3 +2045,82 @@ def test_project_validate_response_rejects_malformed_request() -> None:
     except ContractViolation:
         return
     raise AssertionError("expected ContractViolation")
+
+
+def test_project_validate_response_rejects_incomplete_atomic_fact() -> None:
+    """Offline validate reuses AtomicFact.from_dict — subset facts are 400 (#273)."""
+
+    import copy
+    import json
+    from pathlib import Path
+
+    from irswitch.contracts.primitives import ContractViolation
+    from irswitch.events.narrative_validate_projection import project_validate_response
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "validate_request.json").read_text(encoding="utf-8"))
+    request = copy.deepcopy(request)
+    request["factBindings"][0].pop("attributes")
+    try:
+        project_validate_response(request)
+    except ContractViolation as exc:
+        assert "AtomicFact" in str(exc) or "factBindings" in str(exc)
+        return
+    raise AssertionError("expected ContractViolation for incomplete AtomicFact")
+
+
+def test_project_validate_response_rejects_unknown_fact_field() -> None:
+    import copy
+    import json
+    from pathlib import Path
+
+    from irswitch.contracts.primitives import ContractViolation
+    from irswitch.events.narrative_validate_projection import project_validate_response
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "validate_request.json").read_text(encoding="utf-8"))
+    request = copy.deepcopy(request)
+    request["factBindings"][0]["extraField"] = "nope"
+    try:
+        project_validate_response(request)
+    except ContractViolation as exc:
+        assert "unknown" in str(exc).lower() or "AtomicFact" in str(exc)
+        return
+    raise AssertionError("expected ContractViolation for unknown AtomicFact field")
+
+
+def test_project_validate_response_rejects_unregistered_predicate() -> None:
+    import copy
+    import json
+    from pathlib import Path
+
+    from irswitch.contracts.primitives import ContractViolation
+    from irswitch.events.narrative_validate_projection import project_validate_response
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "validate_request.json").read_text(encoding="utf-8"))
+    request = copy.deepcopy(request)
+    request["factBindings"][0]["predicate"] = "not.a.registered.predicate"
+    try:
+        project_validate_response(request)
+    except ContractViolation as exc:
+        assert "unregistered" in str(exc).lower() or "predicate" in str(exc).lower()
+        return
+    raise AssertionError("expected ContractViolation for unregistered predicate")
+
+
+def test_project_validate_response_rejects_unknown_request_field() -> None:
+    import json
+    from pathlib import Path
+
+    from irswitch.contracts.primitives import ContractViolation
+    from irswitch.events.narrative_validate_projection import project_validate_response
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "validate_request.json").read_text(encoding="utf-8"))
+    request = {**request, "force": True}
+    try:
+        project_validate_response(request)
+    except ContractViolation:
+        return
+    raise AssertionError("expected ContractViolation for unknown ValidateRequest field")

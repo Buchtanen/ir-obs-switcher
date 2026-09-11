@@ -12,6 +12,7 @@ import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from irswitch.contracts.fact import AtomicFact
 from irswitch.contracts.primitives import ContractViolation
 
 SCHEMA_VERSION = "commentary-runtime/2"
@@ -19,6 +20,16 @@ FACT_SCHEMA = "atomic-fact/2"
 _BEAT_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _ACTOR_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 _ISSUE_MESSAGE_CAP = 256
+_VALIDATE_REQUEST_KEYS = frozenset(
+    {
+        "schemaVersion",
+        "text",
+        "beatId",
+        "evaluationAtMonoMs",
+        "actorBindings",
+        "factBindings",
+    }
+)
 
 _ACTOR_REVERSED_MESSAGE = "Actor direction is reversed."
 
@@ -77,43 +88,30 @@ def _parse_actor_bindings(raw: object) -> list[tuple[str, tuple[str, ...]]]:
     return bindings
 
 
-def _parse_fact_bindings(raw: object) -> list[dict[str, Any]]:
+def _parse_fact_bindings(raw: object) -> list[AtomicFact]:
+    """Parse factBindings via AtomicFact.from_dict + FactRegistry (#273 design-freeze).
+
+    Every binding must carry the exact ``atomic-fact/2`` field set. Predicate /
+    attribute IDs and scalar types come from the frozen fact registry. Incomplete
+    rows, unknown fields, and unregistered predicates raise ``ContractViolation``.
+    """
+
     if not isinstance(raw, list):
         raise ContractViolation("factBindings must be an array")
     if not raw or len(raw) > 32:
         raise ContractViolation("factBindings must contain 1–32 facts")
     seen_ids: set[str] = set()
-    facts: list[dict[str, Any]] = []
+    facts: list[AtomicFact] = []
     for index, item in enumerate(raw):
-        row = _require_mapping(item, f"factBindings[{index}]")
-        schema = row.get("schemaVersion")
-        if schema != FACT_SCHEMA:
-            raise ContractViolation(f"factBindings[{index}].schemaVersion must be {FACT_SCHEMA}")
-        fact_id = _require_string(row.get("factId"), f"factBindings[{index}].factId")
+        try:
+            fact = AtomicFact.from_dict(item)
+        except ContractViolation as exc:
+            raise ContractViolation(f"factBindings[{index}]: {exc}") from exc
+        fact_id = str(fact.fact_id)
         if fact_id in seen_ids:
             raise ContractViolation("factBindings factId values must be unique")
         seen_ids.add(fact_id)
-        predicate = _require_string(row.get("predicate"), f"factBindings[{index}].predicate")
-        if not _ACTOR_ID.match(predicate):
-            raise ContractViolation(f"factBindings[{index}].predicate is invalid")
-        subject = row.get("subjectId")
-        object_id = row.get("objectId")
-        if subject is not None:
-            subject = _require_string(subject, f"factBindings[{index}].subjectId")
-            if not _ACTOR_ID.match(subject):
-                raise ContractViolation(f"factBindings[{index}].subjectId is invalid")
-        if object_id is not None:
-            object_id = _require_string(object_id, f"factBindings[{index}].objectId")
-            if not _ACTOR_ID.match(object_id):
-                raise ContractViolation(f"factBindings[{index}].objectId is invalid")
-        facts.append(
-            {
-                "factId": fact_id,
-                "predicate": predicate,
-                "subjectId": subject,
-                "objectId": object_id,
-            }
-        )
+        facts.append(fact)
     return facts
 
 
@@ -174,6 +172,12 @@ def project_validate_response(request: Mapping[str, Any]) -> dict[str, Any]:
     """
 
     body = _require_mapping(request, "ValidateRequest")
+    if frozenset(body) != _VALIDATE_REQUEST_KEYS:
+        missing = sorted(_VALIDATE_REQUEST_KEYS - frozenset(body))
+        unknown = sorted(frozenset(body) - _VALIDATE_REQUEST_KEYS)
+        raise ContractViolation(
+            f"invalid ValidateRequest fields; missing={missing}, unknown={unknown}"
+        )
     if body.get("schemaVersion") != SCHEMA_VERSION:
         raise ContractViolation("schemaVersion must be commentary-runtime/2")
     text = _require_string(body.get("text"), "text")
@@ -193,10 +197,10 @@ def project_validate_response(request: Mapping[str, Any]) -> dict[str, Any]:
 
     required_actors: set[str] = set()
     for fact in fact_bindings:
-        if fact["subjectId"] is not None:
-            required_actors.add(str(fact["subjectId"]))
-        if fact["objectId"] is not None:
-            required_actors.add(str(fact["objectId"]))
+        if fact.subject_id is not None:
+            required_actors.add(str(fact.subject_id))
+        if fact.object_id is not None:
+            required_actors.add(str(fact.object_id))
     bound_actors = {actor_id for actor_id, _aliases in actor_bindings}
     if bound_actors != required_actors:
         raise ContractViolation("actorBindings must cover fact actors exactly")
@@ -207,9 +211,9 @@ def project_validate_response(request: Mapping[str, Any]) -> dict[str, Any]:
         hits = _first_alias_hits(text, actor_bindings)
         ordered_actors = [actor_id for _idx, actor_id in hits]
         for fact in fact_bindings:
-            subject = fact["subjectId"]
-            object_id = fact["objectId"]
-            predicate = str(fact["predicate"])
+            subject = fact.subject_id
+            object_id = fact.object_id
+            predicate = str(fact.predicate)
             if subject is None or object_id is None:
                 claims.append(
                     {
