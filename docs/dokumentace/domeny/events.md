@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 slice 3 EN patterns; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 slice 4 verifier pairs; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/race-outcome-story-ttl-274-cad3` (#274, slice 2):** race-outcome story/beat roles + correlation + outcome TTL — [§ #274 map](../inflight/README.md#274-race-outcome-family-map-slice-2-lookup) · [race-outcome-migration.md](../../v2.0.0/race-outcome-migration.md).
 

@@ -1,6 +1,6 @@
 # #274 Race-outcome family migration
 
-**Status:** Slice 3 — EN realization patterns (still all `legacy`) (all families still `legacy`).  
+**Status:** Slice 4 — verifier minimal pairs (still all `legacy`) (all families still `legacy`).  
 **Issue:** [#274](https://github.com/Buchtanen/ir-obs-switcher/issues/274)  
 **Module:** `src/irswitch/contracts/race_outcome_family_map.py`  
 **Tests:** `tests/test_race_outcome_family_map.py`  
@@ -62,7 +62,7 @@ Contract locks:
 ## Known later-slice gaps
 
 - Shadow `FAMILY_ROUTE["position"]` still `legacy`; bridge alias drift vs wire ids above.
-- EN pattern curation, verifier minimal pairs, shadow then per-family activation remain open on #274.
+- Shadow then per-family activation remain open on #274.
 - Deeper speak-path proof for “self-contained if opening unspoken” stays open (policy flag + existing retention regression; not yet live activation).
 
 
@@ -81,9 +81,27 @@ Curated without rewriting frozen `machine/realization-pattern-cards.json` hashes
 
 Rows expose `en_pattern_ids`, `en_claim_surfaces`, `en_forbidden_tokens`. Creatable families require ≥4 catalog-backed EN pattern ids whose `beatId`/`family` match the inventory row.
 
+
+## Verifier minimal pairs (slice 4)
+
+Module: `src/irswitch/contracts/race_outcome_verifier_pairs.py` (tests: `tests/test_race_outcome_verifier_pairs.py`).
+
+Closed accept/reject inventory for each creatable wire, exercised through `SemanticVerifier` without rewriting frozen `machine/realization-corpus.json`:
+
+| Wire | Positive | Reject axes |
+| --- | --- | --- |
+| `OVERTAKE` | passer→passed claim | actor reverse; inverted “is passed by” |
+| `POSITION_GAINED` | gain ordinal claim | loss wording under gain frame |
+| `POSITION_LOST` | loss ordinal claim | gain wording under loss frame |
+| `LEADER_CHANGE` | new leader claim | actor reverse (old leader as subject) |
+| `FINISH` | observed finish position | unsafe negation / polarity mismatch |
+| `OVERTAKEN` | — | no pairs (non-creatable alias) |
+
+Cross-check: gain and loss positive utterances cannot both accept when frames are swapped.
+
 ## Next slices
 
 3. ~~EN realization patterns~~ (this slice)
-4. Verifier minimal pairs  
+4. ~~Verifier minimal pairs~~ (landed)  
 5. Shadow (`position` → `shadow` after routing fix)  
 6. Per-family activation (integration-only)
