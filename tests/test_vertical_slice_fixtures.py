@@ -34,6 +34,7 @@ WIRED_UNIT_COVERAGE: dict[str, tuple[str, ...]] = {
     "F10": ("tests/test_vertical_slice_silence_runtime.py",),
     "F15": ("tests/test_vertical_slice_expiry_runtime.py",),
     "F17": ("tests/test_vertical_slice_silence_runtime.py",),
+    "F21": ("tests/test_vertical_slice_partition_silence_runtime.py",),
     "F22": ("tests/test_stream_timeline.py",),
     "F23": ("tests/test_vertical_slice_policy_runtime.py",),
     "F24": ("tests/test_vertical_slice_expiry_runtime.py",),
@@ -42,6 +43,7 @@ WIRED_UNIT_COVERAGE: dict[str, tuple[str, ...]] = {
     "F31": ("tests/test_stream_timeline.py",),
     "F34": ("tests/test_narrative_tape_replay.py",),
     "F37": ("tests/test_vertical_slice_policy_runtime.py",),
+    "F42": ("tests/test_vertical_slice_partition_silence_runtime.py",),
     "F44": (
         "tests/test_narrative_capture_plan.py",
         "tests/test_narrative_capture_safety.py",
@@ -120,9 +122,11 @@ def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
     all_ids = {row["id"] for row in fixture_bundle["fixtures"]}
     assert set(WIRED_UNIT_COVERAGE) <= all_ids
     unwired = sorted(all_ids - set(WIRED_UNIT_COVERAGE))
-    assert len(unwired) == 24
+    assert len(unwired) == 22
+    assert "F21" not in unwired
     assert "F23" not in unwired
     assert "F37" not in unwired
+    assert "F42" not in unwired
     assert "F01" not in unwired
     assert "F10" not in unwired
     assert "F17" not in unwired
@@ -146,5 +150,7 @@ def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
     assert WIRED_UNIT_COVERAGE["F08"] == ("tests/test_vertical_slice_expiry_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F10"] == ("tests/test_vertical_slice_silence_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F17"] == ("tests/test_vertical_slice_silence_runtime.py",)
+    assert WIRED_UNIT_COVERAGE["F21"] == ("tests/test_vertical_slice_partition_silence_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F23"] == ("tests/test_vertical_slice_policy_runtime.py",)
+    assert WIRED_UNIT_COVERAGE["F42"] == ("tests/test_vertical_slice_partition_silence_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F37"] == ("tests/test_vertical_slice_policy_runtime.py",)
