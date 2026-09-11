@@ -46,6 +46,7 @@ REQUIRED_FIXTURES = (
     "error_component_unavailable.json",
     "error_mailbox_overloaded.json",
     "error_admission_timeout.json",
+    "status_stopped.json",
     "health_commentary_disabled.json",
     "health_commentary_ready.json",
     "health_commentary_ready_history_incomplete.json",

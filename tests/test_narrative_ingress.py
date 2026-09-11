@@ -1085,6 +1085,31 @@ def test_project_runtime_status_identity_golden_disabled() -> None:
     assert projection["status"] == expected["status"]
 
 
+def test_project_runtime_status_stopped_golden() -> None:
+    """#273 public enum: stopped status + null session-plan identity."""
+    import json
+    from pathlib import Path
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    runtime._runtime = "stopped"
+    projection = project_runtime_status(runtime.status())
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "status_stopped.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert projection["schemaVersion"] == expected["schemaVersion"]
+    assert projection["status"] == "stopped"
+    assert projection["language"] == "en"
+    assert projection["timeline"] == expected["timeline"]
+    assert projection["timeline"]["sessionPlan"] is None
+
+
 def test_project_runtime_status_timeline_session_null_golden() -> None:
     """#273 thin timeline session identity — all-or-none null stubs when idle."""
     import json

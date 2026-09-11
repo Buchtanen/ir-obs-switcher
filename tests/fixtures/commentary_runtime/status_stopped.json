@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "commentary-runtime/2",
+  "status": "stopped",
+  "language": "en",
+  "timeline": {
+    "broadcastEpoch": 0,
+    "streamEpoch": 0,
+    "narrativeRunActive": false,
+    "streamActive": null,
+    "streamState": "unknown",
+    "sessionPlan": null,
+    "sessionRef": null,
+    "occurrenceId": null,
+    "lineageId": null,
+    "stage": null,
+    "historyComplete": true
+  }
+}
