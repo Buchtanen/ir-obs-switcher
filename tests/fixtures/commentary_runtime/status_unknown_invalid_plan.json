@@ -1,0 +1,146 @@
+{
+  "byTapeChannel": {
+    "race.battle.closing": {
+      "accepted": 2,
+      "expired": 1,
+      "kick": 3,
+      "queued": 2,
+      "selected": 1,
+      "started": 1
+    }
+  },
+  "catalog": {
+    "beatCount": 64,
+    "eventIdentifierCount": 60,
+    "hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "schemaVersion": "narrative-catalog/2"
+  },
+  "components": {
+    "detectors": {
+      "disabled": [],
+      "reason": null,
+      "status": "ready"
+    },
+    "facts": {
+      "active": 87,
+      "historicalSummaries": 19,
+      "historyComplete": true,
+      "reason": null,
+      "status": "ready",
+      "viewRevision": 204
+    },
+    "llm": {
+      "configGeneration": 7,
+      "generation": 2,
+      "lastAttempt": {
+        "outcome": "succeeded",
+        "reducerLagMs": 3,
+        "requestId": "rr:12",
+        "terminalReason": null,
+        "totalMs": 530,
+        "ttfbMs": 82,
+        "ttftMs": 130
+      },
+      "model": "qwen3:4b-instruct-2507-q4_K_M",
+      "reason": null,
+      "residencyEvidence": "warmup_succeeded",
+      "status": "ready"
+    },
+    "tape": {
+      "drops": 0,
+      "dropsByPriority": {
+        "critical": 0,
+        "normal": 0,
+        "sample": 0
+      },
+      "path": null,
+      "purposeCounts": [],
+      "reason": null,
+      "size": 0,
+      "status": "disabled"
+    },
+    "tts": {
+      "backend": "supertonic",
+      "backendGeneration": 4,
+      "configGeneration": 7,
+      "quarantinedGeneration": null,
+      "reason": null,
+      "status": "ready",
+      "voice": "M1"
+    }
+  },
+  "config": {
+    "applySequence": 12,
+    "desiredGeneration": 7,
+    "desiredHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "effectiveHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "pendingChanges": [
+      {
+        "boundary": "next_stream",
+        "desiredGeneration": 7,
+        "key": "commentary.detector.battle_ahead_v1.max_closing_slope"
+      }
+    ],
+    "schemaVersion": "commentary-config/2"
+  },
+  "episodes": {
+    "active": 1,
+    "candidate": 0,
+    "resolved": 12,
+    "resolvedCapacity": 256,
+    "retainedCurrentCapacity": 64,
+    "suspended": 0
+  },
+  "language": "en",
+  "queues": {
+    "mailbox": {
+      "capacity": 64,
+      "depth": 0,
+      "overflows": 0
+    },
+    "opportunities": {
+      "capacity": 128,
+      "depth": 2,
+      "evicted": 0,
+      "expired": 4
+    }
+  },
+  "reason": "obs_state_unknown",
+  "schemaVersion": "commentary-runtime/2",
+  "speech": {
+    "acceptedAtMonoMs": null,
+    "backend": null,
+    "backendGeneration": null,
+    "beatId": null,
+    "dispatchedAtMonoMs": null,
+    "lastTerminal": {
+      "atMonoMs": 88710,
+      "reason": "completed",
+      "sourceKind": "narrative",
+      "utteranceId": "utt:17"
+    },
+    "opportunityId": null,
+    "sourceKind": null,
+    "state": "idle",
+    "utteranceId": null
+  },
+  "status": "degraded",
+  "timeline": {
+    "broadcastEpoch": 2,
+    "historyComplete": false,
+    "lineageId": null,
+    "narrativeRunActive": true,
+    "occurrenceId": null,
+    "sessionPlan": {
+      "reason": "session_plan_conflict",
+      "revision": 5,
+      "stages": [],
+      "valid": false
+    },
+    "sessionRef": null,
+    "stage": null,
+    "streamActive": null,
+    "streamEpoch": 3,
+    "streamState": "unknown"
+  }
+}

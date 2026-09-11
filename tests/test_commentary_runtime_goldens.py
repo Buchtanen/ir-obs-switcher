@@ -22,11 +22,14 @@ MACHINE_GOLDENS = ROOT / "docs" / "v2.0.0" / "machine" / "api-goldens.json"
 # Required frozen surface for status / decisions / validate / speak (+ speak errors).
 REQUIRED_FIXTURES = (
     "status_ready_library.json",
+    "status_ready.json",
+    "status_unknown_invalid_plan.json",
     "status_speech_idle.json",
     "status_identity_disabled.json",
     "status_identity_after_context.json",
     "status_timeline_session_null.json",
     "status_components_llm_tts.json",
+    "status_component_facts_evicted.json",
     "decisions_selected.json",
     "decisions_story_successor.json",
     "decisions_expired_ttl.json",
@@ -76,6 +79,34 @@ def test_error_goldens_match_machine_api_goldens() -> None:
         assert path.is_file(), f"missing fixture for {error_id}"
         fixture = json.loads(path.read_text(encoding="utf-8"))
         assert fixture == row["value"], f"{error_id} fixture drifted from machine golden"
+
+
+def test_status_ready_and_unknown_invalid_plan_match_machine_api_goldens() -> None:
+    """#273 design-freeze: materialize public-contracts status rows as exact fixtures."""
+
+    machine = json.loads(MACHINE_GOLDENS.read_text(encoding="utf-8"))
+    by_id = {row["id"]: row for row in machine["valid"]}
+    for status_id in ("status_ready", "status_unknown_invalid_plan"):
+        row = by_id[status_id]
+        path = FIXTURES / f"{status_id}.json"
+        fixture = json.loads(path.read_text(encoding="utf-8"))
+        assert fixture == row["value"], f"{status_id} fixture drifted from machine golden"
+        assert fixture["schemaVersion"] == "commentary-runtime/2"
+        assert "episodes" in fixture
+        assert fixture["episodes"]["retainedCurrentCapacity"] == 64
+        assert fixture["episodes"]["resolvedCapacity"] == 256
+    unknown = json.loads(
+        (FIXTURES / "status_unknown_invalid_plan.json").read_text(encoding="utf-8")
+    )
+    assert unknown["status"] == "degraded"
+    assert unknown["reason"] == "obs_state_unknown"
+    timeline = unknown["timeline"]
+    assert timeline["sessionRef"] is None
+    assert timeline["occurrenceId"] is None
+    assert timeline["lineageId"] is None
+    assert timeline["stage"] is None
+    assert timeline["historyComplete"] is False
+    assert timeline["sessionPlan"]["valid"] is False
 
 
 def _app_with_provider(provider: object | None) -> web.Application:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -720,14 +721,16 @@ def test_project_runtime_status_facts_degraded_after_capacity_eviction() -> None
         enqueued_mono_ms=6_000,
     )
     facts = project_runtime_status(runtime.status())["components"]["facts"]
-    assert facts == {
-        "status": "degraded",
-        "reason": "fact_capacity_evicted",
-        "viewRevision": 12,
-        "active": 2,
-        "historicalSummaries": 0,
-        "historyComplete": False,
-    }
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "status_component_facts_evicted.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert facts == expected
 
 
 def test_project_runtime_status_facts_unavailable_while_capacity_exhausted() -> None:

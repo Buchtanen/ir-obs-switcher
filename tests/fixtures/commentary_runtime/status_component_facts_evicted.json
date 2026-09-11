@@ -1,0 +1,8 @@
+{
+  "status": "degraded",
+  "reason": "fact_capacity_evicted",
+  "viewRevision": 12,
+  "active": 2,
+  "historicalSummaries": 0,
+  "historyComplete": false
+}
