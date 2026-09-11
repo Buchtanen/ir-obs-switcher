@@ -36,6 +36,8 @@ WIRED_UNIT_COVERAGE: dict[str, tuple[str, ...]] = {
     "F11": ("tests/test_vertical_slice_qwen_runtime.py",),
     "F12": ("tests/test_vertical_slice_manual_lexicon_runtime.py",),
     "F29": ("tests/test_vertical_slice_manual_lexicon_runtime.py",),
+    "F32": ("tests/test_vertical_slice_facts_freshness_runtime.py",),
+    "F38": ("tests/test_vertical_slice_facts_freshness_runtime.py",),
     "F13": ("tests/test_vertical_slice_mailbox_manual_runtime.py",),
     "F20": ("tests/test_vertical_slice_mailbox_manual_runtime.py",),
     "F15": ("tests/test_vertical_slice_expiry_runtime.py",),
@@ -128,11 +130,13 @@ def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
     all_ids = {row["id"] for row in fixture_bundle["fixtures"]}
     assert set(WIRED_UNIT_COVERAGE) <= all_ids
     unwired = sorted(all_ids - set(WIRED_UNIT_COVERAGE))
-    assert len(unwired) == 16
+    assert len(unwired) == 14
     assert "F09" not in unwired
     assert "F11" not in unwired
     assert "F12" not in unwired
     assert "F29" not in unwired
+    assert "F32" not in unwired
+    assert "F38" not in unwired
     assert "F13" not in unwired
     assert "F20" not in unwired
     assert "F21" not in unwired
@@ -164,6 +168,8 @@ def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
     assert WIRED_UNIT_COVERAGE["F11"] == ("tests/test_vertical_slice_qwen_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F12"] == ("tests/test_vertical_slice_manual_lexicon_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F29"] == ("tests/test_vertical_slice_manual_lexicon_runtime.py",)
+    assert WIRED_UNIT_COVERAGE["F32"] == ("tests/test_vertical_slice_facts_freshness_runtime.py",)
+    assert WIRED_UNIT_COVERAGE["F38"] == ("tests/test_vertical_slice_facts_freshness_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F13"] == ("tests/test_vertical_slice_mailbox_manual_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F20"] == ("tests/test_vertical_slice_mailbox_manual_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F10"] == ("tests/test_vertical_slice_silence_runtime.py",)
