@@ -1,10 +1,10 @@
 # #277 Context family migration (session / filler / weather / field / bio)
 
-**Status:** Slice 6 — leftovers + filler + weather/field + bio + long-silence + EN curation (`STREAM_START`, `SESSION_PREVIEW`, `ENTER_CAR`, `FINAL_LAP`, `PARADE_PAD`, `WEATHER_BRIEF`, `WEATHER_CHANGE`, `FIELD_FACT`, `SOF_BRIEF`, `HR_PRESSURE_RISING`; impulse `LONG_SILENCE_ELAPSED`; EN pattern inventory **68**; all inventory `legacy`; no `FAMILY_ROUTE` flip).
+**Status:** Slice 7 — leftovers + filler + weather/field + bio + long-silence + EN curation + inventory shadow (`STREAM_START`, `SESSION_PREVIEW`, `ENTER_CAR`, `FINAL_LAP`, `PARADE_PAD`, `WEATHER_BRIEF`, `WEATHER_CHANGE`, `FIELD_FACT`, `SOF_BRIEF`, `HR_PRESSURE_RISING`; impulse `LONG_SILENCE_ELAPSED`; EN pattern inventory **68**; all inventory `shadow`; **no** `FAMILY_ROUTE` flip).
 **Issue:** [#277](https://github.com/Buchtanen/ir-obs-switcher/issues/277)  
-**Module:** `src/irswitch/contracts/context_family_map.py`  
-**Tests:** `tests/test_context_family_map.py` (**18**)
-**Lookup:** [inflight § #277 slice 5](../dokumentace/inflight/README.md#277-context-family-map-slice-6-lookup) · [events branch delta](../dokumentace/domeny/events.md#context-family-migration-map-contractscontext_family_mappy)
+**Module:** `src/irswitch/contracts/context_family_map.py` + `context_family_activation_evidence.py`  
+**Tests:** `tests/test_context_family_map.py` + `tests/test_context_family_activation_evidence.py` (**21** = **18** + **3**)
+**Lookup:** [inflight § #277 slice 7](../dokumentace/inflight/README.md#277-context-family-map-slice-7-lookup) · [events branch delta](../dokumentace/domeny/events.md#context-family-migration-map-contractscontext_family_mappy)
 
 ## Guardrails
 
@@ -164,11 +164,29 @@ Helpers (add): `long_silence_eligibility_is_documented()`, `long_silence_fatigue
 
 Helpers (add): `context_en_content_is_curated()`, `generic_forced_filler_is_removed()`.
 
+## Slice 7 inventory — observational shadow readiness (no FAMILY_ROUTE flip)
+
+| Contract | Value |
+| --- | --- |
+| Inventory `migration_status` | all **10** wires → `shadow` |
+| `FAMILY_ROUTE` | **unchanged** (`bio` stays `legacy`; no weather/filler/context key) |
+| Evidence module | `contracts/context_family_activation_evidence.py` |
+| Compare harness | informational only — most wires still `unknown`/`legacy` |
+| Live v2 speech | deferred (#279) |
+
+**AC locks (Slice 7):**
+- Inventory shadow readiness composes Slices 1–6 (`context_family_shadow_readiness_is_complete()`).
+- Activation evidence complete without route flip (`context_family_activation_evidence_is_complete()`).
+- Remaining disposition documents bio/battle route legacy, beat-only fillers, live speech deferral (`remaining_legacy_disposition()`).
+- No frozen `machine/*` hash rewrite; no live speech cutover; CONFIG/API unchanged.
+
+Helpers (add): `context_family_shadow_readiness_is_complete()`, `context_family_activation_evidence()`, `context_family_activation_evidence_is_complete()`, `remaining_legacy_disposition()`.
+
 ## Later #277 slices
 
-Deferred: shadow activation.
+None — inventory migration closed at Slice 7. Live/route cutover stays on #279.
 
 ## Docs / config
 
 - **Docs:** this page + `docs/v2.0.0/README.md` + `docs/dokumentace/{README,inflight/README,domeny/events}.md`.
-- **Docs: CONFIG.md / API.md / COMMENTARY_ENGINE.md unchanged** (inventory-only).
+- **Docs:** CONFIG.md / API.md unchanged (no keys). COMMENTARY_ENGINE.md gains observational #277 inventory-shadow note (not speech ownership).

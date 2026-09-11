@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 7 shadow; #277 slice 6 open; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 7 shadow; #277 slice 7 inventory shadow; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
 
@@ -14,14 +14,13 @@ Slice 1–2 inventory for Wave G #275 (all `migration_status=shadow`):
 | `gain_and_loss_polarities_are_distinct()` | Slice 2: pace gain ≠ time lost |
 | `invalid_lap_scope_is_explicit()` | Slice 3 AC: PRACTICE\|QUALIFYING only |
 | `inherited_facts_use_active_lineage_only()` | Slice 4 AC: session intros/recaps require active lineage |
-| `ops_family_activation_evidence_is_complete()` | Slice 7: observational shadow evidence + fail-soft |
 | `en_patterns_and_tts_slots_are_curated()` | Slice 5: ≥4 EN patterns + TTS slots per wire |
 | `timing_family_replay_cases()` / `restart_rewind_replay_cases_are_complete()` | Slice 6: restart/rewind replay inventory |
 | `timing_family_closeout_evidence()` / `timing_family_closeout_evidence_is_complete()` | Slice 7: coverage/latency/fail-soft closeout |
 | `FAMILY_ROUTE["timing"]=shadow` + inventory `migration_status=shadow` | Slice 8: observational shadow activation (no live v2 speech) |
 | Scope / polarity | `lap_sf` vs `sector`; `lap_complete` / `sector_split` / `sector_best` |
 
-Detail: [timing-family-migration.md](../../v2.0.0/timing-family-migration.md). `FAMILY_ROUTE` pit/incident → shadow (observational). **Docs: `CONFIG.md` / `API.md` unchanged.**
+Detail: [timing-family-migration.md](../../v2.0.0/timing-family-migration.md). `FAMILY_ROUTE["timing"]` → shadow (observational). **Docs: `CONFIG.md` / `API.md` unchanged.**
 
 
 ## Ops family migration map (`contracts/ops_family_map.py`)
@@ -41,6 +40,10 @@ Slices 1–6 inventory for Wave G #276 (all `migration_status=shadow`; `OPS_WIRE
 | `session_wrap_branch_beats_are_documented()` | Slice 4 AC: `SESSION_WRAP` primary `session.wrap.practice` + qualifying/race branches |
 | `closeout_stories_are_separated()` | Slice 4 AC: checkered clock ≠ hero finish ≠ session wrap (scopes/families/tapes/notes) |
 | `unknown_tow_teleport_outcomes_are_defined()` | Slice 5 AC: unknown/tow/teleport taxonomy + `hero_teleport` invalidate + terminal `unknown_*_explicit` + tow/teleport on aftermath/recovery |
+| `en_patterns_and_tts_slots_are_curated()` | Slice 6: ≥4 EN patterns + TTS slots per wire |
+| `ops_family_activation_evidence_is_complete()` | Slice 7: observational shadow evidence + fail-soft |
+
+**Evidence module (Slice 7):** `contracts/ops_family_activation_evidence.py` — EN pattern counts, invalidate/terminal counts, shadow route observation, fail-soft `observation_failed`.
 
 **Slice 2 wires:** `INCIDENT` (`IncidentEmitter` + `incident_race_event_to_envelope`); `INCIDENT_AFTERMATH` / `BACK_UNDER_WAY` (`IncidentAftermathFsm`, FSM direct).
 
@@ -54,17 +57,25 @@ Detail: [ops-family-migration.md](../../v2.0.0/ops-family-migration.md). `FAMILY
 
 
 
-## Context family migration map (`contracts/context_family_map.py`)
+## Context family migration map (`contracts/context_family_map.py` + `contracts/context_family_activation_evidence.py`)
 
-Slices 1–6 inventory for Wave G #277 (all `migration_status=legacy`; `CONTEXT_WIRE_IDS` **10** + long-silence impulse + EN pattern inventory **68**):
+Slices 1–7 inventory for Wave G #277 (all `migration_status=shadow`; `CONTEXT_WIRE_IDS` **10** + long-silence impulse + EN pattern inventory **68**; **no** `FAMILY_ROUTE` flip):
 
 | Helper | Role |
 | --- | --- |
 | Prior Slice 1–5 helpers | session / filler / weather-field / bio / long-silence |
 | `context_en_content_is_curated()` | Slice 6: EN-only curated realization cards |
 | `generic_forced_filler_is_removed()` | Slice 6 AC: no forced generic filler; silence ok |
+| `context_family_shadow_readiness_is_complete()` | Slice 7: inventory shadow readiness (composes Slices 1–6; no route flip) |
+| `context_family_activation_evidence()` | Slice 7: per-wire coverage, EN counts, harness family/route observation |
+| `context_family_activation_evidence_is_complete()` | Slice 7: closeout evidence gate (guards `FAMILY_ROUTE["bio"]` stays `legacy`) |
+| `remaining_legacy_disposition()` | Slice 7: bio/battle route legacy, beat-only fillers, live speech deferral |
 
-Detail: [context-family-migration.md](../../v2.0.0/context-family-migration.md). No `FAMILY_ROUTE` flip. **Docs: CONFIG.md / API.md / COMMENTARY_ENGINE.md unchanged.**
+**Evidence module (Slice 7):** `context_family_activation_evidence.py` — informational compare-harness observation only; most wires still resolve to `unknown`/`legacy` under the harness.
+
+**Tests:** `tests/test_context_family_map.py` + `tests/test_context_family_activation_evidence.py` (**21**).
+
+Detail: [context-family-migration.md](../../v2.0.0/context-family-migration.md). **No** `FAMILY_ROUTE` flip. **Docs: CONFIG.md / API.md unchanged; COMMENTARY_ENGINE.md observational note only.**
 
 
 ## Race-outcome migration map (`contracts/race_outcome_family_map.py`)

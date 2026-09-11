@@ -368,3 +368,15 @@ in-module `FAMILY_ROUTE` table in `events/legacy_v2_shadow_compare.py`. This is
 add CONFIG.md keys or API.md endpoints. Live audible cutover remains deferred;
 the temporary harness stays on the final-PR exclusion list with #272.
 
+
+## Wave G / #277 context-family inventory shadow (branch harness)
+
+Context-family migration (#277) records **inventory-only** observational shadow
+readiness for session leftovers, filler, weather/field and bio-style wires via
+`contracts/context_family_map.py` + `context_family_activation_evidence.py`.
+This does **not** flip the private `FAMILY_ROUTE` table in
+`events/legacy_v2_shadow_compare.py`, is **not** `graph_runtime`
+`legacy|shadow|active` speech ownership, and does **not** add CONFIG.md keys or
+API.md endpoints. Live audible cutover remains deferred to #279; `bio` stays
+route-`legacy`.
+
