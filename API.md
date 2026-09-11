@@ -1141,13 +1141,13 @@ Invalid `limit` query values fall back to the default **20** (clamped to 1–100
 - When the actor loop is **not** running, `try_manual_speak` reduces inline (`reduce_inline` default) so library/HTTP tests stay deterministic; when the actor loop **is** running, admission waits on the latch instead of inline reduce.
 - Does **not** start the actor loop by itself (do not call `try_manual_speak` concurrently with `run()` in library tests).
 
-**Request** (`commentary-runtime/2`): `schemaVersion`, `language` (`en` only), `text` (non-empty string).
+**Request** (`commentary-runtime/2`): exact keys `schemaVersion`, `text`, `language` only (`language` must be `en`; `text` is normalized Unicode length 1–400 with no control characters). Unknown fields (e.g. `force`, backend/voice overrides) → **400** `invalid_request`. `admittedState` on **202** is exactly `committed` after atomic dispatch.
 
 **Responses**
 
 | Status | Body | When |
 | --- | --- | --- |
-| **202** | `{schemaVersion, accepted: true, requestId, admittedState}` | Manual speak admitted (`admittedState` typically `committed`) |
+| **202** | `{schemaVersion, accepted: true, requestId, admittedState}` | Manual speak admitted (`admittedState` exactly `committed`) |
 | **409** | `{schemaVersion, error: {code: speech_busy, …}}` | Speech lane busy |
 | **422** | `{schemaVersion, error: {code: validation_failed, …}}` | Missing/invalid `text` or command construction failed |
 | **503** | `{schemaVersion, error: {code: component_unavailable\|mailbox_overloaded\|admission_timeout, …}}` | No provider / no `try_manual_speak` / mailbox full / reduce miss / latch await timed out |

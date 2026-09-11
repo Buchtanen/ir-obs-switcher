@@ -171,12 +171,20 @@ async def handle_commentary_runtime_validate(request: web.Request) -> web.Respon
     return web.json_response(payload, status=200)
 
 
-async def handle_commentary_runtime_speak(request: web.Request) -> web.Response:
-    """Admit manual EN speak through NarrativeRuntime (sync reduce path)."""
 
-    body = await _read_json_object(request)
-    if isinstance(body, web.Response):
-        return body
+_SPEAK_BODY_KEYS = frozenset({"schemaVersion", "text", "language"})
+
+
+def _parse_manual_speak_body(body: dict[str, Any]) -> str | web.Response:
+    """Freeze manual speak to schemaVersion/text/language only (#273).
+
+    Unknown keys / wrong schemaVersion / non-en language → ``invalid_request``/400.
+    Text must be normalized Unicode, length 1..400, without control characters
+    → otherwise ``validation_failed``/422. Returns the validated text string.
+    """
+
+    if set(body) != _SPEAK_BODY_KEYS:
+        return _error_response("invalid_request", 400)
     if body.get("schemaVersion") != "commentary-runtime/2":
         return _error_response("invalid_request", 400)
     if body.get("language") != "en":
@@ -184,6 +192,22 @@ async def handle_commentary_runtime_speak(request: web.Request) -> web.Response:
     text = body.get("text")
     if not isinstance(text, str):
         return _error_response("validation_failed", 422)
+    normalized = " ".join(text.split())
+    if text != normalized or not 1 <= len(text) <= 400 or any(ord(ch) < 32 for ch in text):
+        return _error_response("validation_failed", 422)
+    return text
+
+
+async def handle_commentary_runtime_speak(request: web.Request) -> web.Response:
+    """Admit manual EN speak through NarrativeRuntime (sync reduce path)."""
+
+    body = await _read_json_object(request)
+    if isinstance(body, web.Response):
+        return body
+    parsed = _parse_manual_speak_body(body)
+    if isinstance(parsed, web.Response):
+        return parsed
+    text = parsed
 
     provider = _resolve_provider(request)
     if provider is None:
@@ -211,7 +235,7 @@ async def handle_commentary_runtime_speak(request: web.Request) -> web.Response:
                 "schemaVersion": "commentary-runtime/2",
                 "accepted": True,
                 "requestId": outcome.request_id or request_id,
-                "admittedState": outcome.admitted_state or "committed",
+                "admittedState": "committed",
             },
             status=202,
         )

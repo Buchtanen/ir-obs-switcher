@@ -244,6 +244,54 @@ async def test_runtime_speak_accepted_and_busy() -> None:
 
 
 @pytest.mark.asyncio
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_rejects_unknown_body_fields() -> None:
+    """#273 manual speak body is schemaVersion/text/language only (no force/overrides)."""
+    import json
+    from pathlib import Path
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "speak_request.json").read_text(encoding="utf-8"))
+    request = dict(request)
+    request["force"] = True
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    app = _app_with_runtime(runtime)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            assert resp.status == 400
+            data = await resp.json()
+            assert data["schemaVersion"] == "commentary-runtime/2"
+            assert data["error"]["code"] == "invalid_request"
+            # Lane must stay idle — unknown fields never dispatch audio.
+            assert runtime.status().lane == "idle"
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_accepted_admitted_state_is_committed() -> None:
+    """#273 202 admittedState is exactly committed after atomic dispatch."""
+    import json
+    from pathlib import Path
+
+    fixtures = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
+    request = json.loads((fixtures / "speak_request.json").read_text(encoding="utf-8"))
+    assert set(request) == {"schemaVersion", "text", "language"}
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    app = _app_with_runtime(runtime)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            assert resp.status == 202
+            data = await resp.json()
+            assert set(data) == {"schemaVersion", "accepted", "requestId", "admittedState"}
+            assert data["admittedState"] == "committed"
+            assert runtime.status().lane == "committed"
+
+
 async def test_runtime_speak_without_provider_returns_503() -> None:
     import json
     from pathlib import Path
