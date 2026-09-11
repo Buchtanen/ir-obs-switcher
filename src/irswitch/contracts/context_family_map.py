@@ -1,10 +1,10 @@
-"""#277 context family migration map — session/stream leftovers + filler + weather/field + bio style (Slices 1–4).
+"""#277 context family migration map — session/stream leftovers + filler + weather/field + bio style (Slices 1–5).
 
 Maps remaining non-race session/stream, filler, weather and field wire identifiers onto legacy
 emitters, adapters, beat/story routes, predicates, realization families, policy
 TTL and tape channels.
 
-Slices 1–4 record these wires as ``legacy``. They do **not** rewrite frozen
+Slices 1–5 record these wires as ``legacy``. They do **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 Session intros/recaps stay owned by the timing map; session wrap/checkered/finish
 stay owned by the ops / race-outcome maps. Beat-only silence fillers are documented without inventing freeze wires.
@@ -73,6 +73,41 @@ CONTEXT_BIO_STYLE_WIRE_IDS: tuple[str, ...] = ("HR_PRESSURE_RISING",)
 
 # Compatibility alias — not speakable inventory (do not invent a freeze row).
 CONTEXT_BIO_ALIAS_WIRE_IDS: tuple[str, ...] = ("HEART_RATE",)
+
+# Slice 5 — long-silence eligibility + fatigue (impulse, not a freeze wire).
+CONTEXT_LONG_SILENCE_IMPULSE_ID = "LONG_SILENCE_ELAPSED"
+CONTEXT_LONG_SILENCE_MS = 33_000
+CONTEXT_LONG_SILENCE_BUSY_LANES: tuple[str, ...] = (
+    "building",
+    "committed",
+    "speaking",
+    "stopping",
+)
+# Beats that may be selected from a long-silence impulse (filler + weather/field briefs).
+CONTEXT_LONG_SILENCE_ELIGIBLE_BEAT_IDS: tuple[str, ...] = (
+    "filler.out_lap",
+    "filler.in_lap",
+    "filler.parade_lap",
+    "filler.garage",
+    "filler.lobby",
+    "filler.quiet_track",
+    "session.weather_brief",
+    "session.field_fact",
+    "session.sof_brief",
+)
+CONTEXT_LONG_SILENCE_OUTCOMES: tuple[str, ...] = (
+    "selected",
+    "source_guard_failed",
+    "no_candidate",
+    "busy_lane",
+)
+CONTEXT_LONG_SILENCE_FATIGUE_AXES: tuple[str, ...] = (
+    "node",
+    "semantic",
+    "edge",
+    "path",
+)
+
 
 CONTEXT_WIRE_IDS: tuple[str, ...] = (
     CONTEXT_SESSION_WIRE_IDS
@@ -436,7 +471,7 @@ def _resolve_beat_ids(
 
 
 def context_family_rows() -> tuple[ContextFamilyRow, ...]:
-    """Return the closed context migration inventory (Slices 1–4: session leftovers + filler + weather/field + bio style, legacy)."""
+    """Return the closed context migration inventory (Slices 1–5: session leftovers + filler + weather/field + bio style, legacy)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -755,5 +790,79 @@ def bio_cannot_invent_sport_truth() -> bool:
         return False
     # Alias must remain non-speakable.
     if "HEART_RATE" in set(CONTEXT_WIRE_IDS):
+        return False
+    return True
+
+
+def long_silence_eligibility_is_documented() -> bool:
+    """Slice 5 helper: long-silence impulse eligibility stays closed and silence-safe."""
+
+    if CONTEXT_LONG_SILENCE_IMPULSE_ID != "LONG_SILENCE_ELAPSED":
+        return False
+    if CONTEXT_LONG_SILENCE_MS != 33_000:
+        return False
+    if CONTEXT_LONG_SILENCE_BUSY_LANES != (
+        "building",
+        "committed",
+        "speaking",
+        "stopping",
+    ):
+        return False
+    # Impulse must not be invented as a freeze wire.
+    if CONTEXT_LONG_SILENCE_IMPULSE_ID in CONTEXT_WIRE_IDS:
+        return False
+    # Eligible beat set includes filler beats + weather/field silence briefs.
+    required = set(CONTEXT_FILLER_BEAT_IDS) | {
+        "session.weather_brief",
+        "session.field_fact",
+        "session.sof_brief",
+    }
+    if set(CONTEXT_LONG_SILENCE_ELIGIBLE_BEAT_IDS) != required:
+        return False
+    outcomes = set(CONTEXT_LONG_SILENCE_OUTCOMES)
+    if not {"selected", "source_guard_failed", "no_candidate", "busy_lane"} <= outcomes:
+        return False
+    # Silence-capable outcomes must remain documented.
+    if "no_candidate" not in outcomes or "source_guard_failed" not in outcomes:
+        return False
+    # Parade pad notes already admit silence; keep AC linked.
+    if not filler_may_resolve_to_silence():
+        return False
+    return True
+
+
+def long_silence_fatigue_is_documented() -> bool:
+    """Slice 5 helper: graph fatigue axes apply to silence-selected context/filler."""
+
+    if not long_silence_eligibility_is_documented():
+        return False
+    if CONTEXT_LONG_SILENCE_FATIGUE_AXES != ("node", "semantic", "edge", "path"):
+        return False
+    # Fatigue is observational inventory only — no FAMILY_ROUTE flip for bio/session.
+    # Re-check parade notes still forbid forced filler under fatigue pressure.
+    row = row_for_wire_id("PARADE_PAD")
+    lowered = row.notes.lower()
+    if "silence" not in lowered:
+        return False
+    if "never force" not in lowered and "not force" not in lowered:
+        return False
+    return True
+
+
+def filler_can_result_in_silence() -> bool:
+    """AC helper: long-silence path may yield silence instead of forced filler speech."""
+
+    if not long_silence_eligibility_is_documented():
+        return False
+    if not long_silence_fatigue_is_documented():
+        return False
+    if not filler_may_resolve_to_silence():
+        return False
+    # Explicit silence outcomes on the long-silence path.
+    if "no_candidate" not in CONTEXT_LONG_SILENCE_OUTCOMES:
+        return False
+    if "source_guard_failed" not in CONTEXT_LONG_SILENCE_OUTCOMES:
+        return False
+    if "busy_lane" not in CONTEXT_LONG_SILENCE_OUTCOMES:
         return False
     return True

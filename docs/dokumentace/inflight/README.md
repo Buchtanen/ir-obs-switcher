@@ -81,7 +81,7 @@
 | #274 race-outcome closeout | contracts + events | `race_outcome_activation_evidence.py` + family map/verifier/shadow — [§ lookup](#274-race-outcome-closeout-lookup) · [race-outcome-migration.md](../../v2.0.0/race-outcome-migration.md) | **open** on `cursor/race-outcome-closeout-274-cad3` |
 | #275 timing family map (slice 8) | contracts + events | observational `FAMILY_ROUTE[timing]=shadow` + inventory `migration_status=shadow` — [§ lookup](#275-timing-family-map-slice-8-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md) | **closed** on `cursor/timing-shadow-activate-275-cad3` |
 | #276 ops family map (slice 6) | contracts | `ops_family_map.py` — pit + incident + SESSION_FLAG + checkered/finish/wrap + unknown/tow/teleport + EN patterns/TTS adversarial curation (observational `shadow`; `OPS_WIRE_IDS` **13**) — [§ slice 1 lookup](#276-ops-family-map-slice-1-lookup) · [§ slice 2 lookup](#276-ops-family-map-slice-2-lookup) · [§ slice 3 lookup](#276-ops-family-map-slice-3-lookup) · [§ slice 4 lookup](#276-ops-family-map-slice-4-lookup) · [§ slice 5 lookup](#276-ops-family-map-slice-5-lookup) · [§ slice 6 lookup](#276-ops-family-map-slice-6-lookup) · [ops-family-migration.md](../../v2.0.0/ops-family-migration.md) | **open** on `cursor/ops-unknown-tow-teleport-276-cad3` (slice 4 on `cursor/ops-finish-separation-276-cad3`; slice 3 on `cursor/ops-flag-inventory-276-cad3`; slice 2 on `cursor/ops-incident-inventory-276-cad3`; slice 1 on `cursor/ops-family-map-276-cad3`) |
-| #277 context family map (slice 4) | contracts | `context_family_map.py` — leftovers + filler + weather/field + bio style (10 wires; all `legacy`) — [§ slice 4 lookup](#277-context-family-map-slice-4-lookup) · [context-family-migration.md](../../v2.0.0/context-family-migration.md) | **open** on `cursor/context-hr-bio-style-277-cad3` |
+| #277 context family map (slice 5) | contracts | `context_family_map.py` — leftovers + filler + weather/field + bio + long-silence (10 wires + impulse; all `legacy`) — [§ slice 5 lookup](#277-context-family-map-slice-5-lookup) · [context-family-migration.md](../../v2.0.0/context-family-migration.md) | **open** on `cursor/context-long-silence-fatigue-277-cad3` |
 | #273 / #284 components llm/tts projection (HTTP + ingress subset) | events + server + race | `events/narrative_ingress.py` (`_llm_component_projection`, `_tts_component_projection`, `_tts_voice_from_ledger`, live `quarantinedGeneration`), `events/narrative_runtime.py` (`llm_component=`, `speech_quarantined_generation`, quarantine on stop-timeout), `race/runtime.py` (passes warmed `LlmComponent`) — [§ lookup](#284-273-components-llm-tts-slice-lookup) | `tests/test_narrative_ingress.py` (**1** golden + **4** live llm/tts + **3** lastAttempt + **3** voice/quarantine rows); golden `tests/fixtures/commentary_runtime/status_components_llm_tts.json`; related **268** |
 | #273 / #284 components detectors/facts projection (HTTP + ingress subset) | events + server | `events/narrative_ingress.py` (`project_runtime_status` `components.facts`/`components.detectors`), `events/narrative_runtime.py` (`detector_bank=`, fact fields, `_ingest_fact_view_counts`, `_detector_disabled_snapshot`), `events/detector_bank.py` (`disabled_for_status`) — [§ lookup](#284-273-components-detectors-facts-slice-lookup) · [§ fact-health continuation](#273-fact-health-continuation-slice-lookup) | live counts feat `d13d6bd` (**3** rows); capacity health **+3** on `cursor/fact-health-273-cad3` ([§ fact-health](#273-fact-health-continuation-slice-lookup)); related **249** / **252** |
 | #273 / #284 timeline session identity (HTTP + ingress subset) | events + server | `events/narrative_runtime.py` (`_session_identity_from_timeline`, `RuntimeStatus` session fields on APPLY_CONTEXT) + `events/narrative_ingress.py` (`_timeline_session_identity` in `project_runtime_status`) — [§ lookup](#284-273-timeline-session-identity-slice-lookup) | `tests/test_narrative_ingress.py` (**3** timeline session rows); goldens `status_timeline_session_null.json`, `status_identity_after_context.json`; related **237** |
@@ -1302,15 +1302,17 @@ Live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / Pr
 | Evidence | tip `7d5ca50` (stopped golden); prior TTS/tape feat `13ab3d5`; **no master PR** |
 | Checkboxes | Public/session-plan continuation **all three flipped** |
 
-### #277 context-family map slice 4 lookup
+### #277 context-family map slice 5 lookup
 
-- **Module:** `src/irswitch/contracts/context_family_map.py` — leftovers + filler + weather/field + bio style (`STREAM_START`, `SESSION_PREVIEW`, `ENTER_CAR`, `FINAL_LAP`, `PARADE_PAD`, `WEATHER_BRIEF`, `WEATHER_CHANGE`, `FIELD_FACT`, `SOF_BRIEF`, `HR_PRESSURE_RISING`).
-- **Bio style freeze wire:** `HR_PRESSURE_RISING` → beat `bio.pressure` / family `bio.context` / scope `bio_style`.
-- **Alias:** `HEART_RATE` compatibility_alias / not speakable (outside `CONTEXT_WIRE_IDS`).
-- **AC:** optional style only; no sport-truth / medical / emotion-cause / performance invention.
-- **Helpers:** prior + `bio_style_wires_are_documented()`, `bio_cannot_invent_sport_truth()`.
-- **Tests:** `tests/test_context_family_map.py` (**13**).
+- **Module:** `src/irswitch/contracts/context_family_map.py` — prior inventory + long-silence eligibility/fatigue policy.
+- **Impulse:** `LONG_SILENCE_ELAPSED` @ 33_000 ms; **not** a freeze wire.
+- **Busy lanes:** building/committed/speaking/stopping → no filler, rearm.
+- **Eligible beats:** filler set + weather/field/SoF silence briefs.
+- **Outcomes:** selected / source_guard_failed / no_candidate / busy_lane (silence-safe).
+- **Fatigue axes:** node / semantic / edge / path (TTS exposure only).
+- **Helpers:** `long_silence_eligibility_is_documented()`, `long_silence_fatigue_is_documented()`, `filler_can_result_in_silence()`.
+- **Tests:** `tests/test_context_family_map.py` (**16**).
 - **Docs:** [context-family-migration.md](../../v2.0.0/context-family-migration.md); CONFIG/API/COMMENTARY_ENGINE unchanged.
-- **Branch:** `cursor/context-hr-bio-style-277-cad3`.
-- **Guardrails:** no frozen machine hash rewrite; no `FAMILY_ROUTE["bio"]` flip; no live v2 speech.
+- **Branch:** `cursor/context-long-silence-fatigue-277-cad3`.
+- **Guardrails:** no machine hash rewrite; no `FAMILY_ROUTE` flip; no live v2 speech.
 

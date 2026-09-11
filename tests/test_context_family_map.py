@@ -1,4 +1,4 @@
-"""#277 Slices 1–4 — context family map (session + filler + weather/field + bio style)."""
+"""#277 Slices 1–5 — context family map (session + filler + weather/field + bio style + long-silence)."""
 
 from __future__ import annotations
 
@@ -9,7 +9,14 @@ import pytest
 from irswitch.contracts.context_family_map import (
     CONTEXT_BIO_ALIAS_WIRE_IDS,
     CONTEXT_BIO_STYLE_WIRE_IDS,
+    CONTEXT_FILLER_BEAT_IDS,
     CONTEXT_FILLER_WIRE_IDS,
+    CONTEXT_LONG_SILENCE_BUSY_LANES,
+    CONTEXT_LONG_SILENCE_ELIGIBLE_BEAT_IDS,
+    CONTEXT_LONG_SILENCE_FATIGUE_AXES,
+    CONTEXT_LONG_SILENCE_IMPULSE_ID,
+    CONTEXT_LONG_SILENCE_MS,
+    CONTEXT_LONG_SILENCE_OUTCOMES,
     CONTEXT_OWNED_ELSEWHERE,
     CONTEXT_SESSION_PHASE_ORDER,
     CONTEXT_SESSION_WIRE_IDS,
@@ -25,7 +32,10 @@ from irswitch.contracts.context_family_map import (
     context_session_stories_have_explicit_invalidation,
     enter_car_branch_beats_are_documented,
     filler_beats_are_documented,
+    filler_can_result_in_silence,
     filler_may_resolve_to_silence,
+    long_silence_eligibility_is_documented,
+    long_silence_fatigue_is_documented,
     migration_status_by_wire_id,
     owned_elsewhere_session_wires_are_documented,
     row_for_wire_id,
@@ -295,3 +305,34 @@ def test_bio_style_is_optional_and_non_truth_inventing() -> None:
     assert "sport truth" in lowered
     assert "performance" in lowered
     assert "HEART_RATE" not in CONTEXT_WIRE_IDS
+
+
+def test_long_silence_eligibility_is_documented() -> None:
+    assert CONTEXT_LONG_SILENCE_IMPULSE_ID == "LONG_SILENCE_ELAPSED"
+    assert CONTEXT_LONG_SILENCE_MS == 33_000
+    assert CONTEXT_LONG_SILENCE_BUSY_LANES == (
+        "building",
+        "committed",
+        "speaking",
+        "stopping",
+    )
+    assert CONTEXT_LONG_SILENCE_IMPULSE_ID not in CONTEXT_WIRE_IDS
+    assert long_silence_eligibility_is_documented() is True
+    assert set(CONTEXT_FILLER_BEAT_IDS) <= set(CONTEXT_LONG_SILENCE_ELIGIBLE_BEAT_IDS)
+    assert {
+        "session.weather_brief",
+        "session.field_fact",
+        "session.sof_brief",
+    } <= set(CONTEXT_LONG_SILENCE_ELIGIBLE_BEAT_IDS)
+
+
+def test_long_silence_fatigue_is_documented() -> None:
+    assert CONTEXT_LONG_SILENCE_FATIGUE_AXES == ("node", "semantic", "edge", "path")
+    assert long_silence_fatigue_is_documented() is True
+
+
+def test_filler_can_result_in_silence() -> None:
+    assert filler_can_result_in_silence() is True
+    assert "no_candidate" in CONTEXT_LONG_SILENCE_OUTCOMES
+    assert "source_guard_failed" in CONTEXT_LONG_SILENCE_OUTCOMES
+    assert "busy_lane" in CONTEXT_LONG_SILENCE_OUTCOMES

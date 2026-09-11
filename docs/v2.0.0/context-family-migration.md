@@ -1,10 +1,10 @@
 # #277 Context family migration (session / filler / weather / field / bio)
 
-**Status:** Slice 4 — session leftovers + filler + weather/field + bio style (`STREAM_START`, `SESSION_PREVIEW`, `ENTER_CAR`, `FINAL_LAP`, `PARADE_PAD`, `WEATHER_BRIEF`, `WEATHER_CHANGE`, `FIELD_FACT`, `SOF_BRIEF`, `HR_PRESSURE_RISING`; all `legacy`; no `FAMILY_ROUTE` flip).
+**Status:** Slice 5 — leftovers + filler + weather/field + bio style + long-silence eligibility/fatigue (`STREAM_START`, `SESSION_PREVIEW`, `ENTER_CAR`, `FINAL_LAP`, `PARADE_PAD`, `WEATHER_BRIEF`, `WEATHER_CHANGE`, `FIELD_FACT`, `SOF_BRIEF`, `HR_PRESSURE_RISING`; impulse `LONG_SILENCE_ELAPSED`; all inventory `legacy`; no `FAMILY_ROUTE` flip).
 **Issue:** [#277](https://github.com/Buchtanen/ir-obs-switcher/issues/277)  
 **Module:** `src/irswitch/contracts/context_family_map.py`  
-**Tests:** `tests/test_context_family_map.py` (**13**)
-**Lookup:** [inflight § #277 slice 4](../dokumentace/inflight/README.md#277-context-family-map-slice-4-lookup) · [events branch delta](../dokumentace/domeny/events.md#context-family-migration-map-contractscontext_family_mappy)
+**Tests:** `tests/test_context_family_map.py` (**16**)
+**Lookup:** [inflight § #277 slice 5](../dokumentace/inflight/README.md#277-context-family-map-slice-5-lookup) · [events branch delta](../dokumentace/domeny/events.md#context-family-migration-map-contractscontext_family_mappy)
 
 ## Guardrails
 
@@ -123,9 +123,30 @@ Helpers (add): `weather_and_field_wires_are_documented()`, `weather_and_field_cu
 
 Helpers (add): `bio_style_wires_are_documented()`, `bio_cannot_invent_sport_truth()`.
 
+
+## Slice 5 inventory — long-silence eligibility and fatigue
+
+| Impulse | Interval | Busy lanes | Freeze wire? |
+| --- | ---: | --- | --- |
+| `LONG_SILENCE_ELAPSED` | 33_000 ms | `building` / `committed` / `speaking` / `stopping` | **No** (not in `CONTEXT_WIRE_IDS`) |
+
+**Eligible beats (silence impulse):** filler set + `session.weather_brief` / `session.field_fact` / `session.sof_brief`.
+
+**Outcomes:** `selected` | `source_guard_failed` | `no_candidate` | `busy_lane` — last three are silence-safe.
+
+**Fatigue axes (graph runtime):** `node` / `semantic` / `edge` / `path` — mutate on audible TTS exposure only; rejection/parking does not count.
+
+**AC locks (Slice 5):**
+- Long-silence path may yield **silence** (`filler_can_result_in_silence()`).
+- Eligibility closed via `long_silence_eligibility_is_documented()`.
+- Fatigue axes closed via `long_silence_fatigue_is_documented()`.
+- Still no forced generic filler; still no `FAMILY_ROUTE` flip.
+
+Helpers (add): `long_silence_eligibility_is_documented()`, `long_silence_fatigue_is_documented()`, `filler_can_result_in_silence()`.
+
 ## Later #277 slices
 
-Deferred: long-silence eligibility/fatigue; EN-only curation + remove generic forced filler; shadow activation.
+Deferred: EN-only curation + remove generic forced filler; shadow activation.
 
 ## Docs / config
 
