@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 16 — offline unresponsive-TTS lane-watchdog drivers for F26 (no live Windows §24.9 GO).
+**Status:** Slice 17 — offline TTS auto-resolution drivers for F30 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -232,6 +232,21 @@
 **AC locks (Slice 16):**
 - Machine projection for F26 still matches frozen expectations.
 - Runtime drivers prove start-timeout unconsumed, playback-timeout consumed, stop-timeout quarantine, admission blocked under quarantine, late callback no-ops, and higher-generation restore.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+
+## Slice 17 — F30 TTS auto-resolution runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F30` (TTS auto resolution never retries an utterance) |
+| Pytest | `tests/test_vertical_slice_tts_auto_runtime.py` |
+| Inventory | **38/44** wired; **6** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 17):**
+- Machine projection for F30 still matches frozen expectations.
+- Runtime drivers prove auto snapshots SAPI, never fails over the same utterance text, later rebuilds only with a higher generation, and SuperTonic is explicit-only.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices

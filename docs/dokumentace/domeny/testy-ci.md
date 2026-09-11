@@ -259,3 +259,16 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 
 **Slice 16 locks:** F26 start-timeout unconsumed, playback-timeout consumed, stop-timeout quarantine, admission blocked, late no-op, higher-generation restore; machine projection still matches frozen expectations; gap inventory **37/44** wired, **7** unwired.
 
+## #278 vertical-slice TTS auto-resolution runtime (Slice 17)
+
+**Status:** offline F30 drivers on branch `cursor/vertical-slice-tts-auto-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Contract | Value |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_tts_auto_runtime.py`](../../../tests/test_vertical_slice_tts_auto_runtime.py) (**2** tests: **1** parametrized machine projection + F30 runtime driver) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **38/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 17](../../v2.0.0/vertical-slice-acceptance.md#slice-17--f30-tts-auto-resolution-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F30 row; hashes **unchanged**) |
+
+**Slice 17 locks:** F30 auto snapshots SAPI, no same-text failover, later generation only, SuperTonic explicit-only; machine projection still matches frozen expectations; gap inventory **38/44** wired, **6** unwired.
+
