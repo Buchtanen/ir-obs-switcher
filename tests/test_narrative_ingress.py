@@ -326,7 +326,11 @@ def test_project_runtime_status_speech_retains_last_terminal_after_completion() 
         "sourceKind": "manual",
         "reason": "completed",
         "atMonoMs": 12_500,
+        "backend": "sapi",
+        "backendGeneration": utterance["backendGeneration"],
     }
+    # Slice 3 (#349): last accepted backend remains visible after terminal.
+    assert projection["speech"]["backend"] == "sapi"
 
 
 def test_project_runtime_status_speech_idle_golden() -> None:
