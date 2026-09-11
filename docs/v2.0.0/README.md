@@ -97,11 +97,11 @@ This index covers the complete refactor, not only the first vertical slice. Each
 
 - [x] [#284 — v2: single-owner NarrativeRuntime actor and command lifecycle](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **CLOSED** AC **41/41**; merged via PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) @ `77452a9` → `codex/commentary-story-flow-spec` (**not** master). Lookup: [inflight § #284 runtime](../dokumentace/inflight/README.md#284-narrative-runtime-lookup).
 - [x] [#272 — v2: legacy-to-v2 adapter and shadow comparison](https://github.com/Buchtanen/ir-obs-switcher/issues/272) — **CLOSED** AC **4/4**; complete harness feat `6cfce0c` on `cursor/legacy-v2-shadow-272-cad3` (prior first slice `f72eb8c`) — observational legacy↔v2 shadow compare (`events/legacy_v2_shadow_compare.py`, **16** tests); stack PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) → base `codex/commentary-story-flow-spec`; temporary branch-only harness — removed before final PR per `final-pr-exclusion-manifest.md`. **Docs: `CONFIG.md` none; `API.md` none.** [inflight § #272](../dokumentace/inflight/README.md#272-legacyv2-shadow-harness-complete-2026-09-11).
-- [ ] [#273 — v2: v2 health, observability and operator configuration](https://github.com/Buchtanen/ir-obs-switcher/issues/273) — depends on #238–#241, #269, #272, #283 and #284; owns exact public golden payloads.
+- [x] [#273 — v2: v2 health, observability and operator configuration](https://github.com/Buchtanen/ir-obs-switcher/issues/273) — **CLOSED** on integration; public goldens + operator config/docs landed (tip after N12 harden). Lookup: [inflight § #273](../dokumentace/inflight/README.md#273-final-docs-config-close-out-slice-lookup).
 
 ## Wave G — complete event-family migration
 
-- [ ] [#274 — v2: migrate race outcome event families](https://github.com/Buchtanen/ir-obs-switcher/issues/274) — position/pass/overtake/leader/finish.
+- [ ] [#274 — v2: migrate race outcome event families](https://github.com/Buchtanen/ir-obs-switcher/issues/274) — position/pass/overtake/leader/finish. **Slice 1 in progress:** source map + polarity inventory (`contracts/race_outcome_family_map.py`); see [race-outcome-migration.md](race-outcome-migration.md).
 - [ ] [#275 — v2: migrate lap, sector, practice and qualifying families](https://github.com/Buchtanen/ir-obs-switcher/issues/275) — timing and inherited recaps.
 - [ ] [#276 — v2: migrate pit, incident, flag and recovery families](https://github.com/Buchtanen/ir-obs-switcher/issues/276) — stateful operational stories.
 - [ ] [#277 — v2: migrate session, filler, weather, field and bio families](https://github.com/Buchtanen/ir-obs-switcher/issues/277) — non-race-event commentary.

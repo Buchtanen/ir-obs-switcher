@@ -17,11 +17,11 @@
 | Wire id | Legacy node | Beat | Predicate | Family | Policy / TTL | Tape | Status |
 | --- | --- | --- | --- | --- | ---: | --- | --- |
 | `OVERTAKE` | `overtake` | `position.pass` | `position.passed` | `position.pass` | critical / 45s | `race.position.pass` | legacy |
-| `POSITION_GAINED` | `position_gained` | `position.gained` | `position.changed` (`direction=gained`) | `position.change` | result / 30s | `race.position.change` | legacy |
-| `POSITION_LOST` | `position_lost` | `position.lost` | `position.changed` (`direction=lost`) | `position.change` | result / 30s | `race.position.change` | legacy |
+| `POSITION_GAINED` | `position_gained` | `position.gained` | `position.changed (`direction=gained`)` | `position.change` | result / 30s | `race.position.change` | legacy |
+| `POSITION_LOST` | `position_lost` | `position.lost` | `position.changed (`direction=lost`)` | `position.change` | result / 30s | `race.position.change` | legacy |
 | `LEADER_CHANGE` | `leader_change` | `position.leader_change` | `position.leader_changed` | `position.leader` | result / 30s | `race.position.leader` | legacy |
 | `FINISH` | `finish` | `session.hero_finish` | `race.hero_finished` | `session.finish` | critical / 45s | `race.session.finish` | legacy |
-| `OVERTAKEN` | — | — | — | — | — | `compat.alias` | legacy alias (not creatable) |
+| `OVERTAKEN` | `—` | `—` | `—` | `—` | — | `compat.alias` | legacy alias (not creatable) |
 
 `migration_status_by_wire_id()` is the coverage-matrix companion that records every family as migrated/legacy; slice 1 keeps all values at `legacy`.
 
