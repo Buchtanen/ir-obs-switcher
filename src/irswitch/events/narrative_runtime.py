@@ -413,6 +413,8 @@ class NarrativeRuntime:
         self._last_recovery_loss_last: int | None = None
         self._last_recovery_safety_effect_count = 0
         self._last_recovery_cancelled_lane: LaneState | None = None
+        self._recovery_barrier_timeline_revision: int | None = None
+        self._recovery_barrier_fact_view_revision: int | None = None
 
     def _detector_disabled_snapshot(self) -> tuple[dict[str, str], ...]:
         if self._detector_bank is None:
@@ -1651,6 +1653,21 @@ class NarrativeRuntime:
     def _on_context(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         part = command.context_part
         assert part is not None
+        if (
+            self._recovery_barrier_timeline_revision is not None
+            and self._recovery_barrier_fact_view_revision is not None
+            and command.context_revision is not None
+        ):
+            barrier = (
+                int(self._recovery_barrier_timeline_revision),
+                int(self._recovery_barrier_fact_view_revision),
+            )
+            candidate = (
+                int(command.context_revision.timeline_revision),
+                int(command.context_revision.fact_view_revision),
+            )
+            if candidate <= barrier:
+                return "ignored_stale_or_inapplicable", ["stale_context_after_recovery"]
         transition_effects = self._apply_context_projection(part)
         effects = ["context_applied"]
         effects.extend(transition_effects)
@@ -2342,8 +2359,12 @@ class NarrativeRuntime:
                 self._ingest_fact_view_counts(fact_view)
         lane_before_cancel = self._lane
         self._history_complete = False
+        self._fact_capacity_evicted = True
         self._recovery_seen = True
         self._recovery_count += 1
+        if self._timeline_revision is not None and self._fact_view_revision is not None:
+            self._recovery_barrier_timeline_revision = int(self._timeline_revision)
+            self._recovery_barrier_fact_view_revision = int(self._fact_view_revision)
         payload = command.payload
         self._last_recovery_loss_first = int(payload["lossFirstMailboxSequence"])
         self._last_recovery_loss_last = int(payload["lossLastMailboxSequence"])

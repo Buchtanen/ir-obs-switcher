@@ -51,6 +51,7 @@ WIRED_UNIT_COVERAGE: dict[str, tuple[str, ...]] = {
     "F43": ("tests/test_vertical_slice_tape_funnel_runtime.py",),
     "F40": ("tests/test_vertical_slice_qwen_authority_runtime.py",),
     "F36": ("tests/test_vertical_slice_config_boundary_runtime.py",),
+    "F19": ("tests/test_vertical_slice_recovery_barrier_runtime.py",),
     "F13": ("tests/test_vertical_slice_mailbox_manual_runtime.py",),
     "F20": ("tests/test_vertical_slice_mailbox_manual_runtime.py",),
     "F15": ("tests/test_vertical_slice_expiry_runtime.py",),
@@ -143,7 +144,7 @@ def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
     all_ids = {row["id"] for row in fixture_bundle["fixtures"]}
     assert set(WIRED_UNIT_COVERAGE) <= all_ids
     unwired = sorted(all_ids - set(WIRED_UNIT_COVERAGE))
-    assert len(unwired) == 1
+    assert len(unwired) == 0
     assert "F09" not in unwired
     assert "F11" not in unwired
     assert "F12" not in unwired
@@ -163,6 +164,7 @@ def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
     assert "F43" not in unwired
     assert "F40" not in unwired
     assert "F36" not in unwired
+    assert "F19" not in unwired
     assert "F13" not in unwired
     assert "F20" not in unwired
     assert "F21" not in unwired
