@@ -55,3 +55,5 @@
 ## Related
 
 [API.md](../../../API.md), [inflight](../inflight/README.md), [events](events.md).
+
+- #273 golden freeze: `tests/test_commentary_runtime_goldens.py` locks `tests/fixtures/commentary_runtime/error_*.json` to `docs/v2.0.0/machine/api-goldens.json` and HTTP speak 409/503 bodies.

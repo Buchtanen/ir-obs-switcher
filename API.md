@@ -1159,6 +1159,8 @@ Invalid `limit` query values fall back to the default **20** (clamped to 1–100
 }
 ```
 
+**Example (mailbox overloaded)** — golden `tests/fixtures/commentary_runtime/error_mailbox_overloaded.json` (and siblings `error_speech_busy.json`, `error_component_unavailable.json`, …) are frozen against `docs/v2.0.0/machine/api-goldens.json` via `tests/test_commentary_runtime_goldens.py`.
+
 **Example (admission timeout)** — golden `tests/fixtures/commentary_runtime/error_admission_timeout.json`:
 
 ```json

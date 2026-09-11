@@ -738,6 +738,18 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 - **Tests:** `tests/test_commentary_http.py` — `test_commentary_page_exposes_decision_panel` (**1**) asserts runtime paths present and legacy status/decisions absent from HTML; `test_commentary_page_uses_versioned_contracts_only` (**1**) locks required/banned path substrings. Suite total **9** passed locally on branch. **Not shipped on `master`.**
 - **Still out of scope (issue OPEN):** master cutover only (human kick). HTTP handler cutover landed feat `f2c1f1b` ([§ golden-health validate/speak](#284-273-golden-health-validatespeak-slice-lookup)); assignments removal is [§ assignments route removal](#273-assignments-route-removal-slice-lookup). **#273 remainder still open.**
 
+
+### #273 error/request golden freeze slice lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| Fixtures | `tests/fixtures/commentary_runtime/error_*.json` (+ existing status/decisions/validate/speak request+response goldens) |
+| Lock tests | `tests/test_commentary_runtime_goldens.py` (inventory + machine `api-goldens.json` parity + HTTP speak error body locks) |
+| Machine source | `docs/v2.0.0/machine/api-goldens.json` `valid.error_*` |
+| Scope | Branch-only; freezes public error bodies before further handler edits |
+
+
 ### #284 #273 ManualAdmissionLatch slice lookup
 
 - **Latch (`events/narrative_manual_latch.py`):** `ManualAdmissionLatch` — one-shot rendezvous only (`pending | actor_claimed | caller_abandoned`); `ADMISSION_TIMEOUT_S=1.0`. Not a speech waiter, prepared-text queue, actor input, or replayed DTO. **Not** exported from `events/__init__.py`.

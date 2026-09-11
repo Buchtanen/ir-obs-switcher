@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "commentary-runtime/2",
+  "error": {
+    "code": "component_unavailable",
+    "fields": {},
+    "message": "Bounded public detail."
+  }
+}
