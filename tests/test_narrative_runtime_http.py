@@ -493,7 +493,9 @@ async def test_runtime_speak_text_over_400_matches_validation_failed() -> None:
     """#273: speak text length 401 freezes to error_validation_failed."""
     import json
 
-    expected = json.loads((_fixtures() / "error_validation_failed.json").read_text(encoding="utf-8"))
+    expected = json.loads(
+        (_fixtures() / "error_validation_failed.json").read_text(encoding="utf-8")
+    )
     app = _app_with_runtime(None)
     async with TestServer(app) as server:
         async with TestClient(server) as client:
@@ -558,7 +560,9 @@ async def test_runtime_speak_non_string_text_matches_validation_failed() -> None
     """#273: non-string speak text freezes to error_validation_failed."""
     import json
 
-    expected = json.loads((_fixtures() / "error_validation_failed.json").read_text(encoding="utf-8"))
+    expected = json.loads(
+        (_fixtures() / "error_validation_failed.json").read_text(encoding="utf-8")
+    )
     app = _app_with_runtime(None)
     async with TestServer(app) as server:
         async with TestClient(server) as client:
@@ -727,4 +731,3 @@ async def test_runtime_status_llm_preflight_failed_unavailable_http() -> None:
             llm = (await resp.json())["components"]["llm"]
             assert llm["status"] == "unavailable"
             assert llm["reason"] == "component_unavailable"
-
