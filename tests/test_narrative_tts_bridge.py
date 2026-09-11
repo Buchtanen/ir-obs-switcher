@@ -17,6 +17,20 @@ BRIDGE_SOURCE = (
 )
 
 
+async def _collect_effect(effect, token):
+    import inspect
+
+    produced = effect(token)
+    if inspect.isasyncgen(produced):
+        return [command async for command in produced]
+    result = await produced
+    if result is None:
+        return []
+    if hasattr(result, "kind"):
+        return [result]
+    return list(result)
+
+
 @pytest.mark.asyncio
 async def test_tts_effect_enqueues_text_and_returns_terminal_callbacks() -> None:
     sink = NullTtsSink()
@@ -28,7 +42,7 @@ async def test_tts_effect_enqueues_text_and_returns_terminal_callbacks() -> None
         "dispatchGeneration": 1,
         "text": "Clear gap ahead.",
     }
-    produced = await effect(token)
+    produced = await _collect_effect(effect, token)
     assert len(sink.spoken) == 1
     assert sink.spoken[0].text == "Clear gap ahead."
     assert [command.kind for command in produced] == [

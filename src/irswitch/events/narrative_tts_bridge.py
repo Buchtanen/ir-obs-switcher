@@ -1,8 +1,13 @@
-"""NarrativeRuntime-owned TTS effect bridge (#284).
+"""NarrativeRuntime-owned TTS effect bridge (#284 / #349 Slice 3).
 
-Turns utterance tokens into ProcessTtsSink / speak_text playback and returns
-mailbox TTS callbacks. Not exported from ``events/__init__.py``. Race wires
-this as ``tts_effect=`` and drops CommentaryConsumer speech ownership.
+Turns utterance tokens into ProcessTtsSink / speak_text playback and streams
+mailbox TTS callbacks. Accept is emitted at the enqueue/start boundary;
+terminal callbacks follow real idle/cancel/fail outcomes. Backend identity
+comes from ``detect_backend`` (or an explicit override), never a hardcoded
+``sapi`` label.
+
+Not exported from ``events/__init__.py``. Race wires this as ``tts_effect=``
+and drops CommentaryConsumer speech ownership.
 """
 
 from __future__ import annotations
@@ -10,17 +15,18 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from collections.abc import Awaitable, Callable
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any, Literal, Protocol, cast
 
 from irswitch.commentary.graph import GraphNode, TtsLimits
-from irswitch.commentary.tts import CommentaryUtterance, speak_text
+from irswitch.commentary.tts import CommentaryUtterance, detect_backend, speak_text
 from irswitch.contracts.command import NarrativeCommand
 
 logger = logging.getLogger(__name__)
 
 EffectWorker = Callable[
-    [dict[str, Any]], Awaitable[NarrativeCommand | list[NarrativeCommand] | None]
+    [dict[str, Any]],
+    Awaitable[NarrativeCommand | list[NarrativeCommand] | None] | AsyncIterator[NarrativeCommand],
 ]
 
 
@@ -57,7 +63,20 @@ def _bridge_utterance(text: str, token: dict[str, Any], *, locale: str) -> Comme
     )
 
 
-def _tts_callback(kind: str, token: dict[str, Any], *, mono_ms: int) -> NarrativeCommand:
+def _resolve_backend(explicit: str | None) -> str:
+    if explicit is not None and str(explicit).strip():
+        return str(explicit).strip().lower()
+    return str(detect_backend() or "null").strip().lower() or "null"
+
+
+def _tts_callback(
+    kind: str,
+    token: dict[str, Any],
+    *,
+    mono_ms: int,
+    backend: str,
+    worker_sequence: int,
+) -> NarrativeCommand:
     utterance_id = str(token["utteranceId"])
     utterance_ordinal = int(token["utteranceOrdinal"])
     backend_generation = int(token["backendGeneration"])
@@ -74,7 +93,7 @@ def _tts_callback(kind: str, token: dict[str, Any], *, mono_ms: int) -> Narrativ
         kind,
     )
     return NarrativeCommand.tts_callback(
-        f"tts:{kind}:{utterance_id}",
+        f"tts:{kind}:{utterance_id}:{worker_sequence}",
         kind_lit,
         mono_ms,
         utterance_id=utterance_id,
@@ -83,18 +102,29 @@ def _tts_callback(kind: str, token: dict[str, Any], *, mono_ms: int) -> Narrativ
         dispatch_generation=dispatch_generation,
         callback={
             "schemaVersion": "tts-callback/2",
-            "callbackId": f"cb:{kind}:{utterance_id}",
+            "callbackId": f"cb:{kind}:{utterance_id}:{worker_sequence}",
             "kind": callback_kind,
             "utteranceId": utterance_id,
             "utteranceOrdinal": utterance_ordinal,
-            "backend": "sapi",
+            "backend": backend,
             "backendGeneration": backend_generation,
             "dispatchGeneration": dispatch_generation,
-            "workerSequence": 1,
+            "workerSequence": int(worker_sequence),
             "observedMonoMs": mono_ms,
             "detailCode": detail,
         },
     )
+
+
+def _interrupt_sink(sink: _EnqueueSink | None) -> None:
+    if sink is None:
+        return
+    interrupt = getattr(sink, "interrupt", None)
+    if callable(interrupt):
+        try:
+            interrupt()
+        except Exception:
+            logger.debug("narrative tts_effect interrupt failed", exc_info=True)
 
 
 def build_tts_effect(
@@ -102,29 +132,93 @@ def build_tts_effect(
     *,
     locale: str = "en",
     idle_timeout_s: float = 30.0,
+    backend: str | None = None,
 ) -> EffectWorker:
-    """Build a NarrativeRuntime ``tts_effect`` worker around a process TTS sink."""
+    """Build a NarrativeRuntime ``tts_effect`` worker around a process TTS sink.
 
-    async def tts_effect(token: dict[str, Any]) -> list[NarrativeCommand]:
+    Returns an async generator that yields ``PLAYBACK_ACCEPTED`` at the enqueue
+    boundary, then a terminal callback after idle/fail/cancel. ``backend`` pins
+    identity for tests; otherwise ``detect_backend()`` is used.
+    """
+
+    resolved_backend = _resolve_backend(backend)
+
+    async def tts_effect(token: dict[str, Any]) -> AsyncIterator[NarrativeCommand]:
         mono_ms = int(time.monotonic() * 1000)
         text = str(token.get("text") or "").strip()
-        if text:
-            try:
-                if sink is not None:
-                    sink.enqueue(_bridge_utterance(text, token, locale=locale))
-                    wait_idle = getattr(sink, "wait_idle", None)
-                    if callable(wait_idle):
-                        await asyncio.to_thread(wait_idle, idle_timeout_s)
-                else:
-                    await asyncio.to_thread(speak_text, text, locale=locale)
-            except asyncio.CancelledError:
-                raise
-            except Exception:
-                logger.warning("narrative tts_effect playback failed", exc_info=True)
-                return [_tts_callback("SPEECH_FAILED", token, mono_ms=mono_ms)]
-        return [
-            _tts_callback("PLAYBACK_ACCEPTED", token, mono_ms=mono_ms),
-            _tts_callback("SPEECH_COMPLETED", token, mono_ms=mono_ms + 1),
-        ]
+        if not text:
+            yield _tts_callback(
+                "PLAYBACK_ACCEPTED",
+                token,
+                mono_ms=mono_ms,
+                backend=resolved_backend,
+                worker_sequence=1,
+            )
+            yield _tts_callback(
+                "SPEECH_COMPLETED",
+                token,
+                mono_ms=mono_ms + 1,
+                backend=resolved_backend,
+                worker_sequence=2,
+            )
+            return
 
-    return tts_effect
+        try:
+            if sink is not None:
+                sink.enqueue(_bridge_utterance(text, token, locale=locale))
+            else:
+                # speak_text path has no separate accept boundary before audio;
+                # accept is still emitted before the blocking speak returns.
+                pass
+            yield _tts_callback(
+                "PLAYBACK_ACCEPTED",
+                token,
+                mono_ms=mono_ms,
+                backend=resolved_backend,
+                worker_sequence=1,
+            )
+            if sink is not None:
+                wait_idle = getattr(sink, "wait_idle", None)
+                if callable(wait_idle):
+                    idle_ok = await asyncio.to_thread(wait_idle, idle_timeout_s)
+                    if not idle_ok:
+                        yield _tts_callback(
+                            "SPEECH_FAILED",
+                            token,
+                            mono_ms=int(time.monotonic() * 1000),
+                            backend=resolved_backend,
+                            worker_sequence=2,
+                        )
+                        return
+                # Null / non-waiting sinks complete immediately after accept.
+            else:
+                await asyncio.to_thread(speak_text, text, locale=locale)
+            yield _tts_callback(
+                "SPEECH_COMPLETED",
+                token,
+                mono_ms=int(time.monotonic() * 1000),
+                backend=resolved_backend,
+                worker_sequence=2,
+            )
+        except asyncio.CancelledError:
+            _interrupt_sink(sink)
+            yield _tts_callback(
+                "SPEECH_INTERRUPTED",
+                token,
+                mono_ms=int(time.monotonic() * 1000),
+                backend=resolved_backend,
+                worker_sequence=2,
+            )
+            return
+        except Exception:
+            logger.warning("narrative tts_effect playback failed", exc_info=True)
+            _interrupt_sink(sink)
+            yield _tts_callback(
+                "SPEECH_FAILED",
+                token,
+                mono_ms=int(time.monotonic() * 1000),
+                backend=resolved_backend,
+                worker_sequence=2,
+            )
+
+    return tts_effect  # type: ignore[return-value]

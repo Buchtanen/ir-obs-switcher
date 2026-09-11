@@ -8,6 +8,7 @@ consumer, overlay, or server loops. Owns mailbox dequeue order,
 from __future__ import annotations
 
 import asyncio
+import inspect
 import time
 from collections import deque
 from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
@@ -1086,7 +1087,22 @@ class NarrativeRuntime:
         attr: str,
     ) -> None:
         try:
-            produced = await worker(dict(token))
+            produced = worker(dict(token))
+            if inspect.isasyncgen(produced):
+                try:
+                    async for command in produced:
+                        if isinstance(command, NarrativeCommand):
+                            self.admit(command)
+                except asyncio.CancelledError:
+                    aclose = getattr(produced, "aclose", None)
+                    if callable(aclose):
+                        await aclose()
+                    raise
+                return
+            if inspect.isawaitable(produced):
+                produced = await produced
+            else:
+                return
         except asyncio.CancelledError:
             raise
         except Exception:
@@ -1182,8 +1198,7 @@ class NarrativeRuntime:
         self._speech_utterance_id = None
         self._speech_beat_id = None
         self._speech_opportunity_id = None
-        self._speech_backend = None
-        self._speech_backend_generation = None
+        # Keep last observed backend identity for status/metrics after terminal.
         self._speech_dispatched_at_mono_ms = None
         self._speech_accepted_at_mono_ms = None
         self._pending_exposure = None
@@ -1221,6 +1236,8 @@ class NarrativeRuntime:
             "sourceKind": source_kind,
             "reason": reason,
             "atMonoMs": at_mono_ms,
+            "backend": self._speech_backend,
+            "backendGeneration": self._speech_backend_generation,
         }
         self._clear_active_speech_projection()
 
@@ -2138,6 +2155,9 @@ class NarrativeRuntime:
             self._lane = "speaking"
             self._speech_deadline_stage = "playback"
             self._speech_accepted_at_mono_ms = int(command.enqueued_mono_ms)
+            backend = command.payload.get("backend")
+            if isinstance(backend, str) and backend.strip():
+                self._speech_backend = backend.strip()
             effects = [
                 "playback_accepted",
                 "effect:cancel_speech_deadline",

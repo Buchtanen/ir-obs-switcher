@@ -266,7 +266,7 @@ def _tape_component_projection(status: RuntimeStatus) -> dict[str, Any]:
     return component
 
 
-_TTS_BACKENDS = frozenset({"sapi", "espeak", "supertonic"})
+_TTS_BACKENDS = frozenset({"sapi", "espeak", "supertonic", "null"})
 _LLM_MODEL_UNCONFIGURED = "unconfigured"
 
 

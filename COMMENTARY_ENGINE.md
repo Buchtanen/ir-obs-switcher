@@ -281,7 +281,9 @@ Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine 
 
 **Slice 2 — mailbox cutover:** `NarrativeShadowConsumer` admits stream `ConfigUpdate` / `SessionReset` into `NarrativeMailbox` (no `shadow_non_batch` drop). Shadow timeline/fact revisions follow `stream_sequence` so post-recovery context can clear the recovery barrier floor.
 
-- Remaining live-path blockers (real TTS protocol, Qwen fail-closed, HTTP contract) are tracked under [#349](https://github.com/Buchtanen/ir-obs-switcher/issues/349) before §24.9 Windows gates (#278).
+**Slice 3 — TTS protocol:** `build_tts_effect` streams `PLAYBACK_ACCEPTED` at enqueue, then a real terminal (`SPEECH_COMPLETED` / `SPEECH_FAILED` / `SPEECH_INTERRUPTED`); callback `backend` follows `detect_backend` (allows `null`); runtime retains last `speech_backend` for status/metrics.
+
+- Remaining live-path blockers (Qwen fail-closed, HTTP contract) are tracked under [#349](https://github.com/Buchtanen/ir-obs-switcher/issues/349) before §24.9 Windows gates (#278).
 
 ## Content DB + fill plan
 

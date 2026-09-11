@@ -232,7 +232,7 @@ def _validate_tts_payload(payload: dict[str, Any], token: dict[str, Any], kind: 
             raise ContractViolation("TTS callback identity must match command token")
     Identifier(payload["callbackId"])
     Identifier(payload["utteranceId"])
-    if payload["backend"] not in {"sapi", "espeak", "supertonic"}:
+    if payload["backend"] not in {"sapi", "espeak", "supertonic", "null"}:
         raise ContractViolation("TTS callback backend is invalid")
     _positive(payload["workerSequence"], "workerSequence")
     _nonnegative(payload["observedMonoMs"], "observedMonoMs")
