@@ -9,7 +9,7 @@
 ## Guardrails
 
 - Does **not** rewrite frozen `docs/v2.0.0/machine/*` hashes.
-- Does **not** flip `FAMILY_ROUTE` (session leftovers stay `legacy`; `bio` remains `legacy`).
+- Does **not** flip `FAMILY_ROUTE` (`bio` remains `legacy`; no weather/filler/context key; shared `session` shadow is unchanged by #277).
 - Does **not** cut over live `v2` speech.
 - Does **not** duplicate wires already inventoried by timing (`SESSION_INTRO_*`, `QUALI_RECAP`) or ops (`SESSION_WRAP`, `SESSION_FLAG`, `SESSION_CHECKERED`, `FINISH`).
 - Integration-only; no master PR until cutover (#279).
