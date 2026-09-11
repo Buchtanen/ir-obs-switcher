@@ -54,6 +54,9 @@ def _packaged_catalog_projection() -> dict[str, Any]:
     }
 
 
+_PENDING_CHANGES_CAP = 128
+
+
 def _unloaded_config_projection() -> dict[str, Any]:
     """Default config block when no CONFIG_UPDATE ledger is cached."""
 
@@ -65,6 +68,41 @@ def _unloaded_config_projection() -> dict[str, Any]:
         "applySequence": 0,
         "pendingChanges": [],
     }
+
+
+def _pending_changes_projection(pending: list[object]) -> list[dict[str, object]] | None:
+    """Value-free pending boundary rows: ``{key,boundary,desiredGeneration}``.
+
+    Rows are sorted by ``key``, capped at 128. Any malformed row fails closed
+    (caller unloads the whole config block) so values never leak through.
+    """
+
+    projected: list[dict[str, object]] = []
+    for item in pending:
+        if not isinstance(item, dict):
+            return None
+        key = item.get("key")
+        boundary = item.get("boundary")
+        desired_generation = item.get("desiredGeneration")
+        if (
+            not isinstance(key, str)
+            or not key
+            or not isinstance(boundary, str)
+            or not boundary
+            or isinstance(desired_generation, bool)
+            or not isinstance(desired_generation, int)
+            or desired_generation < 0
+        ):
+            return None
+        projected.append(
+            {
+                "key": key,
+                "boundary": boundary,
+                "desiredGeneration": int(desired_generation),
+            }
+        )
+    projected.sort(key=lambda row: str(row["key"]))
+    return projected[:_PENDING_CHANGES_CAP]
 
 
 def _config_projection(status: RuntimeStatus) -> dict[str, Any]:
@@ -92,13 +130,16 @@ def _config_projection(status: RuntimeStatus) -> dict[str, Any]:
         or not isinstance(pending, list)
     ):
         return _unloaded_config_projection()
+    pending_changes = _pending_changes_projection(pending)
+    if pending_changes is None:
+        return _unloaded_config_projection()
     return {
         "schemaVersion": "commentary-config/2",
         "desiredGeneration": int(desired_generation),
         "desiredHash": desired_hash,
         "effectiveHash": effective_hash,
         "applySequence": int(apply_sequence),
-        "pendingChanges": [dict(item) if isinstance(item, dict) else item for item in pending],
+        "pendingChanges": pending_changes,
     }
 
 

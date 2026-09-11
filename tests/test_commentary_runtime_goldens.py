@@ -31,6 +31,7 @@ REQUIRED_FIXTURES = (
     "decisions_story_successor.json",
     "decisions_expired_ttl.json",
     "status_opportunities_queue.json",
+    "status_config_pending_boundaries.json",
     "validate_request.json",
     "validate_supported.json",
     "validate_rejected.json",

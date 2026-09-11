@@ -1153,7 +1153,13 @@ def test_project_runtime_status_config_follows_config_update_ledger() -> None:
         "desiredHash": ledger["desiredHash"],
         "effectiveHash": ledger["effectiveHash"],
         "applySequence": 7,
-        "pendingChanges": list(ledger["pendingChanges"]),
+        "pendingChanges": [
+            {
+                "key": "voice",
+                "boundary": "next_plan_or_manual",
+                "desiredGeneration": 3,
+            }
+        ],
     }
 
     assert runtime.admit(
@@ -1170,6 +1176,98 @@ def test_project_runtime_status_config_follows_config_update_ledger() -> None:
     assert cleared["desiredGeneration"] == 0
     assert cleared["applySequence"] == 0
     assert cleared["pendingChanges"] == []
+
+
+def test_project_runtime_status_fixed_en_catalog_and_pending_boundaries_golden() -> None:
+    """#273 fixed language=en, packaged catalog hash, value-free pending boundaries."""
+    import json
+    from pathlib import Path
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    runtime._config_ledger = {
+        "schemaVersion": "commentary-config/2",
+        "desiredGeneration": 7,
+        "desiredHash": "sha256:" + ("1" * 64),
+        "effectiveHash": "sha256:" + ("2" * 64),
+        "applySequence": 12,
+        "desiredValues": {"commentary.tts.voice": "secret-voice"},
+        "pendingChanges": [
+            {
+                "key": "commentary.tts.voice",
+                "boundary": "next_utterance",
+                "desiredGeneration": 7,
+                "value": "secret-voice",
+            },
+            {
+                "key": "commentary.detector.battle_ahead_v1.max_closing_slope",
+                "boundary": "next_stream",
+                "desiredGeneration": 7,
+                "value": 0.4,
+            },
+        ],
+    }
+    projection = project_runtime_status(runtime.status())
+    golden = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "status_config_pending_boundaries.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert projection["language"] == "en"
+    assert projection["language"] == golden["language"]
+    assert projection["catalog"] == golden["catalog"]
+    assert projection["config"] == golden["config"]
+    for row in projection["config"]["pendingChanges"]:
+        assert set(row) == {"key", "boundary", "desiredGeneration"}
+
+
+def test_project_runtime_status_pending_changes_sorted_capped_and_fail_closed() -> None:
+    """#273 pendingChanges sort by key, cap 128, malformed rows unload config."""
+    runtime = NarrativeRuntime()
+    runtime.enable()
+
+    many = [
+        {
+            "key": f"commentary.detector.slot_{index:03d}.threshold",
+            "boundary": "next_stream",
+            "desiredGeneration": 4,
+        }
+        for index in range(140, 0, -1)
+    ]
+    runtime._config_ledger = {
+        "schemaVersion": "commentary-config/2",
+        "desiredGeneration": 4,
+        "desiredHash": "sha256:" + ("a" * 64),
+        "effectiveHash": "sha256:" + ("b" * 64),
+        "applySequence": 9,
+        "pendingChanges": many,
+    }
+    pending = project_runtime_status(runtime.status())["config"]["pendingChanges"]
+    assert len(pending) == 128
+    keys = [row["key"] for row in pending]
+    assert keys == sorted(keys)
+    assert keys[0] == "commentary.detector.slot_001.threshold"
+    assert keys[-1] == "commentary.detector.slot_128.threshold"
+
+    runtime._config_ledger = {
+        "schemaVersion": "commentary-config/2",
+        "desiredGeneration": 4,
+        "desiredHash": "sha256:" + ("a" * 64),
+        "effectiveHash": "sha256:" + ("b" * 64),
+        "applySequence": 9,
+        "pendingChanges": [
+            {"key": "commentary.tts.voice", "boundary": "next_utterance", "desiredGeneration": 4},
+            {"key": "broken", "boundary": "next_stream"},  # missing desiredGeneration
+        ],
+    }
+    unloaded = project_runtime_status(runtime.status())["config"]
+    assert unloaded["desiredGeneration"] == 0
+    assert unloaded["applySequence"] == 0
+    assert unloaded["pendingChanges"] == []
 
 
 def test_project_runtime_status_episodes_follow_registry_counts() -> None:
