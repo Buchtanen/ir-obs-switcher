@@ -1602,8 +1602,8 @@ def test_semantic_verifier_rejects_without_tts() -> None:
     assert runtime.current_utterance_token() is None
 
 
-def test_semantic_verifier_skips_when_frame_missing() -> None:
-    """#270/#284: verifier without a frame still reaches TTS (skip, not reject)."""
+def test_semantic_verifier_rejects_when_frame_missing() -> None:
+    """#349: verifier without a frame rejects (fail-closed, no TTS)."""
     gate = FreshnessGate()
     token, world = _minimal_commit_pair()
     runtime = NarrativeRuntime(
@@ -1629,12 +1629,15 @@ def test_semantic_verifier_skips_when_frame_missing() -> None:
             result=_result_for(rz, text="Clear sentence."),
         )
     )
-    committed = runtime.reduce_next()
-    assert committed is not None
-    assert committed.lane_after == "committed"
-    assert "realization_committed" in committed.effects
-    assert "effect:dispatch_tts" in committed.effects
-    assert "semantic_verdict:skipped_no_frame" in committed.effects
+    rejected = runtime.reduce_next()
+    assert rejected is not None
+    assert rejected.lane_after == "idle"
+    assert "realization_verify_rejected" in rejected.effects
+    assert "semantic_verdict:rejected" in rejected.effects
+    assert "semantic_reason:missing_verify_frame" in rejected.effects
+    assert "effect:dispatch_tts" not in rejected.effects
+    assert "semantic_verdict:skipped_no_frame" not in rejected.effects
+    assert runtime.current_utterance_token() is None
 
 
 def test_opportunity_queue_absent_keeps_legacy_dispatch() -> None:

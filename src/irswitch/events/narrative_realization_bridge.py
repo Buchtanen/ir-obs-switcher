@@ -405,6 +405,14 @@ class SpeechDraftCache:
             return self._drafts.pop(0)
         return SpeechDraft(text=fallback, beat_id=None, source="fallback")
 
+    def take_authored(self) -> SpeechDraft | None:
+        """Pop the oldest authored draft, if any (never template/fallback)."""
+
+        for index, draft in enumerate(self._drafts):
+            if draft.source == "authored" and draft.text:
+                return self._drafts.pop(index)
+        return None
+
     def note_spoken_line(self, line_id: str | None) -> None:
         if not line_id:
             return
@@ -500,6 +508,46 @@ def realization_result_payload(
     }
 
 
+def _failed_realization_command(
+    token: dict[str, Any],
+    mono_ms: int,
+    *,
+    failure_reason: str,
+    backend: str = "qwen_compiled",
+) -> NarrativeCommand:
+    return NarrativeCommand.realization_result(
+        f"effect:rz-fail:{token['requestId']}",
+        "REALIZATION_FAILED",
+        mono_ms,
+        request_id=str(token["requestId"]),
+        request_ordinal=int(token["requestOrdinal"]),
+        dispatch_generation=int(token["dispatchGeneration"]),
+        result={
+            "schemaVersion": "realization-result/2",
+            "resultId": f"result-fail:{token['requestId']}",
+            "requestId": str(token["requestId"]),
+            "requestOrdinal": int(token["requestOrdinal"]),
+            "dispatchGeneration": int(token["dispatchGeneration"]),
+            "backend": backend,
+            "outcome": "failed",
+            "text": None,
+            "textHash": None,
+            "failureReason": failure_reason,
+            "modelReported": None,
+            "transportStartedMonoMs": mono_ms,
+            "responseStartedMonoMs": mono_ms,
+            "firstContentMonoMs": None,
+            "completedMonoMs": mono_ms + 1,
+            "promptTokens": None,
+            "completionTokens": None,
+            "totalTokens": None,
+            "usageSource": "unavailable",
+            "finishReason": None,
+            "resultHash": _sha256(f"fail:{token['requestId']}"),
+        },
+    )
+
+
 def build_realization_effect(
     draft_cache: SpeechDraftCache | None = None,
     *,
@@ -512,9 +560,10 @@ def build_realization_effect(
     """Build a NarrativeRuntime ``realization_effect``.
 
     Order: authored pack (when preferred + mapped) → optional #269 Qwen
-    (when ``allow_qwen`` and component ready) → shadow draft / template fallback.
-    Qwen transport failure never invents authored fallback inside the transport;
-    this bridge may still speak a template draft after a Qwen miss.
+    (when ``allow_qwen`` and component ready). When ``allow_qwen`` is True,
+    authored+Qwen miss is fail-closed (no silent template live fallback);
+    cached authored drafts may still speak. Template/shadow fallback remains
+    only when Qwen is disabled.
     """
 
     cache = draft_cache if draft_cache is not None else SpeechDraftCache()
@@ -555,6 +604,19 @@ def build_realization_effect(
             if qwen_text:
                 text = qwen_text
                 backend = "qwen_compiled"
+        if text is None and allow_qwen:
+            authored_draft = cache.take_authored()
+            if authored_draft is not None:
+                text = authored_draft.text
+                verify_frame = authored_draft.verify_frame
+                backend = "authored"
+            else:
+                return _failed_realization_command(
+                    token,
+                    mono_ms,
+                    failure_reason="realization_transport",
+                    backend="qwen_compiled",
+                )
         if text is None:
             draft = cache.consume(fallback=fallback_text)
             text = draft.text
@@ -568,25 +630,6 @@ def build_realization_effect(
                 )
                 if speech is not None:
                     text, verify_frame = speech
-            if (
-                text == draft.text
-                and allow_qwen
-                and qwen_service is not None
-                and llm_component is not None
-                and draft.beat_id
-                and draft.source != "authored"
-            ):
-                qwen_text = realize_qwen_text(
-                    beat_id=str(draft.beat_id),
-                    request_ordinal=int(token["requestOrdinal"]),
-                    dispatch_generation=int(token["dispatchGeneration"]),
-                    service=qwen_service,
-                    component=llm_component,
-                    now_ms=mono_ms,
-                )
-                if qwen_text:
-                    text = qwen_text
-                    backend = "qwen_compiled"
         try:
             if verify_frame is not None:
                 stash_live_verify_frame(token, verify_frame)
@@ -601,36 +644,11 @@ def build_realization_effect(
             )
         except Exception:
             logger.warning("narrative realization_effect failed", exc_info=True)
-            return NarrativeCommand.realization_result(
-                f"effect:rz-fail:{token['requestId']}",
-                "REALIZATION_FAILED",
+            return _failed_realization_command(
+                token,
                 mono_ms,
-                request_id=str(token["requestId"]),
-                request_ordinal=int(token["requestOrdinal"]),
-                dispatch_generation=int(token["dispatchGeneration"]),
-                result={
-                    "schemaVersion": "realization-result/2",
-                    "resultId": f"result-fail:{token['requestId']}",
-                    "requestId": str(token["requestId"]),
-                    "requestOrdinal": int(token["requestOrdinal"]),
-                    "dispatchGeneration": int(token["dispatchGeneration"]),
-                    "backend": "authored",
-                    "outcome": "failed",
-                    "text": None,
-                    "textHash": None,
-                    "failureReason": "realization_invalid_response",
-                    "modelReported": None,
-                    "transportStartedMonoMs": mono_ms,
-                    "responseStartedMonoMs": mono_ms,
-                    "firstContentMonoMs": None,
-                    "completedMonoMs": mono_ms + 1,
-                    "promptTokens": None,
-                    "completionTokens": None,
-                    "totalTokens": None,
-                    "usageSource": "unavailable",
-                    "finishReason": None,
-                    "resultHash": _sha256(f"fail:{token['requestId']}"),
-                },
+                failure_reason="realization_invalid_response",
+                backend="authored",
             )
 
     return realization_effect

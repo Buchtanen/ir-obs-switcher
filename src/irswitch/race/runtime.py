@@ -274,7 +274,7 @@ class RaceRuntime:
             llm_component = None
             if self._narrative_qwen_enabled:
                 # Live StdlibTransport + short soft-fail warmup; qwen_ready only
-                # when Ollama answers 200. Authored/template remain on miss.
+                # when Ollama answers 200. Qwen miss is fail-closed (no silent template fallback); authored drafts may still speak.
                 llm_component = LlmComponent()
                 transport = StdlibTransport()
                 qwen_service = RealizerService(transport=transport)

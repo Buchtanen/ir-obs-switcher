@@ -2052,9 +2052,20 @@ class NarrativeRuntime:
         if self._semantic_verifier is not None:
             intent, attached_live = self._verify_intent_from_realization(command, text=text)
             if intent is None:
-                # Qwen/unframed paths may omit a #270 frame; skip rather than
-                # fail-closed so the race can still inject the verifier.
-                semantic_verdict = "skipped_no_frame"
+                # #349 fail-closed: unframed output must not speak when verifier is live.
+                self._realization = None
+                self._commit_token = None
+                self._lane = "idle"
+                effects = [
+                    "realization_verify_rejected",
+                    "semantic_verdict:rejected",
+                    "semantic_reason:missing_verify_frame",
+                    "effect:cancel_realization_deadline",
+                ]
+                self._release_opportunity_attempt(effects)
+                self._invalidate_episode(effects)
+                self._note_director_failure(effects)
+                return "handled", effects
             else:
                 if attached_live:
                     # Marker for live authored/template frame attachment.
