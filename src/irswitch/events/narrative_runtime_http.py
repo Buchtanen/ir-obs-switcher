@@ -26,6 +26,7 @@ from ``events/__init__.py``.
 
 from __future__ import annotations
 
+import ipaddress
 import logging
 import time
 import uuid
@@ -43,6 +44,10 @@ from irswitch.events.narrative_validate_projection import project_validate_respo
 logger = logging.getLogger(__name__)
 
 _process_narrative_runtime: NarrativeRuntimeStatusProvider | None = None
+
+CSRF_HEADER = "X-Requested-With"
+CSRF_VALUE = "irswitch"
+_MAX_WRITE_BODY_BYTES = 64 * 1024
 
 
 class NarrativeRuntimeStatusProvider(Protocol):
@@ -92,6 +97,40 @@ def _error_response(
         },
         status=status,
     )
+
+
+def _peer_is_loopback(request: web.Request) -> bool:
+    """Return True only for the direct peer; forwarded headers never grant locality."""
+
+    peer = request.remote or ""
+    try:
+        return ipaddress.ip_address(peer).is_loopback
+    except ValueError:
+        return False
+
+
+def _enforce_write_transport(request: web.Request) -> web.Response | None:
+    """Apply public-contracts write transport gates before body parse (#273).
+
+    Order: loopback peer → CSRF header → Content-Type → Content-Length.
+    ``forbidden`` covers peer/CSRF; size/type failures stay ``invalid_request``.
+    """
+
+    if not _peer_is_loopback(request):
+        return _error_response("forbidden", 403)
+    if request.headers.get(CSRF_HEADER) != CSRF_VALUE:
+        return _error_response("forbidden", 403)
+    content_type = request.content_type or ""
+    if content_type.split(";")[0].strip().lower() != "application/json":
+        return _error_response("invalid_request", 400)
+    length_raw = request.headers.get("Content-Length")
+    if length_raw is not None:
+        try:
+            if int(length_raw) > _MAX_WRITE_BODY_BYTES:
+                return _error_response("invalid_request", 400)
+        except ValueError:
+            return _error_response("invalid_request", 400)
+    return None
 
 
 async def _read_json_object(request: web.Request) -> dict[str, Any] | web.Response:
@@ -154,6 +193,9 @@ async def handle_commentary_runtime_decisions(request: web.Request) -> web.Respo
 async def handle_commentary_runtime_validate(request: web.Request) -> web.Response:
     """Offline validate EN text against supplied beat + bindings (no live state)."""
 
+    denied = _enforce_write_transport(request)
+    if denied is not None:
+        return denied
     body = await _read_json_object(request)
     if isinstance(body, web.Response):
         return body
@@ -200,6 +242,9 @@ def _parse_manual_speak_body(body: dict[str, Any]) -> str | web.Response:
 async def handle_commentary_runtime_speak(request: web.Request) -> web.Response:
     """Admit manual EN speak through NarrativeRuntime (sync reduce path)."""
 
+    denied = _enforce_write_transport(request)
+    if denied is not None:
+        return denied
     body = await _read_json_object(request)
     if isinstance(body, web.Response):
         return body

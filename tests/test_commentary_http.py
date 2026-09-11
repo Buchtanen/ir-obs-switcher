@@ -13,6 +13,8 @@ from irswitch.events.narrative_runtime_http import APP_NARRATIVE_RUNTIME, set_na
 from irswitch.overlay.http import reset_overlay_server
 from irswitch.server.api import create_app, reset_state
 
+WRITE_CSRF_HEADERS = {"X-Requested-With": "irswitch"}
+
 FIXTURES = Path(__file__).resolve().parents[1] / "tests" / "fixtures" / "commentary_runtime"
 
 
@@ -50,7 +52,9 @@ async def test_public_speak_without_runtime_returns_503(app: web.Application) ->
     request = json.loads((FIXTURES / "speak_request.json").read_text(encoding="utf-8"))
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 503
             body = await resp.json()
             assert body["schemaVersion"] == "commentary-runtime/2"
@@ -65,7 +69,9 @@ async def test_public_validate_uses_runtime_contract(app: web.Application) -> No
     expected = json.loads((FIXTURES / "validate_supported.json").read_text(encoding="utf-8"))
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/validate", json=request)
+            resp = await client.post(
+                "/api/commentary/validate", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 200
             assert await resp.json() == expected
 
@@ -80,7 +86,9 @@ async def test_public_speak_admits_via_narrative_runtime(app: web.Application) -
     app[APP_NARRATIVE_RUNTIME] = runtime
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 202
             body = await resp.json()
             assert body["accepted"] is True
@@ -97,6 +105,7 @@ async def test_public_speak_rejects_legacy_body_shape(app: web.Application) -> N
             resp = await client.post(
                 "/api/commentary/speak",
                 json={"text": "He takes P5 from Rossi.", "nodeId": "overtake"},
+                headers=WRITE_CSRF_HEADERS,
             )
             assert resp.status == 400
             body = await resp.json()

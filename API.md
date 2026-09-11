@@ -859,7 +859,7 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 | `POST` | `/api/commentary/validate` | `#284` / `#273` cut over to NarrativeRuntime offline validate (`commentary-runtime/2`; same handler as `/api/commentary/runtime/validate`) |
 | `POST` | `/api/commentary/speak` | `#284` / `#273` cut over to NarrativeRuntime manual speak (`commentary-runtime/2`; same handler as `/api/commentary/runtime/speak`) |
 
-`GET /api/commentary/assignments` was removed in #273: the route is unregistered and returns the server's generic 404 (not a commentary-runtime JSON tombstone). Offline `render_assignments()` in `commentary/assignments.py` remains for CLI/docs.
+`GET /api/commentary/assignments` was removed in #273: the route is unregistered and returns the server's generic 404 (not a commentary-runtime JSON tombstone; `error_not_found.json` remains a reserved machine golden only). Offline `render_assignments()` in `commentary/assignments.py` remains for CLI/docs.
 
 `speak` nejdřív pustí TTS validator.
 
@@ -1095,6 +1095,7 @@ Invalid `limit` query values fall back to the default **20** (clamped to 1–100
 **Content-Type**: `application/json`
 
 **Behavior**
+- Write transport: direct loopback peer + exact `X-Requested-With: irswitch` (else **403** `forbidden`); `Content-Type: application/json` and body ≤64 KiB (else **400** `invalid_request`).
 - Public `POST /api/commentary/validate` is cut over to this handler; `/api/commentary/runtime/validate` remains an alias.
 - **Offline** — does not read live `NarrativeRuntime` state, roster, or Qwen; no provider required.
 - Syntactically valid requests always return **200** with a `ValidateResponse` body; `valid` is `false` when any issue has severity `error`.

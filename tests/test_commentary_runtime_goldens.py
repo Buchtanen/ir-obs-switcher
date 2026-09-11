@@ -16,6 +16,8 @@ from irswitch.events.narrative_runtime_http import (
 )
 
 ROOT = Path(__file__).resolve().parents[1]
+WRITE_CSRF_HEADERS = {"X-Requested-With": "irswitch"}
+
 FIXTURES = ROOT / "tests" / "fixtures" / "commentary_runtime"
 MACHINE_GOLDENS = ROOT / "docs" / "v2.0.0" / "machine" / "api-goldens.json"
 
@@ -130,7 +132,9 @@ async def test_runtime_speak_mailbox_overloaded_matches_error_golden() -> None:
     app = _app_with_provider(_Overloaded())
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/runtime/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 503
             assert await resp.json() == expected
 
@@ -146,7 +150,9 @@ async def test_runtime_speak_admission_timeout_matches_error_golden() -> None:
     app = _app_with_provider(_Timeout())
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/runtime/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 503
             assert await resp.json() == expected
 
@@ -162,7 +168,9 @@ async def test_runtime_speak_busy_matches_error_golden() -> None:
     app = _app_with_provider(_Busy())
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/runtime/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 409
             assert await resp.json() == expected
 
@@ -176,7 +184,9 @@ async def test_runtime_speak_component_unavailable_matches_error_golden() -> Non
     app = _app_with_provider(None)
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/runtime/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 503
             assert await resp.json() == expected
 
@@ -192,7 +202,7 @@ async def test_runtime_validate_invalid_json_matches_error_golden() -> None:
             resp = await client.post(
                 "/api/commentary/runtime/validate",
                 data=b"not-json",
-                headers={"Content-Type": "application/json"},
+                headers={**WRITE_CSRF_HEADERS, "Content-Type": "application/json"},
             )
             assert resp.status == 400
             assert await resp.json() == expected
@@ -206,7 +216,11 @@ async def test_runtime_validate_invalid_request_matches_error_golden() -> None:
     app = _app_with_provider(None)
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/runtime/validate", json=["not-an-object"])
+            resp = await client.post(
+                "/api/commentary/runtime/validate",
+                json=["not-an-object"],
+                headers=WRITE_CSRF_HEADERS,
+            )
             assert resp.status == 400
             assert await resp.json() == expected
 
@@ -221,9 +235,79 @@ async def test_runtime_speak_validation_failed_matches_error_golden() -> None:
     app = _app_with_provider(None)
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/runtime/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 422
             assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_missing_csrf_matches_forbidden_golden() -> None:
+    """#273: write without X-Requested-With: irswitch freezes to error_forbidden.json."""
+
+    expected = json.loads((FIXTURES / "error_forbidden.json").read_text(encoding="utf-8"))
+    request = json.loads((FIXTURES / "speak_request.json").read_text(encoding="utf-8"))
+    app = _app_with_provider(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            assert resp.status == 403
+            assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_validate_rejected_matches_golden() -> None:
+    """#273: actor-reversed validate body freezes to validate_rejected.json."""
+
+    request = json.loads((FIXTURES / "validate_request.json").read_text(encoding="utf-8"))
+    request = {
+        **request,
+        "text": "Morgan is closing on the driver, the gap at one point four seconds.",
+    }
+    expected = json.loads((FIXTURES / "validate_rejected.json").read_text(encoding="utf-8"))
+    app = _app_with_provider(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/validate", json=request, headers=WRITE_CSRF_HEADERS
+            )
+            assert resp.status == 200
+            assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_accepted_matches_golden_with_normalized_request_id() -> None:
+    """#273: speak accept body matches speak_accepted.json aside from dynamic requestId."""
+
+    expected = json.loads((FIXTURES / "speak_accepted.json").read_text(encoding="utf-8"))
+    request = json.loads((FIXTURES / "speak_request.json").read_text(encoding="utf-8"))
+
+    class _Accept:
+        async def try_manual_speak(self, text: str, **kwargs: object) -> ManualSpeakOutcome:
+            return ManualSpeakOutcome(kind="accepted", request_id=str(kwargs.get("request_id")))
+
+    app = _app_with_provider(_Accept())
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
+            assert resp.status == 202
+            body = await resp.json()
+            assert body["requestId"].startswith("manual:")
+            body_normalized = {**body, "requestId": expected["requestId"]}
+            assert body_normalized == expected
+
+
+def test_error_not_found_fixture_matches_machine_and_is_reserved() -> None:
+    """#273: error_not_found stays machine-synced; assignments uses generic 404."""
+
+    machine = json.loads(MACHINE_GOLDENS.read_text(encoding="utf-8"))
+    row = next(item for item in machine["valid"] if item["id"] == "error_not_found")
+    fixture = json.loads((FIXTURES / "error_not_found.json").read_text(encoding="utf-8"))
+    assert fixture == row["value"]
+    assert fixture["error"]["code"] == "not_found"
 
 
 def test_health_commentary_ready_matches_machine_golden() -> None:

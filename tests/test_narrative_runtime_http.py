@@ -17,6 +17,8 @@ from irswitch.events.narrative_runtime_http import (
     register_narrative_runtime_routes,
 )
 
+WRITE_CSRF_HEADERS = {"X-Requested-With": "irswitch"}
+
 SOURCE = (
     Path(__file__).resolve().parents[1]
     / "src"
@@ -197,7 +199,9 @@ async def test_runtime_validate_supported_golden() -> None:
     app = _app_with_runtime(None)
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/runtime/validate", json=request)
+            resp = await client.post(
+                "/api/commentary/runtime/validate", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 200
             assert await resp.json() == expected
 
@@ -210,6 +214,7 @@ async def test_runtime_validate_malformed_returns_400() -> None:
             resp = await client.post(
                 "/api/commentary/runtime/validate",
                 json={"schemaVersion": "commentary-runtime/2"},
+                headers=WRITE_CSRF_HEADERS,
             )
             assert resp.status == 400
             data = await resp.json()
@@ -229,7 +234,9 @@ async def test_runtime_speak_accepted_and_busy() -> None:
     app = _app_with_runtime(runtime)
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/runtime/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 202
             data = await resp.json()
             assert data["schemaVersion"] == "commentary-runtime/2"
@@ -237,7 +244,9 @@ async def test_runtime_speak_accepted_and_busy() -> None:
             assert data["admittedState"] == "committed"
             assert data["requestId"].startswith("manual:")
 
-            busy = await client.post("/api/commentary/runtime/speak", json=request)
+            busy = await client.post(
+                "/api/commentary/runtime/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert busy.status == 409
             payload = await busy.json()
             assert payload["error"]["code"] == "speech_busy"
@@ -259,7 +268,9 @@ async def test_runtime_speak_rejects_unknown_body_fields() -> None:
     app = _app_with_runtime(runtime)
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/runtime/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 400
             data = await resp.json()
             assert data["schemaVersion"] == "commentary-runtime/2"
@@ -282,7 +293,9 @@ async def test_runtime_speak_accepted_admitted_state_is_committed() -> None:
     app = _app_with_runtime(runtime)
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/runtime/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 202
             data = await resp.json()
             assert set(data) == {"schemaVersion", "accepted", "requestId", "admittedState"}
@@ -299,7 +312,9 @@ async def test_runtime_speak_without_provider_returns_503() -> None:
     app = _app_with_runtime(None)
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/runtime/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 503
             data = await resp.json()
             assert data["error"]["code"] == "component_unavailable"
@@ -346,7 +361,9 @@ async def test_public_validate_matches_runtime_golden() -> None:
     register_commentary_routes(app)
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/validate", json=request)
+            resp = await client.post(
+                "/api/commentary/validate", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 200
             assert await resp.json() == expected
 
@@ -367,7 +384,9 @@ async def test_public_speak_matches_runtime_admit_path() -> None:
     app[APP_NARRATIVE_RUNTIME] = runtime
     async with TestServer(app) as server:
         async with TestClient(server) as client:
-            resp = await client.post("/api/commentary/speak", json=request)
+            resp = await client.post(
+                "/api/commentary/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert resp.status == 202
             data = await resp.json()
             assert data["schemaVersion"] == "commentary-runtime/2"
@@ -375,7 +394,9 @@ async def test_public_speak_matches_runtime_admit_path() -> None:
             assert data["admittedState"] == "committed"
             assert data["requestId"].startswith("manual:")
 
-            busy = await client.post("/api/commentary/speak", json=request)
+            busy = await client.post(
+                "/api/commentary/speak", json=request, headers=WRITE_CSRF_HEADERS
+            )
             assert busy.status == 409
             payload = await busy.json()
             assert payload["error"]["code"] == "speech_busy"
@@ -404,6 +425,7 @@ async def test_runtime_speak_admission_timeout_maps_503() -> None:
                     "language": "en",
                     "text": "Commentary audio test.",
                 },
+                headers=WRITE_CSRF_HEADERS,
             )
             assert resp.status == 503
             data = await resp.json()
