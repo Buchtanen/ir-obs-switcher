@@ -23,6 +23,9 @@ BUILDER_PATH = MACHINE / "build_vertical_slice_fixtures.py"
 
 # Named F scenarios already covered by adjacent unit tests (docstring inventory).
 WIRED_UNIT_COVERAGE: dict[str, tuple[str, ...]] = {
+    "F02": ("tests/test_vertical_slice_transition_runtime.py",),
+    "F03": ("tests/test_vertical_slice_transition_runtime.py",),
+    "F04": ("tests/test_vertical_slice_transition_runtime.py",),
     "F08": ("tests/test_vertical_slice_expiry_runtime.py",),
     "F15": ("tests/test_vertical_slice_expiry_runtime.py",),
     "F22": ("tests/test_stream_timeline.py",),
@@ -109,10 +112,13 @@ def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
     all_ids = {row["id"] for row in fixture_bundle["fixtures"]}
     assert set(WIRED_UNIT_COVERAGE) <= all_ids
     unwired = sorted(all_ids - set(WIRED_UNIT_COVERAGE))
-    assert len(unwired) == 35
+    assert len(unwired) == 32
     assert "F01" in unwired
     assert "F05" in unwired
     assert "F23" in unwired
+    assert "F02" not in unwired
+    assert "F03" not in unwired
+    assert "F04" not in unwired
     assert "F08" not in unwired
     assert "F15" not in unwired
     assert "F24" not in unwired
@@ -121,4 +127,5 @@ def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
         "tests/test_narrative_capture_plan.py",
         "tests/test_narrative_capture_safety.py",
     )
+    assert WIRED_UNIT_COVERAGE["F02"] == ("tests/test_vertical_slice_transition_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F08"] == ("tests/test_vertical_slice_expiry_runtime.py",)

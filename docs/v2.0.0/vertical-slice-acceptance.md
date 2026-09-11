@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 2 — offline expiry runtime drivers for F08/F15/F24 (no live Windows §24.9 GO).
+**Status:** Slice 3 — offline transition runtime drivers for F02/F03/F04 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -31,6 +31,20 @@
 **AC locks (Slice 2):**
 - Machine projection for F08/F15/F24 still matches frozen expectations/calcs.
 - Runtime drivers prove no barge-in / no prepared queue, fact-only silence path, half-open expiry without fallback.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+## Slice 3 — F02/F03/F04 transition runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F02` (canonical P0>Q0>R0 inheritance), `F03` (Race→Qualifying rewind), `F04` (confirmed same-session restart) |
+| Pytest | `tests/test_vertical_slice_transition_runtime.py` |
+| Inventory | **12/44** wired; **32** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 3):**
+- Machine projection for F02/F03/F04 still matches frozen expectations.
+- Runtime drivers prove lineage inheritance, ordered rewind without `SESSION_REWOUND`, speech cancel on occurrence reset, and confirmed restart without false positives.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices
