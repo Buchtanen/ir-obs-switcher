@@ -820,7 +820,7 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 | Goldens | `tests/fixtures/commentary_runtime/decisions_story_successor.json`, `decisions_expired_ttl.json`, `status_opportunities_queue.json`; added to `tests/test_commentary_runtime_goldens.py` `REQUIRED_FIXTURES` |
 | Tests | `tests/test_narrative_ingress.py` (**3** rows: `test_project_runtime_decisions_story_successor_golden`, `test_build_terminal_decision_entry_expired_ttl_golden`, `test_project_runtime_status_opportunities_queue_follows_live_counts`) |
 | Evidence | feat SHA `75e128d`; PR [#292](https://github.com/Buchtanen/ir-obs-switcher/pull/292) **MERGED** into `codex/commentary-story-flow-spec`; **no master PR** |
-| Scope | Branch-only; atomic task **done** @ integration tip `75e128d`; **#273 remainder still open** (**Expose fixed EN, catalog hash, desired/effective config hashes, apply sequence and pending boundaries**; master cutover only — human kick) |
+| Scope | Branch-only; atomic task **done** @ integration tip `75e128d`; **#273 remainder still open** (~~**Expose fixed EN, catalog hash, desired/effective config hashes, apply sequence and pending boundaries**~~ **DONE** @ `b751d70`; master cutover only — human kick) |
 
 
 ### #284 #273 ManualAdmissionLatch slice lookup
@@ -957,4 +957,17 @@ Live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / Pr
 - **Feat `952cc1d`:** `RuntimeStatus.loop_last_reduce_mono_ms` / `loop_reduce_count` advance on each `reduce_next()`; `loop_supervisors` from `attach_supervisor_heartbeat(name, provider)` (`WorkerSupervisor.status_snapshot` shape: `{running, restarts, lastError}`). Race attaches `narrativeRuntime` + `narrativeShadow` in `race/runtime.py`. `project_runtime_status` emits `loop.{active, lastReduceMonoMs, reduceCount, supervisors}`; library without attach → `supervisors: {}`.
 - **Tests:** `tests/test_narrative_ingress.py` inactive + async active rows + loop heartbeat after reduce + attached supervisors + race-source wiring guard; HTTP disabled subset asserts full idle `loop` shape (`active=false`, `reduceCount=0`, `lastReduceMonoMs=null`, `supervisors={}`). Related **268** (= prior **265** + **3** planningCycle/streamEpoch rows across runtime slice).
 - **Still out of scope:** master cutover only (human kick). **#284 stays OPEN** — no master PR. **#273 remainder still open.**
+
+
+
+### #273 fixed-EN/config-pending-boundaries slice lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| Ingress | `events/narrative_ingress.py` — `_pending_changes_projection` value-free `{key,boundary,desiredGeneration}`, sort by key, cap **128**, fail-closed unload |
+| Status | fixed `language=en`; packaged `catalog.hash`; live `desiredHash`/`effectiveHash`/`applySequence` |
+| Goldens | `tests/fixtures/commentary_runtime/status_config_pending_boundaries.json`; `REQUIRED_FIXTURES` |
+| Evidence | feat SHA `b751d70`; prior mypy tip `d0f3863`; n12 shadow-cutover test fix `4a5c57b`; tip `b751d70`; PR [#294](https://github.com/Buchtanen/ir-obs-switcher/pull/294) **FF-merged**; **no master PR** |
+| Scope | Branch-only; atomic task **done**; #273 main atomic list complete — remaining open AC/design-freeze items only |
 
