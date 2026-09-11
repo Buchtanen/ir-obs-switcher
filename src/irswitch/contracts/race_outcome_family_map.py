@@ -299,7 +299,10 @@ def race_outcome_family_rows() -> tuple[RaceOutcomeFamilyRow, ...]:
                 raise ContractViolation(
                     f"{wire_id} closing route {route!r} missing from beat storyRoutes"
                 )
-        if static.fallback_story_route is not None and static.fallback_story_route not in story_routes:
+        if (
+            static.fallback_story_route is not None
+            and static.fallback_story_route not in story_routes
+        ):
             raise ContractViolation(
                 f"{wire_id} fallback {static.fallback_story_route!r} missing from beat storyRoutes"
             )
