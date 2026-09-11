@@ -23,7 +23,10 @@ BUILDER_PATH = MACHINE / "build_vertical_slice_fixtures.py"
 
 # Named F scenarios already covered by adjacent unit tests (docstring inventory).
 WIRED_UNIT_COVERAGE: dict[str, tuple[str, ...]] = {
+    "F08": ("tests/test_vertical_slice_expiry_runtime.py",),
+    "F15": ("tests/test_vertical_slice_expiry_runtime.py",),
     "F22": ("tests/test_stream_timeline.py",),
+    "F24": ("tests/test_vertical_slice_expiry_runtime.py",),
     "F25": ("tests/test_stream_timeline.py",),
     "F27": ("tests/test_narrative_tape_queue.py",),
     "F31": ("tests/test_stream_timeline.py",),
@@ -101,17 +104,21 @@ def test_vertical_slice_mutations_are_fail_closed(
 def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
     fixture_bundle: dict[str, Any],
 ) -> None:
-    """Slice 1 inventory: machine harness covers all 44; runtime unit wiring is sparse."""
+    """Inventory: machine harness covers all 44; runtime unit wiring grows per slice."""
 
     all_ids = {row["id"] for row in fixture_bundle["fixtures"]}
     assert set(WIRED_UNIT_COVERAGE) <= all_ids
     unwired = sorted(all_ids - set(WIRED_UNIT_COVERAGE))
-    assert len(unwired) == 38
+    assert len(unwired) == 35
     assert "F01" in unwired
     assert "F05" in unwired
     assert "F23" in unwired
+    assert "F08" not in unwired
+    assert "F15" not in unwired
+    assert "F24" not in unwired
     # Named coverage stays an explicit allow-list so later slices shrink it deliberately.
     assert WIRED_UNIT_COVERAGE["F44"] == (
         "tests/test_narrative_capture_plan.py",
         "tests/test_narrative_capture_safety.py",
     )
+    assert WIRED_UNIT_COVERAGE["F08"] == ("tests/test_vertical_slice_expiry_runtime.py",)
