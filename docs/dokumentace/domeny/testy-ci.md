@@ -233,3 +233,16 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 
 **Slice 14 locks:** F28 reduce 10→12, older/duplicate noop, lone-sample coverage capped/invalid for trend, OLS three buckets, identity match; FeatureEngine stays free of NarrativeRuntime/DetectorBank imports; machine projection still matches frozen expectations; gap inventory **35/44** wired, **9** unwired.
 
+## #278 vertical-slice disable/re-enable runtime (Slice 15)
+
+**Status:** offline F16 drivers on branch `cursor/vertical-slice-disable-config-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Contract | Value |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_disable_reenable_runtime.py`](../../../tests/test_vertical_slice_disable_reenable_runtime.py) (**2** tests: **1** parametrized machine projection + F16 runtime driver) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **36/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 15](../../v2.0.0/vertical-slice-acceptance.md#slice-15--f16-disablere-enable-within-broadcast-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F16 row; hashes **unchanged**) |
+
+**Slice 15 locks:** F16 close run 3, commentary disabled, complete trailer, manual independence, allocate run 4, incomplete history, one enabled mid-stream, no state leak; machine projection still matches frozen expectations; gap inventory **36/44** wired, **8** unwired.
+

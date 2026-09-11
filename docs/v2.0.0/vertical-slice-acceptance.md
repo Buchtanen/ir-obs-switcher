@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 14 — offline feature-order + bucket-coverage drivers for F28 (no live Windows §24.9 GO).
+**Status:** Slice 15 — offline disable/re-enable-within-broadcast drivers for F16 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -202,6 +202,21 @@
 **AC locks (Slice 14):**
 - Machine projection for F28 still matches frozen expectations.
 - Runtime drivers prove reduce 10→12, older/duplicate noop, lone-sample coverage capped/invalid for trend, OLS three-bucket coverage, and identity match; `FeatureEngine` import surface stays free of `NarrativeRuntime` / `DetectorBank`.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+
+## Slice 15 — F16 disable/re-enable-within-broadcast runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F16` (disable + re-enable inside one OBS broadcast) |
+| Pytest | `tests/test_vertical_slice_disable_reenable_runtime.py` |
+| Inventory | **36/44** wired; **8** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 15):**
+- Machine projection for F16 still matches frozen expectations.
+- Runtime drivers prove close run 3, commentary disabled, complete trailer flush, manual independence while disabled, allocate run 4 / stream epoch 2, incomplete history across the gap, one enabled mid-stream, and no state leak into the new run.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 ## Later slices
