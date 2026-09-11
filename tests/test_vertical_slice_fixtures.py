@@ -40,6 +40,8 @@ WIRED_UNIT_COVERAGE: dict[str, tuple[str, ...]] = {
     "F38": ("tests/test_vertical_slice_facts_freshness_runtime.py",),
     "F18": ("tests/test_vertical_slice_context_prompt_runtime.py",),
     "F33": ("tests/test_vertical_slice_context_prompt_runtime.py",),
+    "F14": ("tests/test_vertical_slice_playback_replace_runtime.py",),
+    "F35": ("tests/test_vertical_slice_playback_replace_runtime.py",),
     "F13": ("tests/test_vertical_slice_mailbox_manual_runtime.py",),
     "F20": ("tests/test_vertical_slice_mailbox_manual_runtime.py",),
     "F15": ("tests/test_vertical_slice_expiry_runtime.py",),
@@ -132,7 +134,7 @@ def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
     all_ids = {row["id"] for row in fixture_bundle["fixtures"]}
     assert set(WIRED_UNIT_COVERAGE) <= all_ids
     unwired = sorted(all_ids - set(WIRED_UNIT_COVERAGE))
-    assert len(unwired) == 12
+    assert len(unwired) == 10
     assert "F09" not in unwired
     assert "F11" not in unwired
     assert "F12" not in unwired
@@ -141,6 +143,8 @@ def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
     assert "F38" not in unwired
     assert "F18" not in unwired
     assert "F33" not in unwired
+    assert "F14" not in unwired
+    assert "F35" not in unwired
     assert "F13" not in unwired
     assert "F20" not in unwired
     assert "F21" not in unwired
@@ -176,6 +180,8 @@ def test_vertical_slice_gap_inventory_lists_unwired_runtime_scenarios(
     assert WIRED_UNIT_COVERAGE["F38"] == ("tests/test_vertical_slice_facts_freshness_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F18"] == ("tests/test_vertical_slice_context_prompt_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F33"] == ("tests/test_vertical_slice_context_prompt_runtime.py",)
+    assert WIRED_UNIT_COVERAGE["F14"] == ("tests/test_vertical_slice_playback_replace_runtime.py",)
+    assert WIRED_UNIT_COVERAGE["F35"] == ("tests/test_vertical_slice_playback_replace_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F13"] == ("tests/test_vertical_slice_mailbox_manual_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F20"] == ("tests/test_vertical_slice_mailbox_manual_runtime.py",)
     assert WIRED_UNIT_COVERAGE["F10"] == ("tests/test_vertical_slice_silence_runtime.py",)
