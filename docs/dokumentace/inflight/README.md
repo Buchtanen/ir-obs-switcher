@@ -1417,3 +1417,11 @@ Live DetectorBank / DirectEdgeBank / LifecycleTriggerBank / ClosingDetector / Pr
 - **Branch:** `cursor/vertical-slice-playback-replace-278-cad3`.
 - **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/vertical-slice-acceptance.md` + `docs/dokumentace/`; **`CONFIG.md` / `API.md` unchanged**; **no** frozen `machine/*` hash rewrite; **does not** claim live Windows/iRSDK/OBS/Ollama/TTS §24.9 GO.
 
+### #278 vertical-slice feature-order runtime slice 14 lookup
+
+- **Issue:** [#278](https://github.com/Buchtanen/ir-obs-switcher/issues/278) — Slice 14 offline feature-order + bucket-coverage drivers for **F28** (upstream FeatureEngine owns frame order and OLS coverage) (**open**; issue remains open until live §24.9 slices land).
+- **Acceptance status:** [vertical-slice-acceptance.md § Slice 14](../../v2.0.0/vertical-slice-acceptance.md#slice-14--f28-feature-order--bucket-coverage-runtime-drivers).
+- **Pytest consumer:** [`tests/test_vertical_slice_feature_order_runtime.py`](../../../tests/test_vertical_slice_feature_order_runtime.py) (**2**) — re-runs frozen machine projection for F28 plus `FeatureEngine` order/coverage drivers; gap inventory **35/44** wired (**9** unwired) via [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) `WIRED_UNIT_COVERAGE`.
+- **Slice 13 prerequisite:** [§ slice 13 lookup](#278-vertical-slice-playback-replace-runtime-slice-13-lookup) on `cursor/vertical-slice-playback-replace-278-cad3`.
+- **Branch:** `cursor/vertical-slice-feature-order-278-cad3`.
+- **Docs impact:** branch-only `inflight/` + `docs/v2.0.0/vertical-slice-acceptance.md` + `docs/dokumentace/`; **`CONFIG.md` / `API.md` unchanged**; **no** frozen `machine/*` hash rewrite; **does not** claim live Windows/iRSDK/OBS/Ollama/TTS §24.9 GO.

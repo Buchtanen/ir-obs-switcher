@@ -190,6 +190,20 @@
 - Runtime drivers prove reset-then-stale-accept stays unconsumed, accept-then-reset interrupts exposed speech, reducer sequence authority, replace-without-suppression, close cycle N / open N+1 attempt 1, one alternative, lower/pure fact does not replace, accepted events only.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
+## Slice 14 — F28 feature-order + bucket-coverage runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F28` (feature frame order + bucket coverage owned upstream) |
+| Pytest | `tests/test_vertical_slice_feature_order_runtime.py` |
+| Inventory | **35/44** wired; **9** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 14):**
+- Machine projection for F28 still matches frozen expectations.
+- Runtime drivers prove reduce 10→12, older/duplicate noop, lone-sample coverage capped/invalid for trend, OLS three-bucket coverage, and identity match; `FeatureEngine` import surface stays free of `NarrativeRuntime` / `DetectorBank`.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
 ## Later slices
 
 - Runtime NarrativeRuntime drivers for remaining F scenarios.
