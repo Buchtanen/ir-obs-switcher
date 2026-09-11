@@ -169,12 +169,17 @@ def test_overtaken_alias_cannot_create_opportunity() -> None:
     assert can_create_event_opportunity("OVERTAKEN") is False
 
 
-def test_migration_status_records_every_family_as_legacy() -> None:
+def test_migration_status_records_creatable_families_as_shadow() -> None:
     status = migration_status_by_wire_id()
     assert set(status) == set(RACE_OUTCOME_WIRE_IDS)
-    assert set(status.values()) == {"legacy"}
-    assert {row.wire_id for row in rows_by_migration_status("legacy")} == set(RACE_OUTCOME_WIRE_IDS)
-    assert rows_by_migration_status("shadow") == ()
+    creatable = {row.wire_id for row in race_outcome_family_rows() if row.can_create}
+    alias = {row.wire_id for row in race_outcome_family_rows() if not row.can_create}
+    assert creatable
+    assert alias == {"OVERTAKEN"}
+    assert {status[w] for w in creatable} == {"shadow"}
+    assert {status[w] for w in alias} == {"legacy"}
+    assert {row.wire_id for row in rows_by_migration_status("shadow")} == creatable
+    assert {row.wire_id for row in rows_by_migration_status("legacy")} == alias
     assert rows_by_migration_status("v2") == ()
 
 

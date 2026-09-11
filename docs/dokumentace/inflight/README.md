@@ -11,7 +11,7 @@
 | DTO/tape/schema freeze | [docs/v2.0.0/schema-contracts.md](../../v2.0.0/schema-contracts.md), [machine/](../../v2.0.0/machine/README.md) | Rewriting `machine/` hashes |
 | Master domain pages (`domeny/*.md`, `architektura.md`, `mapa-souboru.md`, `stav.md`) | See `master` — **absent on this branch by design** | Copying master pages as if v2 were shipped |
 
-## Implementation lookup (#239–#284, #272 branch-only, #274 Wave G slice 4 open)
+## Implementation lookup (#239–#284, #272 branch-only, #274 Wave G slice 5 open)
 
 | Issue | Module placement | Key files | Tests |
 | --- | --- | --- | --- |
@@ -78,7 +78,7 @@
 | #273 bounds/preflight HTTP verification (limits/invalid/unavailable/mixed-boundary/preflight) | events + server | `tests/test_narrative_runtime_http.py` (+12 HTTP rows) — [§ lookup](#273-bounds-preflight-http-verification-slice-lookup) | **landed** @ feat `e6ee7b8` on `cursor/bounds-preflight-verify-273-cad3` (pending FF → `codex/commentary-story-flow-spec`) |
 | #273 INFO/WARN + channel cadence observability (dashboard byTapeChannel + tape log lock) | web + commentary + docs | `web/commentary/index.html` `summarizeByTapeChannel`; `CONFIG.md` `[commentary.tape]`; caplog tape quietness — [§ lookup](#273-info-warn-channel-cadence-slice-lookup) | **landed** @ feat `f19330e` on `cursor/info-warn-cadence-273-cad3` (pending FF → `codex/commentary-story-flow-spec`) |
 | #273 final docs/config close-out (API/dashboard/behavior + CONFIG/example) | docs | `API.md` / `CONFIG.md` / `config/config.example.ini` / `COMMENTARY_ENGINE.md` / `domeny/{server,events}.md` — [§ lookup](#273-final-docs-config-close-out-slice-lookup) | **landed** @ feat `f613064` on `cursor/final-docs-273-cad3` (FF → `codex/commentary-story-flow-spec`) |
-| #274 race-outcome family map (slice 4) | contracts | `contracts/race_outcome_family_map.py` + `contracts/race_outcome_verifier_pairs.py` + tests — [§ lookup](#274-race-outcome-family-map-slice-4-lookup) · [race-outcome-migration.md](../../v2.0.0/race-outcome-migration.md) | **open** on `cursor/race-outcome-verifier-pairs-274-cad3` (base `codex/commentary-story-flow-spec`) |
+| #274 race-outcome family map (slice 5) | contracts + events | `race_outcome_family_map.py` + `race_outcome_verifier_pairs.py` + `legacy_v2_shadow_compare.py` — [§ lookup](#274-race-outcome-family-map-slice-5-lookup) · [race-outcome-migration.md](../../v2.0.0/race-outcome-migration.md) | **open** on `cursor/race-outcome-shadow-activate-274-cad3` (base `codex/commentary-story-flow-spec`) |
 | #273 / #284 components llm/tts projection (HTTP + ingress subset) | events + server + race | `events/narrative_ingress.py` (`_llm_component_projection`, `_tts_component_projection`, `_tts_voice_from_ledger`, live `quarantinedGeneration`), `events/narrative_runtime.py` (`llm_component=`, `speech_quarantined_generation`, quarantine on stop-timeout), `race/runtime.py` (passes warmed `LlmComponent`) — [§ lookup](#284-273-components-llm-tts-slice-lookup) | `tests/test_narrative_ingress.py` (**1** golden + **4** live llm/tts + **3** lastAttempt + **3** voice/quarantine rows); golden `tests/fixtures/commentary_runtime/status_components_llm_tts.json`; related **268** |
 | #273 / #284 components detectors/facts projection (HTTP + ingress subset) | events + server | `events/narrative_ingress.py` (`project_runtime_status` `components.facts`/`components.detectors`), `events/narrative_runtime.py` (`detector_bank=`, fact fields, `_ingest_fact_view_counts`, `_detector_disabled_snapshot`), `events/detector_bank.py` (`disabled_for_status`) — [§ lookup](#284-273-components-detectors-facts-slice-lookup) · [§ fact-health continuation](#273-fact-health-continuation-slice-lookup) | live counts feat `d13d6bd` (**3** rows); capacity health **+3** on `cursor/fact-health-273-cad3` ([§ fact-health](#273-fact-health-continuation-slice-lookup)); related **249** / **252** |
 | #273 / #284 timeline session identity (HTTP + ingress subset) | events + server | `events/narrative_runtime.py` (`_session_identity_from_timeline`, `RuntimeStatus` session fields on APPLY_CONTEXT) + `events/narrative_ingress.py` (`_timeline_session_identity` in `project_runtime_status`) — [§ lookup](#284-273-timeline-session-identity-slice-lookup) | `tests/test_narrative_ingress.py` (**3** timeline session rows); goldens `status_timeline_session_null.json`, `status_identity_after_context.json`; related **237** |
@@ -932,14 +932,14 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 - **Branch:** `cursor/final-docs-273-cad3`; feat SHA `f613064`.
 - **Docs impact:** this file, API/CONFIG/example/COMMENTARY_ENGINE/domeny, handover. Code unchanged.
 
-### #274 race-outcome family map slice 4 lookup
+### #274 race-outcome family map slice 5 lookup
 
-- **Modules:** `race_outcome_family_map.py` (inventory through EN patterns) + `race_outcome_verifier_pairs.py` (accept/reject minimal pairs).
-- **Verifier:** pairs run through `SemanticVerifier`; no frozen `machine/realization-corpus.json` rewrite; no `FAMILY_ROUTE` flip; all families still `legacy`.
-- **Axes:** pass actor reverse; gain↔loss polarity swap; leader actor reverse; finish unsafe negation.
-- **Tests:** `tests/test_race_outcome_family_map.py` (**14**) + `tests/test_race_outcome_verifier_pairs.py` (**4**) = **18**.
-- **Branch:** `cursor/race-outcome-verifier-pairs-274-cad3`.
-- **Docs impact:** this file, `docs/v2.0.0/README.md`, `race-outcome-migration.md`, `domeny/events.md`. CONFIG/API unchanged.
+- **Modules:** `contracts/race_outcome_family_map.py` (creatable → `migration_status=shadow`) + `contracts/race_outcome_verifier_pairs.py` + `events/legacy_v2_shadow_compare.py` (`FAMILY_ROUTE` position/session → `shadow`; OVERTAKE routing fix).
+- **Activation:** observational shadow only; no live `v2` speech cutover; no frozen `machine/*` hash rewrite.
+- **Tests:** family map + verifier pairs + shadow compare (**36** combined in focused run).
+- **Branch:** `cursor/race-outcome-shadow-activate-274-cad3`.
+- **Docs impact:** this file, `docs/v2.0.0/README.md`, `race-outcome-migration.md`, `domeny/events.md`. CONFIG/API unchanged (private `FAMILY_ROUTE`).
+
 
 
 

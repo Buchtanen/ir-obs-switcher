@@ -56,11 +56,13 @@ def test_lap_family_routes_to_shadow_via_private_table() -> None:
 
 def test_unmigrated_families_stay_legacy_inside_branch() -> None:
     migrated = {name for name, route in FAMILY_ROUTE.items() if route != "legacy"}
-    assert migrated == {"lap"}
+    assert migrated == {"lap", "position", "session"}
     unmigrated = unmigrated_families()
     assert "timing" in unmigrated
     assert "battle" in unmigrated
     assert "pit" in unmigrated
+    assert "position" not in unmigrated
+    assert "session" not in unmigrated
     assert all(route_for_family(name) == "legacy" for name in unmigrated)
 
 
@@ -263,3 +265,33 @@ def test_removal_manifest_entries_name_single_v2_owner_proof() -> None:
 
     assert "src/irswitch/events/legacy_v2_shadow_compare.py" in REMOVAL_MANIFEST_ENTRIES
     assert "FAMILY_ROUTE" in REMOVAL_MANIFEST_ENTRIES
+
+
+def test_race_outcome_wires_route_to_shadow_families() -> None:
+    assert family_for_event_type("OVERTAKE") == "position"
+    assert family_for_event_type("OVERTAKEN") == "position"
+    assert family_for_event_type("POSITION_GAINED") == "position"
+    assert family_for_event_type("POSITION_LOST") == "position"
+    assert family_for_event_type("LEADER_CHANGE") == "position"
+    assert family_for_event_type("FINISH") == "session"
+    # Battle overtake must stay on the battle family (substring trap).
+    assert family_for_event_type("BATTLE_OVERTAKE") == "battle"
+    assert route_for_family("position") == "shadow"
+    assert route_for_family("session") == "shadow"
+    assert route_for_family("battle") == "legacy"
+
+
+def test_position_family_shadow_compare_stays_observation_only() -> None:
+    envelope = make_envelope(event_type="POSITION_GAINED", phase="ENTER")
+    result = observe_family_safely(
+        family="position",
+        observer=lambda: compare_event_decisions(
+            family="position",
+            legacy_event_type="POSITION_GAINED",
+            legacy_phase="ENTER",
+            envelope=envelope,
+        ),
+    )
+    assert result.route == "shadow"
+    assert result.matched is True
+    assert result.speech_effects == ()

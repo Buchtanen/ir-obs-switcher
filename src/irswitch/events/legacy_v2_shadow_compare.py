@@ -39,11 +39,11 @@ FAMILY_ROUTE: Mapping[str, Route] = {
     "lap": "shadow",
     "timing": "legacy",
     "battle": "legacy",
-    "position": "legacy",
+    "position": "shadow",  # #274 race-outcome pass/gain/loss/leader
     "pit": "legacy",
     "bio": "legacy",
     "incident": "legacy",
-    "session": "legacy",
+    "session": "shadow",  # #274 hero finish / checkered
 }
 
 # Paths that must be absent from the final master cutover diff (#279/#282).
@@ -124,9 +124,15 @@ def family_for_event_type(event_type: str) -> str:
         return "lap"
     if token.startswith("SECTOR") or token.startswith("TIMING") or "SPLIT" in token:
         return "timing"
+    # Race-outcome pass/alias wires before the generic OVERTAKE substring check
+    # so they do not collapse into battle (#274 routing fix).
+    if token in {"OVERTAKE", "OVERTAKEN"}:
+        return "position"
     if token.startswith("BATTLE") or "OVERTAKE" in token:
         return "battle"
     if token.startswith("POS") or "POSITION" in token:
+        return "position"
+    if token.startswith("LEADER"):
         return "position"
     if token.startswith("PIT"):
         return "pit"
@@ -134,6 +140,9 @@ def family_for_event_type(event_type: str) -> str:
         return "bio"
     if "INCIDENT" in token or "FLAG" in token or "INVALID_LAP" in token:
         return "incident"
+    # Hero/checkered finish is a session-family race outcome (#274).
+    if token == "FINISH":
+        return "session"
     if token.startswith("SESSION") or token.startswith("TOW"):
         return "session"
     return "unknown"

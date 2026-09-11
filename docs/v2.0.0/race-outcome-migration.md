@@ -1,6 +1,6 @@
 # #274 Race-outcome family migration
 
-**Status:** Slice 4 — verifier minimal pairs (still all `legacy`) (all families still `legacy`).  
+**Status:** Slice 5 — shadow activation for position + session (creatable wires `shadow`; alias `OVERTAKEN` still `legacy`).  
 **Issue:** [#274](https://github.com/Buchtanen/ir-obs-switcher/issues/274)  
 **Module:** `src/irswitch/contracts/race_outcome_family_map.py`  
 **Tests:** `tests/test_race_outcome_family_map.py`  
@@ -9,21 +9,21 @@
 ## Guardrails
 
 - Does **not** rewrite frozen `docs/v2.0.0/machine/*` hashes.
-- Does **not** flip `FAMILY_ROUTE` / shadow → v2 activation.
+- Flips `FAMILY_ROUTE` for `position` + `session` to **shadow** only (observation). Does **not** cut over to live `v2` speech.
 - Integration-only; no master PR until cutover.
 
 ## Inventory
 
 | Wire id | Legacy node | Beat | Role | Predicate | Family | Policy / TTL | Tape | Status |
 | --- | --- | --- | --- | --- | --- | ---: | --- | --- |
-| `OVERTAKE` | `overtake` | `position.pass` | outcome | `position.passed` | `position.pass` | critical / 45s | `race.position.pass` | legacy |
-| `POSITION_GAINED` | `position_gained` | `position.gained` | result | `position.changed (`direction=gained`)` | `position.change` | result / 30s | `race.position.change` | legacy |
-| `POSITION_LOST` | `position_lost` | `position.lost` | result | `position.changed (`direction=lost`)` | `position.change` | result / 30s | `race.position.change` | legacy |
-| `LEADER_CHANGE` | `leader_change` | `position.leader_change` | result | `position.leader_changed` | `position.leader` | result / 30s | `race.position.leader` | legacy |
-| `FINISH` | `finish` | `session.hero_finish` | outcome | `race.hero_finished` | `session.finish` | critical / 45s | `race.session.finish` | legacy |
+| `OVERTAKE` | `overtake` | `position.pass` | outcome | `position.passed` | `position.pass` | critical / 45s | `race.position.pass` | shadow |
+| `POSITION_GAINED` | `position_gained` | `position.gained` | result | `position.changed (`direction=gained`)` | `position.change` | result / 30s | `race.position.change` | shadow |
+| `POSITION_LOST` | `position_lost` | `position.lost` | result | `position.changed (`direction=lost`)` | `position.change` | result / 30s | `race.position.change` | shadow |
+| `LEADER_CHANGE` | `leader_change` | `position.leader_change` | result | `position.leader_changed` | `position.leader` | result / 30s | `race.position.leader` | shadow |
+| `FINISH` | `finish` | `session.hero_finish` | outcome | `race.hero_finished` | `session.finish` | critical / 45s | `race.session.finish` | shadow |
 | `OVERTAKEN` | `—` | `—` | `—` | `—` | `—` | — | `compat.alias` | legacy alias (not creatable) |
 
-`migration_status_by_wire_id()` is the coverage-matrix companion that records every family as migrated/legacy; slices 1–2 keep all values at `legacy`.
+`migration_status_by_wire_id()` is the coverage-matrix companion; creatable wires are `shadow`, alias `OVERTAKEN` remains `legacy`.
 
 ## Story / correlation / TTL (slice 2)
 
@@ -61,8 +61,8 @@ Contract locks:
 
 ## Known later-slice gaps
 
-- Shadow `FAMILY_ROUTE["position"]` still `legacy`; bridge alias drift vs wire ids above.
-- Shadow then per-family activation remain open on #274.
+- Bridge alias drift (`PASS` / `POSITION_GAIN`) vs wire ids may remain; battle overtake stays on `battle`.
+- Live `v2` cutover / fail-soft legacy rollback evidence remain open on #274.
 - Deeper speak-path proof for “self-contained if opening unspoken” stays open (policy flag + existing retention regression; not yet live activation).
 
 
@@ -99,9 +99,21 @@ Closed accept/reject inventory for each creatable wire, exercised through `Seman
 
 Cross-check: gain and loss positive utterances cannot both accept when frames are swapped.
 
+
+## Shadow activation (slice 5)
+
+Observational only — still no live speech cutover / no `v2` route:
+
+- `FAMILY_ROUTE["position"]` → `shadow` (pass / gain / loss / leader)
+- `FAMILY_ROUTE["session"]` → `shadow` (hero `FINISH`)
+- Routing fix: `OVERTAKE` / `OVERTAKEN` map to `position` **before** the generic `OVERTAKE` substring trap; `BATTLE_OVERTAKE` stays `battle`
+- `LEADER_CHANGE*` → `position`; exact `FINISH` → `session`
+- Creatable inventory rows `migration_status=shadow`; alias `OVERTAKEN` stays `legacy`
+- Harness remains fail-soft / speech-effect free (`legacy_v2_shadow_compare`)
+
 ## Next slices
 
 3. ~~EN realization patterns~~ (this slice)
 4. ~~Verifier minimal pairs~~ (landed)  
-5. Shadow (`position` → `shadow` after routing fix)  
+5. ~~Shadow (`position`/`session` → `shadow` after routing fix)~~ (landed)  
 6. Per-family activation (integration-only)

@@ -7,7 +7,8 @@ realization families, policy TTL, tape channels and correlation bindings.
 Slice 1 recorded every family as ``legacy``. Slice 2 locked story/beat roles,
 correlation identity and outcome TTL. Slice 3 curates EN realization pattern
 ids and polarity-safe claim surfaces. It does **not** rewrite frozen
-``docs/v2.0.0/machine/*`` hashes and does **not** flip ``FAMILY_ROUTE``.
+``docs/v2.0.0/machine/*`` hashes. Slice 5 marks creatable race-outcome
+families ``shadow`` and flips ``FAMILY_ROUTE`` for ``position`` + ``session``.
 """
 
 from __future__ import annotations
@@ -89,6 +90,7 @@ class _StaticSource:
     en_pattern_ids: tuple[str, ...]
     en_claim_surfaces: tuple[str, ...]
     en_forbidden_tokens: tuple[str, ...]
+    migration_status: MigrationStatus
     notes: str = ""
 
 
@@ -118,6 +120,7 @@ _STATIC: dict[str, _StaticSource] = {
             "gets by {targetSurface}",
         ),
         en_forbidden_tokens=("is passed by", "loses position to", "drops behind"),
+        migration_status="shadow",
         notes="Passer→passed order; closes battle_ahead/two_front or single_result.",
     ),
     "POSITION_GAINED": _StaticSource(
@@ -144,6 +147,7 @@ _STATIC: dict[str, _StaticSource] = {
             "improves to P{newPosition}",
         ),
         en_forbidden_tokens=("drops", "slips", "loses", "falls back"),
+        migration_status="shadow",
         notes="Adapter maps RaceEvent direction gain → POSITION_GAINED.",
     ),
     "POSITION_LOST": _StaticSource(
@@ -170,6 +174,7 @@ _STATIC: dict[str, _StaticSource] = {
             "falls back to P{newPosition}",
         ),
         en_forbidden_tokens=("gains", "climbs", "moves up", "improves"),
+        migration_status="shadow",
         notes="Adapter maps RaceEvent direction loss → POSITION_LOST.",
     ),
     "LEADER_CHANGE": _StaticSource(
@@ -196,6 +201,7 @@ _STATIC: dict[str, _StaticSource] = {
             "the lead switches to {newLeaderSurface}",
         ),
         en_forbidden_tokens=("hero wins the race", "checkered"),
+        migration_status="shadow",
         notes="Old leader → new leader; hero involvement only when bound.",
     ),
     "FINISH": _StaticSource(
@@ -222,6 +228,7 @@ _STATIC: dict[str, _StaticSource] = {
             "ends the race P{finishPosition}",
         ),
         en_forbidden_tokens=("provisional class win", "unofficial classification"),
+        migration_status="shadow",
         notes="Hero finish / checkered result; self-contained critical outcome.",
     ),
     "OVERTAKEN": _StaticSource(
@@ -238,6 +245,7 @@ _STATIC: dict[str, _StaticSource] = {
         en_pattern_ids=(),
         en_claim_surfaces=(),
         en_forbidden_tokens=(),
+        migration_status="legacy",
         notes="compatibility_alias; reject as v2 input; migrate to POSITION_LOST + cause.",
     ),
 }
@@ -348,7 +356,7 @@ def race_outcome_family_rows() -> tuple[RaceOutcomeFamilyRow, ...]:
                     can_create=False,
                     polarity=static.polarity,
                     self_contained=False,
-                    migration_status="legacy",
+                    migration_status=static.migration_status,
                     correlation_kind=static.correlation_kind,
                     correlation_bindings=static.correlation_bindings,
                     closing_story_routes=static.closing_story_routes,
@@ -416,7 +424,7 @@ def race_outcome_family_rows() -> tuple[RaceOutcomeFamilyRow, ...]:
                 can_create=can_create,
                 polarity=static.polarity,
                 self_contained=policy_id in SELF_CONTAINED_POLICIES,
-                migration_status="legacy",
+                migration_status=static.migration_status,
                 correlation_kind=static.correlation_kind,
                 correlation_bindings=static.correlation_bindings,
                 closing_story_routes=static.closing_story_routes,
