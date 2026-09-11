@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 21 — offline Qwen request/stream/deadline authority drivers for F40 (no live Windows §24.9 GO).
+**Status:** Slice 22 — offline mixed-boundary config drivers for F36 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -313,7 +313,22 @@
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 
+## Slice 22 — F36 mixed-boundary config runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F36` (mixed-boundary config is explicit and replayable) |
+| Pytest | `tests/test_vertical_slice_config_boundary_runtime.py` |
+| Inventory | **43/44** wired; **1** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 22):**
+- Machine projection for F36 still matches frozen expectations.
+- Runtime drivers prove gen6 plan freeze across gen7 install, exact boundary groups with redacted utterance patch, no old-generation TTS backend fallback, effective/desired manifest hashes after available boundaries, explicit barrier config-transition loss, pending recomputation on gen8 revert, and invalid reload with no generation + atomic automatic disable while preserving last valid manual TTS backend.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+
 ## Later slices
 
-- Runtime NarrativeRuntime drivers for remaining F scenarios.
+- Runtime NarrativeRuntime drivers for remaining F scenarios (F19).
 - Live Windows/iRSDK/OBS/Ollama/TTS §24.9 gates.
