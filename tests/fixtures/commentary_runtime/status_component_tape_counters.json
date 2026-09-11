@@ -1,0 +1,16 @@
+{
+  "status": "ready",
+  "reason": null,
+  "path": "narrative-process_race-s1-f0000.ndjson",
+  "size": 1280,
+  "drops": 3,
+  "dropsByPriority": {
+    "sample": 1,
+    "normal": 1,
+    "critical": 1
+  },
+  "purposeCounts": [
+    {"purposeChannel": "detector_tuning", "count": 2},
+    {"purposeChannel": "flow", "count": 5}
+  ]
+}

@@ -354,6 +354,7 @@ class TapeRecordQueue:
         self._recorder_generation = _nonnegative(recorder_generation, "recorderGeneration")
         self._items: list[QueuedTapeRecord] = []
         self._loss = TapeLossAccumulator()
+        self._drop_totals = {"sample": 0, "normal": 0, "critical": 0}
         self._health: WriterHealth = "ready"
         self._health_latch = health_latch if health_latch is not None else CaptureHealthLatch()
         self._lock = Lock()
@@ -378,6 +379,20 @@ class TapeRecordQueue:
     def loss_snapshot(self) -> dict[str, Any] | None:
         with self._lock:
             return self._loss.snapshot()
+
+    def drop_counter_snapshot(self) -> dict[str, Any]:
+        """Cumulative out-of-queue drop totals for live status projection."""
+
+        with self._lock:
+            by_priority = {
+                "sample": int(self._drop_totals["sample"]),
+                "normal": int(self._drop_totals["normal"]),
+                "critical": int(self._drop_totals["critical"]),
+            }
+            return {
+                "drops": sum(by_priority.values()),
+                "dropsByPriority": by_priority,
+            }
 
     def dequeue(self) -> QueuedTapeRecord | None:
         with self._lock:
@@ -456,6 +471,9 @@ class TapeRecordQueue:
         return next((item for item in self._items if item.record_priority == priority), None)
 
     def _lose(self, record: QueuedTapeRecord, reason: LossReason) -> CaptureHealthNotice | None:
+        priority = record.record_priority
+        if priority in self._drop_totals:
+            self._drop_totals[priority] += 1
         self._loss.record(
             record_type=record.record_type,
             record_priority=record.record_priority,

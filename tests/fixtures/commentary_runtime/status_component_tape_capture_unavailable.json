@@ -2,10 +2,12 @@
   "status": "unavailable",
   "reason": "capture_unavailable",
   "path": null,
+  "size": 0,
   "drops": 0,
   "dropsByPriority": {
     "sample": 0,
     "normal": 0,
     "critical": 0
-  }
+  },
+  "purposeCounts": []
 }

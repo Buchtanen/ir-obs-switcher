@@ -1842,6 +1842,32 @@
                     }
                   ]
                 },
+                "purposeCounts": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "count": {
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "purposeChannel": {
+                        "enum": [
+                          "flow",
+                          "llm_eval",
+                          "detector_tuning"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "purposeChannel",
+                      "count"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 3,
+                  "minItems": 0,
+                  "type": "array"
+                },
                 "reason": {
                   "oneOf": [
                     {
@@ -2007,6 +2033,10 @@
                     }
                   ]
                 },
+                "size": {
+                  "minimum": 0,
+                  "type": "integer"
+                },
                 "status": {
                   "enum": [
                     "disabled",
@@ -2021,8 +2051,10 @@
                 "status",
                 "reason",
                 "path",
+                "size",
                 "drops",
-                "dropsByPriority"
+                "dropsByPriority",
+                "purposeCounts"
               ],
               "type": "object"
             },

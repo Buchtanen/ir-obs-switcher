@@ -777,6 +777,20 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 | Scope | Branch-only; no master cutover |
 
 
+### #273 tape drop/size/purpose-channel counters slice lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| Writer | `commentary/tape_queue.py` cumulative `drop_counter_snapshot()`; `commentary/tape_writer.py` `runtime_status_snapshot()` (`size`, `drops`, `dropsByPriority`, `purposeCounts`, relative `path`) |
+| Runtime | `NarrativeRuntime(..., tape_writer=)` → `RuntimeStatus` tape counter fields |
+| Projector | `events/narrative_ingress.py` → `_tape_component_projection` on `components.tape` |
+| Schema | `docs/v2.0.0/machine/api-contracts.schema.json` tape `{size, purposeCounts}` |
+| Goldens | `status_component_tape_counters.json`; existing tape goldens extended with zero stubs |
+| Tests | `tests/test_narrative_ingress.py` (+2 rows), `tests/test_narrative_tape_queue.py` cumulative drop row |
+| Scope | Branch-only; atomic task open (no checkbox flip); per-`tape_channel` funnel counters remain next slice |
+
+
 ### #284 #273 ManualAdmissionLatch slice lookup
 
 - **Latch (`events/narrative_manual_latch.py`):** `ManualAdmissionLatch` — one-shot rendezvous only (`pending | actor_claimed | caller_abandoned`); `ADMISSION_TIMEOUT_S=1.0`. Not a speech waiter, prepared-text queue, actor input, or replayed DTO. **Not** exported from `events/__init__.py`.

@@ -798,6 +798,99 @@ def test_project_tape_unavailable_exposes_capture_loss_reason() -> None:
     assert tape == golden
 
 
+def test_project_tape_counters_from_runtime_status() -> None:
+    """#273: tape drop/size/purpose-channel counters project on components.tape."""
+    import json
+    from dataclasses import replace
+    from pathlib import Path
+
+    from irswitch.events.narrative_ingress import project_runtime_status
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    status = replace(
+        runtime.status(),
+        tape_status="ready",
+        tape_path="narrative-process_race-s1-f0000.ndjson",
+        tape_size=1280,
+        tape_drops=3,
+        tape_drops_by_priority={"sample": 1, "normal": 1, "critical": 1},
+        tape_purpose_counts=(
+            {"purposeChannel": "flow", "count": 5},
+            {"purposeChannel": "detector_tuning", "count": 2},
+        ),
+    )
+    projected = project_runtime_status(status)
+    tape = projected["components"]["tape"]
+    assert tape["drops"] == sum(tape["dropsByPriority"].values())
+    golden = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "status_component_tape_counters.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert tape == golden
+
+
+def test_project_tape_counters_live_from_attached_writer() -> None:
+    """#273: attached NarrativeTapeWriter feeds live tape counters into status."""
+    import copy
+    from pathlib import Path
+
+    from irswitch.commentary.tape_writer import NarrativeTapeWriter
+    from irswitch.events.narrative_ingress import project_runtime_status
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+    from tests.test_narrative_tape_writer import _golden
+
+    manifest = copy.deepcopy(_golden("tape-manifest-framing"))
+    manifest["enabledPurposeChannels"] = ["flow", "detector_tuning"]
+    records: list[bytes] = []
+
+    def sink(data: bytes) -> None:
+        records.append(data)
+
+    writer = NarrativeTapeWriter(
+        Path("/tmp/unused"),
+        manifest,
+        capacity=1,
+        sink=sink,
+    )
+    record = _golden("tape-health-record")
+    writer.submit(record)
+    writer.submit({**record, "recordId": "record:sample:1", "recordPriority": "sample"})
+    writer.submit(
+        {
+            **record,
+            "recordId": "record:critical:1",
+            "recordPriority": "critical",
+            "purposeChannel": "detector_tuning",
+        }
+    )
+    # Saturate queue: evict/drop the sample row.
+    writer.submit(
+        {
+            **record,
+            "recordId": "record:normal:2",
+            "recordPriority": "normal",
+            "purposeChannel": "flow",
+        }
+    )
+
+    runtime = NarrativeRuntime(tape_writer=writer)
+    runtime.enable()
+    projected = project_runtime_status(runtime.status())
+    tape = projected["components"]["tape"]
+    assert tape["drops"] >= 1
+    assert tape["drops"] == sum(tape["dropsByPriority"].values())
+    assert isinstance(tape["size"], int)
+    assert tape["size"] >= 0
+    assert isinstance(tape["purposeCounts"], list)
+
+
 def test_project_detectors_disabled_required_rows() -> None:
     """#273: disabled-required detectors appear as bounded {id, reason} rows."""
     import json

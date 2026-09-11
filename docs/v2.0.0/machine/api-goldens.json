@@ -196,7 +196,9 @@
               "sample": 0
             },
             "path": null,
+            "purposeCounts": [],
             "reason": null,
+            "size": 0,
             "status": "disabled"
           },
           "tts": {
@@ -352,7 +354,9 @@
               "sample": 0
             },
             "path": null,
+            "purposeCounts": [],
             "reason": null,
+            "size": 0,
             "status": "disabled"
           },
           "tts": {
@@ -508,7 +512,9 @@
               "sample": 0
             },
             "path": null,
+            "purposeCounts": [],
             "reason": null,
+            "size": 0,
             "status": "disabled"
           },
           "tts": {
@@ -845,7 +851,9 @@
               "sample": 0
             },
             "path": null,
+            "purposeCounts": [],
             "reason": null,
+            "size": 0,
             "status": "disabled"
           },
           "tts": {
@@ -1000,7 +1008,9 @@
               "sample": 0
             },
             "path": null,
+            "purposeCounts": [],
             "reason": null,
+            "size": 0,
             "status": "disabled"
           },
           "tts": {

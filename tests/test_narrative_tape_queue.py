@@ -304,6 +304,19 @@ def test_f27_sample_then_normal_eviction_then_required_capture_notice() -> None:
     assert queue.loss_snapshot() is None
 
 
+def test_drop_counter_snapshot_is_cumulative_across_flush() -> None:
+    queue = TapeRecordQueue(capacity=1)
+    assert queue.admit(_record("sample:1", "feature_frame", "sample")).accepted
+    assert not queue.admit(_record("sample:2", "feature_frame", "sample")).accepted
+    assert queue.admit(_record("normal:1", "fact_change", "normal")).accepted
+    flushed = queue.flush_drop_notice("notice:1")
+    assert flushed is not None
+    assert queue.loss_snapshot() is None
+    counters = queue.drop_counter_snapshot()
+    assert counters["drops"] == 2
+    assert counters["dropsByPriority"] == {"sample": 2, "normal": 0, "critical": 0}
+
+
 def test_required_capture_loss_merges_idempotent_latch() -> None:
     latch = CaptureHealthLatch()
     queue = TapeRecordQueue(capacity=1, recorder_generation=2, health_latch=latch)

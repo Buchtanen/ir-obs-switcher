@@ -299,9 +299,22 @@ def build_schema() -> dict[str, Any]:
                                 "status": component_status,
                                 "reason": reason,
                                 "path": nullable({"type": "string", "maxLength": 512}),
+                                "size": n0,
                                 "drops": n0,
                                 "dropsByPriority": closed(
                                     {"sample": n0, "normal": n0, "critical": n0}
+                                ),
+                                "purposeCounts": array(
+                                    closed(
+                                        {
+                                            "purposeChannel": enum(
+                                                "flow", "llm_eval", "detector_tuning"
+                                            ),
+                                            "count": n0,
+                                        }
+                                    ),
+                                    0,
+                                    3,
                                 ),
                             }
                         ),
@@ -683,8 +696,10 @@ def _status() -> dict[str, Any]:
                 "status": "disabled",
                 "reason": None,
                 "path": None,
+                "size": 0,
                 "drops": 0,
                 "dropsByPriority": {"sample": 0, "normal": 0, "critical": 0},
+                "purposeCounts": [],
             },
             "detectors": {"status": "ready", "reason": None, "disabled": []},
             "facts": {
@@ -1062,6 +1077,13 @@ def invariant_errors(schema_name: str, value: dict[str, Any]) -> list[str]:
         tape = value["components"]["tape"]
         if tape["drops"] != sum(tape["dropsByPriority"].values()):
             errors.append("tape drop sum differs")
+        purpose_counts = tape.get("purposeCounts") or []
+        if [row["purposeChannel"] for row in purpose_counts] != sorted(
+            {row["purposeChannel"] for row in purpose_counts}
+        ):
+            errors.append("tape purpose counts not sorted unique")
+        if any(row["count"] < 1 for row in purpose_counts):
+            errors.append("tape purpose count is zero")
         pending = value["config"]["pendingChanges"]
         if [row["key"] for row in pending] != sorted({row["key"] for row in pending}):
             errors.append("pending changes not sorted unique")

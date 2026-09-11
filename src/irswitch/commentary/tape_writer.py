@@ -432,6 +432,7 @@ class NarrativeTapeWriter:
             capacity, recorder_generation=recorder_generation, health_latch=health_latch
         )
         self._envelopes: dict[str, dict[str, Any]] = {}
+        self._purpose_counts: dict[str, int] = {}
         self._sink = sink
         self._session: TapeFileSession | None = None
         self._task: asyncio.Task[None] | None = None
@@ -455,6 +456,32 @@ class NarrativeTapeWriter:
         if session is not None and session.health == "degraded":
             return "degraded"
         return self._queue.health
+
+    def runtime_status_snapshot(self) -> dict[str, Any]:
+        """Bounded tape counters for commentary-runtime/2 ``components.tape``."""
+
+        with self._lock:
+            counters = self._queue.drop_counter_snapshot()
+            session = self._session
+            size = 0 if session is None else int(session.byte_size)
+            path: str | None = None
+            if session is not None:
+                try:
+                    path = str(session.path.relative_to(self._output_dir))
+                except ValueError:
+                    path = session.path.name
+            purpose_counts = [
+                {"purposeChannel": channel, "count": int(count)}
+                for channel, count in sorted(self._purpose_counts.items())
+                if count > 0
+            ]
+            return {
+                "path": path,
+                "size": size,
+                "drops": int(counters["drops"]),
+                "dropsByPriority": dict(counters["dropsByPriority"]),
+                "purposeCounts": purpose_counts,
+            }
 
     def submit(
         self,
@@ -563,6 +590,10 @@ class NarrativeTapeWriter:
             session = self._session
             if session is None or not session.append(envelope):
                 continue
+            purpose = envelope.get("purposeChannel")
+            if isinstance(purpose, str) and purpose:
+                with self._lock:
+                    self._purpose_counts[purpose] = self._purpose_counts.get(purpose, 0) + 1
             if session.byte_size >= self._rotate_bytes:
                 self._rotate()
 

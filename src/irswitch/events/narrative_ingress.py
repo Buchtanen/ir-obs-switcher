@@ -151,6 +151,61 @@ def _by_tape_channel_projection(status: RuntimeStatus) -> dict[str, dict[str, in
     return projected
 
 
+def _empty_tape_drops_by_priority() -> dict[str, int]:
+    return {"sample": 0, "normal": 0, "critical": 0}
+
+
+def _tape_component_projection(status: RuntimeStatus) -> dict[str, Any]:
+    """Project bounded ``components.tape`` counters and health."""
+
+    tape_status = status.tape_status
+    drops_by_priority = _empty_tape_drops_by_priority()
+    raw_priority = status.tape_drops_by_priority
+    if isinstance(raw_priority, dict):
+        for key in drops_by_priority:
+            value = raw_priority.get(key)
+            if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+                continue
+            drops_by_priority[key] = int(value)
+    drops = int(status.tape_drops) if isinstance(status.tape_drops, int) and status.tape_drops >= 0 else sum(
+        drops_by_priority.values()
+    )
+    size = 0
+    if isinstance(status.tape_size, int) and status.tape_size >= 0:
+        size = int(status.tape_size)
+    purpose_counts: list[dict[str, Any]] = []
+    raw_purpose = status.tape_purpose_counts
+    if isinstance(raw_purpose, tuple):
+        for row in raw_purpose:
+            if not isinstance(row, dict):
+                continue
+            channel = row.get("purposeChannel")
+            count = row.get("count")
+            if (
+                not isinstance(channel, str)
+                or isinstance(count, bool)
+                or not isinstance(count, int)
+                or count < 1
+            ):
+                continue
+            purpose_counts.append({"purposeChannel": channel, "count": int(count)})
+        purpose_counts.sort(key=lambda item: str(item["purposeChannel"]))
+    path = status.tape_path if isinstance(status.tape_path, str) else None
+    component = {
+        "status": "disabled" if not tape_status else str(tape_status),
+        "reason": None,
+        "path": path,
+        "size": size,
+        "drops": drops,
+        "dropsByPriority": drops_by_priority,
+        "purposeCounts": purpose_counts,
+    }
+    if tape_status == "unavailable":
+        component["status"] = "unavailable"
+        component["reason"] = "capture_unavailable"
+    return component
+
+
 _TTS_BACKENDS = frozenset({"sapi", "espeak", "supertonic"})
 _LLM_MODEL_UNCONFIGURED = "unconfigured"
 
@@ -376,17 +431,7 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
 
     if not isinstance(status, RuntimeStatus):
         raise ContractViolation("projector requires RuntimeStatus")
-    tape_status = status.tape_status
-    tape_component = {
-        "status": "disabled" if not tape_status else str(tape_status),
-        "reason": None,
-        "path": None,
-        "drops": 0,
-        "dropsByPriority": {"sample": 0, "normal": 0, "critical": 0},
-    }
-    if tape_status == "unavailable":
-        tape_component["status"] = "unavailable"
-        tape_component["reason"] = "capture_unavailable"
+    tape_component = _tape_component_projection(status)
     tts_status = str(status.component_health.get("tts", "ready"))
     last_terminal = status.speech_last_terminal
     history_complete = bool(status.history_complete)

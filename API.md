@@ -946,8 +946,10 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
       "status": "disabled",
       "reason": null,
       "path": null,
+      "size": 0,
       "drops": 0,
-      "dropsByPriority": { "sample": 0, "normal": 0, "critical": 0 }
+      "dropsByPriority": { "sample": 0, "normal": 0, "critical": 0 },
+      "purposeCounts": []
     },
     "detectors": { "status": "ready", "reason": null, "disabled": [] },
     "facts": {

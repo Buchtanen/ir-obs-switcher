@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 from irswitch.commentary.mailbox import AdmissionResult, NarrativeMailbox
+from irswitch.commentary.tape_writer import NarrativeTapeWriter
 from irswitch.contracts.catalog_loader import load_narrative_catalog
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.context import ContextBatchPart
@@ -247,6 +248,12 @@ class RuntimeStatus:
     config_ledger: dict[str, object] | None
     episode_counts: dict[str, int] | None
     by_tape_channel: dict[str, dict[str, int]] | None
+    # #273 live tape counter projection inputs (None => zero/empty stubs)
+    tape_path: str | None
+    tape_size: int | None
+    tape_drops: int | None
+    tape_drops_by_priority: dict[str, int] | None
+    tape_purpose_counts: tuple[dict[str, object], ...] | None
     # #273 live llm transport/residency projection inputs (None model => stubs)
     llm_attached: bool
     llm_generation: int
@@ -280,6 +287,7 @@ class NarrativeRuntime:
         command_journal_path: Path | str | None = None,
         semantic_verifier: SemanticVerifier | None = None,
         tape_effect: EffectWorker | None = None,
+        tape_writer: NarrativeTapeWriter | None = None,
         shutdown_flush_timeout_s: float = 2.0,
     ) -> None:
         # Empty NarrativeMailbox is falsy via __len__; only replace on None so
@@ -327,6 +335,7 @@ class NarrativeRuntime:
         self._realization_effect = realization_effect
         self._tts_effect = tts_effect
         self._tape_effect = tape_effect
+        self._tape_writer = tape_writer
         self._shutdown_flush_timeout_s = float(shutdown_flush_timeout_s)
         self._realization_task: asyncio.Task[None] | None = None
         self._tts_task: asyncio.Task[None] | None = None
@@ -516,6 +525,7 @@ class NarrativeRuntime:
             config_ledger=(None if self._config_ledger is None else dict(self._config_ledger)),
             episode_counts=self._episode_counts_snapshot(),
             by_tape_channel=self._by_tape_channel_snapshot(),
+            **self._tape_counter_status_fields(),
             llm_attached=llm_attached,
             llm_generation=llm_generation,
             llm_model=llm_model,
@@ -1643,6 +1653,48 @@ class NarrativeRuntime:
             return None
         snapshot = self._opportunity_queue.tape_channel_status_counts()
         return snapshot or None
+
+    def _tape_counter_status_fields(self) -> dict[str, object]:
+        writer = self._tape_writer
+        if writer is None:
+            return {
+                "tape_path": None,
+                "tape_size": None,
+                "tape_drops": None,
+                "tape_drops_by_priority": None,
+                "tape_purpose_counts": None,
+            }
+        try:
+            snapshot = writer.runtime_status_snapshot()
+        except Exception:
+            return {
+                "tape_path": None,
+                "tape_size": None,
+                "tape_drops": None,
+                "tape_drops_by_priority": None,
+                "tape_purpose_counts": None,
+            }
+        by_priority = snapshot.get("dropsByPriority")
+        purpose = snapshot.get("purposeCounts")
+        return {
+            "tape_path": snapshot.get("path"),
+            "tape_size": int(snapshot.get("size") or 0),
+            "tape_drops": int(snapshot.get("drops") or 0),
+            "tape_drops_by_priority": (
+                None
+                if not isinstance(by_priority, dict)
+                else {
+                    "sample": int(by_priority.get("sample") or 0),
+                    "normal": int(by_priority.get("normal") or 0),
+                    "critical": int(by_priority.get("critical") or 0),
+                }
+            ),
+            "tape_purpose_counts": (
+                None
+                if not isinstance(purpose, list)
+                else tuple(dict(row) for row in purpose if isinstance(row, dict))
+            ),
+        }
 
     def _on_silence(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         generation = int((command.token or {})["generation"])

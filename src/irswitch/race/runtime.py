@@ -328,6 +328,7 @@ class RaceRuntime:
                 command_journal_path=journal_dir / "narrative-command-journal.ndjson",
                 semantic_verifier=SemanticVerifier(),
                 tape_effect=tape_effect,
+                tape_writer=tape_writer,
             )
             runtime.enable()
             self.narrative_runtime = runtime
