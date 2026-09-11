@@ -386,6 +386,7 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
     }
     if tape_status == "unavailable":
         tape_component["status"] = "unavailable"
+        tape_component["reason"] = "capture_unavailable"
     tts_status = str(status.component_health.get("tts", "ready"))
     last_terminal = status.speech_last_terminal
     history_complete = bool(status.history_complete)
@@ -450,7 +451,10 @@ def project_runtime_status(status: RuntimeStatus) -> dict[str, Any]:
             "detectors": {
                 "status": "ready",
                 "reason": None,
-                "disabled": [dict(row) for row in status.detector_disabled],
+                "disabled": sorted(
+                    (dict(row) for row in status.detector_disabled),
+                    key=lambda row: str(row.get("id", "")),
+                ),
             },
             "facts": {
                 "status": "ready",

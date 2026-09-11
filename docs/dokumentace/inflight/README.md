@@ -763,6 +763,20 @@ Library evidence for cancel stale deadlines/generation on occurrence/stream tran
 | Scope | Branch-only freeze of bounded summary + failure semantics |
 
 
+
+### #273 recorder/model/timeline/detector health projection freeze slice lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| Projector | `project_runtime_status` components `llm` (model), `tape` (recorder), `detectors` + `timeline` |
+| Capture-loss | `components.tape.status=unavailable` + `reason=capture_unavailable` |
+| Disabled detectors | `components.detectors.disabled[]` sorted by `id`, reasons from freeze registry |
+| Goldens | `status_health_projections_library.json`, `status_component_tape_capture_unavailable.json`, `status_component_detectors_disabled.json` |
+| Tests | `tests/test_narrative_ingress.py` (#273 projection rows) |
+| Scope | Branch-only; no master cutover |
+
+
 ### #284 #273 ManualAdmissionLatch slice lookup
 
 - **Latch (`events/narrative_manual_latch.py`):** `ManualAdmissionLatch` — one-shot rendezvous only (`pending | actor_claimed | caller_abandoned`); `ADMISSION_TIMEOUT_S=1.0`. Not a speech waiter, prepared-text queue, actor input, or replayed DTO. **Not** exported from `events/__init__.py`.

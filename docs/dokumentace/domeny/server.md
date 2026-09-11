@@ -59,3 +59,5 @@
 - #273 golden freeze: `tests/test_commentary_runtime_goldens.py` locks `tests/fixtures/commentary_runtime/error_*.json` to `docs/v2.0.0/machine/api-goldens.json` and HTTP speak 409/503 bodies.
 
 - #273 `/health` commentary freeze: goldens `health_commentary_*.json`; degraded/disabled commentary never flips overall `/health` alone (`tests/test_api.py`).
+
+- #273 component health freeze: tape `capture_unavailable` + detectors `disabled[]` goldens (`status_component_*`, `status_health_projections_library.json`).

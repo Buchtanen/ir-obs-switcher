@@ -1,0 +1,11 @@
+{
+  "status": "unavailable",
+  "reason": "capture_unavailable",
+  "path": null,
+  "drops": 0,
+  "dropsByPriority": {
+    "sample": 0,
+    "normal": 0,
+    "critical": 0
+  }
+}

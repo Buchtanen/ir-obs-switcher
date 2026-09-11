@@ -229,3 +229,5 @@ Next work: v2 integration only (#273 master cutover, `planningCycleId` race tape
 ## Related
 
 [server](server.md), [API.md](../../../API.md), [implementation-handover](../../v2.0.0/implementation-handover.md).
+
+- #273: `project_runtime_status` sets `components.tape.reason=capture_unavailable` when `tape_status=unavailable`; `components.detectors.disabled` sorted by id.

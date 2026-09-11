@@ -770,6 +770,100 @@ def test_project_runtime_status_identity_follows_context_timeline() -> None:
     assert timeline["stage"] == "race"
 
 
+def test_project_tape_unavailable_exposes_capture_loss_reason() -> None:
+    """#273: recorder/tape unavailable projects capture_unavailable on components.tape."""
+    import json
+    from dataclasses import replace
+    from pathlib import Path
+
+    from irswitch.events.narrative_ingress import project_runtime_status
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    status = replace(runtime.status(), tape_status="unavailable")
+    projected = project_runtime_status(status)
+    tape = projected["components"]["tape"]
+    assert tape["status"] == "unavailable"
+    assert tape["reason"] == "capture_unavailable"
+    golden = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "status_component_tape_capture_unavailable.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert tape == golden
+
+
+def test_project_detectors_disabled_required_rows() -> None:
+    """#273: disabled-required detectors appear as bounded {id, reason} rows."""
+    import json
+    from dataclasses import replace
+    from pathlib import Path
+
+    from irswitch.events.narrative_ingress import project_runtime_status
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    status = replace(
+        runtime.status(),
+        detector_disabled=(
+            {"id": "gap_closing", "reason": "disabled_by_config"},
+            {"id": "battle_ahead", "reason": "capture_unavailable"},
+        ),
+    )
+    projected = project_runtime_status(status)
+    detectors = projected["components"]["detectors"]
+    assert detectors["status"] == "ready"
+    assert detectors["disabled"] == [
+        {"id": "battle_ahead", "reason": "capture_unavailable"},
+        {"id": "gap_closing", "reason": "disabled_by_config"},
+    ]
+    golden = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "status_component_detectors_disabled.json"
+        ).read_text(encoding="utf-8")
+    )
+    # Freeze exact projected shape including sort order (id ascending).
+    assert detectors == golden
+
+
+def test_project_immutable_recorder_model_timeline_detector_shapes() -> None:
+    """#273: freeze recorder/model/timeline/detector health projection shapes."""
+    import json
+    from pathlib import Path
+
+    from irswitch.events.narrative_ingress import project_runtime_status
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+
+    projected = project_runtime_status(NarrativeRuntime().status())
+    golden = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "status_health_projections_library.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert {
+        "timeline": projected["timeline"],
+        "components": {
+            "llm": projected["components"]["llm"],
+            "tape": projected["components"]["tape"],
+            "detectors": projected["components"]["detectors"],
+        },
+    } == golden
+
+
 def test_project_commentary_health_component_disabled_default() -> None:
     from irswitch.events.narrative_ingress import project_commentary_health_component
 

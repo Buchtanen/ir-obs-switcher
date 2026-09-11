@@ -1,0 +1,14 @@
+{
+  "status": "ready",
+  "reason": null,
+  "disabled": [
+    {
+      "id": "battle_ahead",
+      "reason": "capture_unavailable"
+    },
+    {
+      "id": "gap_closing",
+      "reason": "disabled_by_config"
+    }
+  ]
+}
