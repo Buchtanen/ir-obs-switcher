@@ -1,11 +1,11 @@
-"""#276 ops family migration map — pit cycle inventory (Slice 1).
+"""#276 ops family migration map — pit + incident inventory (Slices 1–2).
 
-Maps pit entry / lane / stopped / released / exit / outcome wire identifiers
-onto legacy emitters, adapters, beat/story routes, predicates, realization
-families, policy TTL and tape channels.
+Maps pit-cycle and incident/aftermath/recovery wire identifiers onto legacy
+emitters, adapters, beat/story routes, predicates, realization families,
+policy TTL and tape channels.
 
-Slice 1 records the pit-cycle family as ``legacy``. It does **not** rewrite
-frozen ``docs/v2.0.0/machine/*`` hashes and does **not** flip ``FAMILY_ROUTE``.
+Slices 1–2 record these families as ``legacy``. They do **not** rewrite frozen
+``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 """
 
 from __future__ import annotations
@@ -20,7 +20,14 @@ from .resources import packaged_schema_bytes
 
 MigrationStatus = Literal["legacy", "shadow", "v2"]
 PitPhase = Literal["entry", "lane", "stopped", "released", "exit", "outcome"]
-ScopeKind = Literal["pit_cycle", "pit_outcome"]
+IncidentPhase = Literal["event", "aftermath", "recovery"]
+ScopeKind = Literal[
+    "pit_cycle",
+    "pit_outcome",
+    "incident_event",
+    "incident_aftermath",
+    "incident_recovery",
+]
 
 # Slice 1 inventory: pit entry → service → exit/outcome cycle.
 OPS_PIT_WIRE_IDS: tuple[str, ...] = (
@@ -32,6 +39,15 @@ OPS_PIT_WIRE_IDS: tuple[str, ...] = (
     "PIT_OUTCOME",
 )
 
+# Slice 2 inventory: incident opening → aftermath update → recovery closure.
+OPS_INCIDENT_WIRE_IDS: tuple[str, ...] = (
+    "INCIDENT",
+    "INCIDENT_AFTERMATH",
+    "BACK_UNDER_WAY",
+)
+
+OPS_WIRE_IDS: tuple[str, ...] = OPS_PIT_WIRE_IDS + OPS_INCIDENT_WIRE_IDS
+
 # Historical pit-cycle phase order (service may visit lane and/or stopped/released).
 PIT_CYCLE_PHASE_ORDER: tuple[PitPhase, ...] = (
     "entry",
@@ -42,8 +58,25 @@ PIT_CYCLE_PHASE_ORDER: tuple[PitPhase, ...] = (
     "outcome",
 )
 
+# Incident story order: opening → aftermath update → recovery closure.
+INCIDENT_CYCLE_PHASE_ORDER: tuple[IncidentPhase, ...] = (
+    "event",
+    "aftermath",
+    "recovery",
+)
+
 # Terminal pit-cycle wires (explicit close / outcome).
 PIT_TERMINAL_WIRE_IDS: frozenset[str] = frozenset({"PIT_EXIT", "PIT_OUTCOME"})
+
+# Terminal incident-cycle wire (explicit recovery closure).
+INCIDENT_TERMINAL_WIRE_IDS: frozenset[str] = frozenset({"BACK_UNDER_WAY"})
+
+# INCIDENT freeze binds two branch beats; primary matches off-track when classified.
+INCIDENT_BRANCH_BEAT_IDS: tuple[str, ...] = (
+    "incident.off_track",
+    "incident.unclassified",
+)
+INCIDENT_PRIMARY_BEAT_ID = "incident.off_track"
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,10 +100,12 @@ class OpsFamilyRow:
     event_class: str
     can_create: bool
     pit_phase: PitPhase | None
+    incident_phase: IncidentPhase | None
     scope_kind: ScopeKind
     migration_status: MigrationStatus
     invalidate_reasons: tuple[str, ...]
     terminal_reasons: tuple[str, ...]
+    branch_beat_ids: tuple[str, ...] = ()
     notes: str = ""
 
 
@@ -80,10 +115,12 @@ class _StaticSource:
     race_event_name: str | None
     emitter_module: str
     adapter_module: str
-    pit_phase: PitPhase
+    pit_phase: PitPhase | None
+    incident_phase: IncidentPhase | None
     scope_kind: ScopeKind
     invalidate_reasons: tuple[str, ...]
     terminal_reasons: tuple[str, ...]
+    primary_beat_id: str | None = None
     notes: str = ""
 
 
@@ -94,6 +131,7 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="irswitch.events.pit:PitEmitter",
         adapter_module="irswitch.events.adapters.pit:pit_race_event_to_envelope",
         pit_phase="entry",
+        incident_phase=None,
         scope_kind="pit_cycle",
         invalidate_reasons=(
             "stream_ended",
@@ -110,6 +148,7 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="irswitch.events.pit:PitEmitter",
         adapter_module="irswitch.events.adapters.pit:pit_race_event_to_envelope",
         pit_phase="lane",
+        incident_phase=None,
         scope_kind="pit_cycle",
         invalidate_reasons=(
             "stream_ended",
@@ -127,6 +166,7 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="irswitch.events.pit:PitEmitter",
         adapter_module="irswitch.events.adapters.pit:pit_race_event_to_envelope",
         pit_phase="stopped",
+        incident_phase=None,
         scope_kind="pit_cycle",
         invalidate_reasons=(
             "stream_ended",
@@ -144,6 +184,7 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="irswitch.events.pit:PitEmitter",
         adapter_module="irswitch.events.adapters.pit:pit_race_event_to_envelope",
         pit_phase="released",
+        incident_phase=None,
         scope_kind="pit_cycle",
         invalidate_reasons=(
             "stream_ended",
@@ -160,6 +201,7 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="irswitch.events.pit:PitEmitter",
         adapter_module="irswitch.events.adapters.pit:pit_race_event_to_envelope",
         pit_phase="exit",
+        incident_phase=None,
         scope_kind="pit_cycle",
         invalidate_reasons=("stream_ended", "session_reset", "hero_teleport"),
         terminal_reasons=(
@@ -175,6 +217,7 @@ _STATIC: dict[str, _StaticSource] = {
         emitter_module="irswitch.events.pit:PitEmitter",
         adapter_module="irswitch.events.adapters.pit:pit_race_event_to_envelope",
         pit_phase="outcome",
+        incident_phase=None,
         scope_kind="pit_outcome",
         invalidate_reasons=("stream_ended", "session_reset", "hero_teleport"),
         terminal_reasons=(
@@ -183,6 +226,68 @@ _STATIC: dict[str, _StaticSource] = {
             "unknown_delta_explicit",
         ),
         notes="Terminal pit-cycle outcome; unknown position delta must stay explicit.",
+    ),
+    "INCIDENT": _StaticSource(
+        legacy_node_id="incident",
+        race_event_name="incident",
+        emitter_module="irswitch.events.incident:IncidentEmitter",
+        adapter_module="irswitch.events.adapters.exception_extra:incident_race_event_to_envelope",
+        pit_phase=None,
+        incident_phase="event",
+        scope_kind="incident_event",
+        invalidate_reasons=(
+            "stream_ended",
+            "session_reset",
+            "hero_teleport",
+            "cycle_superseded",
+        ),
+        terminal_reasons=(),
+        primary_beat_id=INCIDENT_PRIMARY_BEAT_ID,
+        notes=(
+            "Opening incident wire; classify_incident_branch maps off_track|unknown onto branch beats "
+            "incident.off_track|incident.unclassified. Missing surface evidence stays "
+            "unclassified (unknown) — never invent contact or damage."
+        ),
+    ),
+    "INCIDENT_AFTERMATH": _StaticSource(
+        legacy_node_id="incident_aftermath",
+        race_event_name=None,
+        emitter_module="irswitch.race.aftermath:IncidentAftermathFsm",
+        adapter_module="irswitch.race.aftermath:IncidentAftermathFsm",
+        pit_phase=None,
+        incident_phase="aftermath",
+        scope_kind="incident_aftermath",
+        invalidate_reasons=(
+            "stream_ended",
+            "session_reset",
+            "hero_teleport",
+            "cycle_superseded",
+            "recovered_before_classify",
+        ),
+        terminal_reasons=(),
+        notes=(
+            "Aftermath update (stalled|rolling). Tow/off-track keep stalled; must not claim "
+            "recovery or damage. Same-tick director prefers INCIDENT over aftermath."
+        ),
+    ),
+    "BACK_UNDER_WAY": _StaticSource(
+        legacy_node_id="back_under_way",
+        race_event_name=None,
+        emitter_module="irswitch.race.aftermath:IncidentAftermathFsm",
+        adapter_module="irswitch.race.aftermath:IncidentAftermathFsm",
+        pit_phase=None,
+        incident_phase="recovery",
+        scope_kind="incident_recovery",
+        invalidate_reasons=("stream_ended", "session_reset", "hero_teleport"),
+        terminal_reasons=(
+            "recovered_motion_held",
+            "cycle_closed",
+            "unknown_motion_explicit",
+        ),
+        notes=(
+            "Recovery closure after stalled aftermath; must not claim no-damage. Missing "
+            "motion evidence stays stalled/unknown (no invention)."
+        ),
     ),
 }
 
@@ -243,8 +348,30 @@ def _story_routes(beat: dict[str, Any]) -> tuple[str, ...]:
     return tuple(routes)
 
 
+def _resolve_beat_ids(
+    wire_id: str,
+    reg: dict[str, Any],
+    static: _StaticSource,
+) -> tuple[str, tuple[str, ...]]:
+    beat_ids = reg.get("beatDefinitions")
+    if not isinstance(beat_ids, list) or any(not isinstance(item, str) for item in beat_ids):
+        raise ContractViolation(f"{wire_id} beatDefinitions must be a string list")
+    if not beat_ids:
+        raise ContractViolation(f"{wire_id} beatDefinitions must not be empty")
+    branch = tuple(str(item) for item in beat_ids)
+    if static.primary_beat_id is not None:
+        if static.primary_beat_id not in branch:
+            raise ContractViolation(
+                f"{wire_id} primary beat {static.primary_beat_id!r} missing from registry"
+            )
+        return static.primary_beat_id, branch
+    if len(branch) != 1:
+        raise ContractViolation(f"{wire_id} must bind exactly one beat")
+    return branch[0], branch
+
+
 def ops_family_rows() -> tuple[OpsFamilyRow, ...]:
-    """Return the closed ops migration inventory (Slice 1: pit cycle, all legacy)."""
+    """Return the closed ops migration inventory (Slices 1–2: pit + incident, legacy)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -252,18 +379,13 @@ def ops_family_rows() -> tuple[OpsFamilyRow, ...]:
     ttl_by_policy = _policy_ttl(beat_doc)
 
     rows: list[OpsFamilyRow] = []
-    for wire_id in OPS_PIT_WIRE_IDS:
+    for wire_id in OPS_WIRE_IDS:
         static = _STATIC[wire_id]
         reg = _registry_row(registry, wire_id)
         event_class = str(reg["eventClass"])
         tape_channel = str(reg["tapeChannel"])
         can_create = can_create_event_opportunity(wire_id)
-        beat_ids = reg.get("beatDefinitions")
-        if not isinstance(beat_ids, list):
-            raise ContractViolation(f"{wire_id} beatDefinitions must be a list")
-        if len(beat_ids) != 1 or not isinstance(beat_ids[0], str):
-            raise ContractViolation(f"{wire_id} must bind exactly one beat")
-        beat_id = beat_ids[0]
+        beat_id, branch_beat_ids = _resolve_beat_ids(wire_id, reg, static)
         beat = beats.get(beat_id)
         if beat is None:
             raise ContractViolation(f"missing beat {beat_id} for {wire_id}")
@@ -291,10 +413,12 @@ def ops_family_rows() -> tuple[OpsFamilyRow, ...]:
                 event_class=event_class,
                 can_create=can_create,
                 pit_phase=static.pit_phase,
+                incident_phase=static.incident_phase,
                 scope_kind=static.scope_kind,
                 migration_status="legacy",
                 invalidate_reasons=static.invalidate_reasons,
                 terminal_reasons=static.terminal_reasons,
+                branch_beat_ids=branch_beat_ids,
                 notes=static.notes,
             )
         )
@@ -357,4 +481,55 @@ def pit_cycle_stories_have_explicit_terminals() -> bool:
                 return False
         elif row.terminal_reasons:
             return False
+    return True
+
+
+def incident_cycle_phase_order_is_monotonic() -> bool:
+    """Slice 2 helper: incident phases follow event → aftermath → recovery."""
+
+    if INCIDENT_CYCLE_PHASE_ORDER != ("event", "aftermath", "recovery"):
+        return False
+    by_phase = {
+        row.incident_phase: row.wire_id
+        for row in ops_family_rows()
+        if row.incident_phase is not None
+    }
+    if set(by_phase) != set(INCIDENT_CYCLE_PHASE_ORDER):
+        return False
+    expected = {
+        "event": "INCIDENT",
+        "aftermath": "INCIDENT_AFTERMATH",
+        "recovery": "BACK_UNDER_WAY",
+    }
+    return by_phase == expected
+
+
+def incident_stories_have_explicit_terminals() -> bool:
+    """AC helper: only recovery wire is terminal; every incident wire invalidates."""
+
+    if not incident_cycle_phase_order_is_monotonic():
+        return False
+    for wire_id in OPS_INCIDENT_WIRE_IDS:
+        row = row_for_wire_id(wire_id)
+        if not row.invalidate_reasons:
+            return False
+        if wire_id in INCIDENT_TERMINAL_WIRE_IDS:
+            if not row.terminal_reasons:
+                return False
+        elif row.terminal_reasons:
+            return False
+    return True
+
+
+def incident_branch_beats_are_documented() -> bool:
+    """Slice 2 helper: INCIDENT documents off-track + unclassified branch beats."""
+
+    row = row_for_wire_id("INCIDENT")
+    if row.beat_id != INCIDENT_PRIMARY_BEAT_ID:
+        return False
+    if row.branch_beat_ids != INCIDENT_BRANCH_BEAT_IDS:
+        return False
+    lowered = row.notes.lower()
+    if "unknown" not in lowered and "unclassified" not in lowered:
+        return False
     return True
