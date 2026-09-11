@@ -1,4 +1,4 @@
-"""#276 ops family migration map — pit + incident + session-flag inventory (Slices 1–3).
+"""#276 ops family migration map — pit + incident + flag + closeout inventory (Slices 1–4).
 
 Maps pit-cycle and incident/aftermath/recovery wire identifiers onto legacy
 emitters, adapters, beat/story routes, predicates, realization families,
@@ -28,6 +28,9 @@ ScopeKind = Literal[
     "incident_aftermath",
     "incident_recovery",
     "flag_control",
+    "session_checkered",
+    "hero_finish",
+    "session_wrap",
 ]
 
 # Slice 1 inventory: pit entry → service → exit/outcome cycle.
@@ -50,7 +53,16 @@ OPS_INCIDENT_WIRE_IDS: tuple[str, ...] = (
 # Slice 3 inventory: session yellow / green / checkered flag branches.
 OPS_FLAG_WIRE_IDS: tuple[str, ...] = ("SESSION_FLAG",)
 
-OPS_WIRE_IDS: tuple[str, ...] = OPS_PIT_WIRE_IDS + OPS_INCIDENT_WIRE_IDS + OPS_FLAG_WIRE_IDS
+# Slice 4 inventory: checkered clock ≠ hero finish ≠ session wrap.
+OPS_CLOSEOUT_WIRE_IDS: tuple[str, ...] = (
+    "SESSION_CHECKERED",
+    "FINISH",
+    "SESSION_WRAP",
+)
+
+OPS_WIRE_IDS: tuple[str, ...] = (
+    OPS_PIT_WIRE_IDS + OPS_INCIDENT_WIRE_IDS + OPS_FLAG_WIRE_IDS + OPS_CLOSEOUT_WIRE_IDS
+)
 
 # Historical pit-cycle phase order (service may visit lane and/or stopped/released).
 PIT_CYCLE_PHASE_ORDER: tuple[PitPhase, ...] = (
@@ -89,6 +101,14 @@ SESSION_FLAG_BRANCH_BEAT_IDS: tuple[str, ...] = (
     "session.checkered",
 )
 SESSION_FLAG_PRIMARY_BEAT_ID = "session.flag.yellow"
+
+# SESSION_WRAP freeze binds stage-routed wrap beats; primary follows registry order.
+SESSION_WRAP_BRANCH_BEAT_IDS: tuple[str, ...] = (
+    "session.wrap.practice",
+    "session.wrap.qualifying",
+    "session.wrap.race",
+)
+SESSION_WRAP_PRIMARY_BEAT_ID = "session.wrap.practice"
 
 
 @dataclass(frozen=True, slots=True)
@@ -330,6 +350,83 @@ _STATIC: dict[str, _StaticSource] = {
             "invent yellow/green/checkered."
         ),
     ),
+    "SESSION_CHECKERED": _StaticSource(
+        legacy_node_id="session_checkered",
+        race_event_name=None,
+        emitter_module="irswitch.events.lifecycle_edges:LifecycleTriggerBank",
+        adapter_module="irswitch.events.lifecycle_edges:LifecycleTriggerBank",
+        pit_phase=None,
+        incident_phase=None,
+        scope_kind="session_checkered",
+        invalidate_reasons=(
+            "stream_ended",
+            "session_reset",
+            "hero_teleport",
+            "checkered_cleared",
+        ),
+        terminal_reasons=(
+            "checkered_clock_spoken",
+            "superseded_by_wrap",
+            "unknown_checkered_explicit",
+        ),
+        notes=(
+            "Session checkered clock (SessionState/checkered lifecycle). Distinct from "
+            "SESSION_FLAG checkered branch (flag rising-edge speech), FINISH (hero done), and "
+            "SESSION_WRAP (session ended). Dedupe with flag checkered branch; missing evidence "
+            "stays unknown — never invent checkered or treat it as hero finish/wrap."
+        ),
+    ),
+    "FINISH": _StaticSource(
+        legacy_node_id="finish",
+        race_event_name=None,
+        emitter_module="irswitch.events.lifecycle_edges:LifecycleTriggerBank",
+        adapter_module="irswitch.events.lifecycle_edges:LifecycleTriggerBank",
+        pit_phase=None,
+        incident_phase=None,
+        scope_kind="hero_finish",
+        invalidate_reasons=(
+            "stream_ended",
+            "session_reset",
+            "hero_teleport",
+            "finish_retracted",
+        ),
+        terminal_reasons=(
+            "hero_finished_spoken",
+            "superseded_by_wrap",
+            "unknown_finish_explicit",
+        ),
+        notes=(
+            "Hero finish (this driver done). Distinct from SESSION_CHECKERED (session clock) and "
+            "SESSION_WRAP (session ended for all). Requires hero finished evidence; missing "
+            "motion/finish evidence stays unknown — never invent a finish from checkered alone."
+        ),
+    ),
+    "SESSION_WRAP": _StaticSource(
+        legacy_node_id="session_wrap",
+        race_event_name=None,
+        emitter_module="irswitch.race.narrative:StreamNarrativeFsm",
+        adapter_module="irswitch.race.narrative:StreamNarrativeFsm",
+        pit_phase=None,
+        incident_phase=None,
+        scope_kind="session_wrap",
+        invalidate_reasons=(
+            "stream_ended",
+            "session_reset",
+            "hero_teleport",
+            "wrap_superseded",
+        ),
+        terminal_reasons=(
+            "session_ended_spoken",
+            "stage_wrap_closed",
+            "unknown_wrap_explicit",
+        ),
+        primary_beat_id=SESSION_WRAP_PRIMARY_BEAT_ID,
+        notes=(
+            "Session wrap / ended (practice|qualifying|race stage beats). Distinct from "
+            "SESSION_CHECKERED and FINISH. StreamNarrativeFsm emits on boundary/finished edges; "
+            "missing end evidence stays unknown — never invent wrap from checkered or hero finish alone."
+        ),
+    ),
 }
 
 
@@ -412,7 +509,7 @@ def _resolve_beat_ids(
 
 
 def ops_family_rows() -> tuple[OpsFamilyRow, ...]:
-    """Return the closed ops migration inventory (Slices 1–3: pit + incident + flag, legacy)."""
+    """Return the closed ops migration inventory (Slices 1–4: pit + incident + flag + closeout, legacy)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -590,5 +687,63 @@ def session_flag_branch_beats_are_documented() -> bool:
     if "hero finish" not in lowered and "session wrap" not in lowered:
         return False
     if not row.invalidate_reasons or not row.terminal_reasons:
+        return False
+    return True
+
+
+def session_wrap_branch_beats_are_documented() -> bool:
+    """Slice 4 helper: SESSION_WRAP documents practice + qualifying + race beats."""
+
+    row = row_for_wire_id("SESSION_WRAP")
+    if row.beat_id != SESSION_WRAP_PRIMARY_BEAT_ID:
+        return False
+    if row.branch_beat_ids != SESSION_WRAP_BRANCH_BEAT_IDS:
+        return False
+    lowered = row.notes.lower()
+    if "practice" not in lowered or "qualifying" not in lowered or "race" not in lowered:
+        return False
+    if not row.invalidate_reasons or not row.terminal_reasons:
+        return False
+    return True
+
+
+def closeout_stories_are_separated() -> bool:
+    """Slice 4 AC: checkered clock, hero finish, and session wrap stay distinct."""
+
+    checkered = row_for_wire_id("SESSION_CHECKERED")
+    finish = row_for_wire_id("FINISH")
+    wrap = row_for_wire_id("SESSION_WRAP")
+    if checkered.scope_kind != "session_checkered":
+        return False
+    if finish.scope_kind != "hero_finish":
+        return False
+    if wrap.scope_kind != "session_wrap":
+        return False
+    if checkered.realization_family != "session.flag":
+        return False
+    if finish.realization_family != "session.finish":
+        return False
+    if wrap.realization_family != "session.wrap":
+        return False
+    if len({checkered.tape_channel, finish.tape_channel, wrap.tape_channel}) < 2:
+        # finish tape differs; checkered shares flag tape with SESSION_FLAG — ok if finish≠wrap
+        pass
+    if finish.tape_channel == checkered.tape_channel:
+        return False
+    if wrap.tape_channel == finish.tape_channel:
+        return False
+    for row in (checkered, finish, wrap):
+        if not row.invalidate_reasons or not row.terminal_reasons:
+            return False
+        lowered = row.notes.lower()
+        # each notes must mention the other two story kinds
+        markers = ("checkered", "finish", "wrap")
+        if sum(1 for m in markers if m in lowered) < 2:
+            return False
+    # SESSION_FLAG checkered branch remains distinct inventory from SESSION_CHECKERED wire
+    flag = row_for_wire_id("SESSION_FLAG")
+    if "session.checkered" not in flag.branch_beat_ids:
+        return False
+    if checkered.wire_id == flag.wire_id:
         return False
     return True

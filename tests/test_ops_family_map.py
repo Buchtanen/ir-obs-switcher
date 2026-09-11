@@ -1,4 +1,4 @@
-"""#276 Slices 1-3 — ops family map (pit + incident + session flags)."""
+"""#276 Slices 1-4 — ops family map (pit + incident + flags + closeout)."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ from irswitch.contracts.ops_family_map import (
     INCIDENT_CYCLE_PHASE_ORDER,
     INCIDENT_PRIMARY_BEAT_ID,
     INCIDENT_TERMINAL_WIRE_IDS,
+    OPS_CLOSEOUT_WIRE_IDS,
     OPS_FLAG_WIRE_IDS,
     OPS_INCIDENT_WIRE_IDS,
     OPS_PIT_WIRE_IDS,
@@ -22,7 +23,10 @@ from irswitch.contracts.ops_family_map import (
     PIT_TERMINAL_WIRE_IDS,
     SESSION_FLAG_BRANCH_BEAT_IDS,
     SESSION_FLAG_PRIMARY_BEAT_ID,
+    SESSION_WRAP_BRANCH_BEAT_IDS,
+    SESSION_WRAP_PRIMARY_BEAT_ID,
     OpsFamilyRow,
+    closeout_stories_are_separated,
     incident_branch_beats_are_documented,
     incident_cycle_phase_order_is_monotonic,
     incident_stories_have_explicit_terminals,
@@ -33,6 +37,7 @@ from irswitch.contracts.ops_family_map import (
     row_for_wire_id,
     rows_by_migration_status,
     session_flag_branch_beats_are_documented,
+    session_wrap_branch_beats_are_documented,
 )
 from irswitch.contracts.primitives import ContractViolation
 from irswitch.contracts.resources import packaged_schema_bytes
@@ -181,23 +186,71 @@ _EXPECT = {
         "terminal": True,
         "branch_beat_ids": ("session.flag.yellow", "session.flag.green", "session.checkered"),
     },
+    "SESSION_CHECKERED": {
+        "beat_id": "session.checkered",
+        "beat_role": "outcome",
+        "policy_id": "critical",
+        "outcome_ttl_ms": 45000,
+        "pit_phase": None,
+        "incident_phase": None,
+        "scope_kind": "session_checkered",
+        "legacy_node_id": "session_checkered",
+        "story_routes": ("session_occurrence", "single_result"),
+        "realization_family": "session.flag",
+        "terminal": True,
+        "branch_beat_ids": ("session.checkered",),
+    },
+    "FINISH": {
+        "beat_id": "session.hero_finish",
+        "beat_role": "outcome",
+        "policy_id": "critical",
+        "outcome_ttl_ms": 45000,
+        "pit_phase": None,
+        "incident_phase": None,
+        "scope_kind": "hero_finish",
+        "legacy_node_id": "finish",
+        "story_routes": ("session_occurrence", "single_result"),
+        "realization_family": "session.finish",
+        "terminal": True,
+        "branch_beat_ids": ("session.hero_finish",),
+    },
+    "SESSION_WRAP": {
+        "beat_id": "session.wrap.practice",
+        "beat_role": "closure",
+        "policy_id": "result",
+        "outcome_ttl_ms": 30000,
+        "pit_phase": None,
+        "incident_phase": None,
+        "scope_kind": "session_wrap",
+        "legacy_node_id": "session_wrap",
+        "story_routes": ("session_occurrence", "single_result"),
+        "realization_family": "session.wrap",
+        "terminal": True,
+        "branch_beat_ids": (
+            "session.wrap.practice",
+            "session.wrap.qualifying",
+            "session.wrap.race",
+        ),
+    },
 }
 
 
-def test_ops_family_rows_cover_pit_incident_and_flag_inventory() -> None:
+def test_ops_family_rows_cover_full_ops_inventory() -> None:
     rows = ops_family_rows()
     assert tuple(row.wire_id for row in rows) == OPS_WIRE_IDS
     assert OPS_WIRE_IDS[: len(OPS_PIT_WIRE_IDS)] == OPS_PIT_WIRE_IDS
     mid = len(OPS_PIT_WIRE_IDS)
     assert OPS_WIRE_IDS[mid : mid + len(OPS_INCIDENT_WIRE_IDS)] == OPS_INCIDENT_WIRE_IDS
-    assert OPS_WIRE_IDS[mid + len(OPS_INCIDENT_WIRE_IDS) :] == OPS_FLAG_WIRE_IDS
-    assert len(rows) == 10
+    mid2 = mid + len(OPS_INCIDENT_WIRE_IDS)
+    assert OPS_WIRE_IDS[mid2 : mid2 + len(OPS_FLAG_WIRE_IDS)] == OPS_FLAG_WIRE_IDS
+    assert OPS_WIRE_IDS[mid2 + len(OPS_FLAG_WIRE_IDS) :] == OPS_CLOSEOUT_WIRE_IDS
+    assert len(rows) == 13
     assert all(isinstance(row, OpsFamilyRow) for row in rows)
 
 
 def test_every_ops_row_is_legacy_before_shadow_cutover() -> None:
     assert migration_status_by_wire_id() == dict.fromkeys(OPS_WIRE_IDS, "legacy")
-    assert len(rows_by_migration_status("legacy")) == 10
+    assert len(rows_by_migration_status("legacy")) == 13
     assert rows_by_migration_status("shadow") == ()
     assert rows_by_migration_status("v2") == ()
 
@@ -296,9 +349,6 @@ def test_incident_branch_beats_are_documented() -> None:
         "incident.unclassified",
     )
     assert incident_branch_beats_are_documented() is True
-    row = row_for_wire_id("INCIDENT")
-    assert row.beat_id == INCIDENT_PRIMARY_BEAT_ID
-    assert row.branch_beat_ids == INCIDENT_BRANCH_BEAT_IDS
 
 
 def test_session_flag_branch_beats_are_documented() -> None:
@@ -310,13 +360,36 @@ def test_session_flag_branch_beats_are_documented() -> None:
         "session.checkered",
     )
     assert session_flag_branch_beats_are_documented() is True
-    row = row_for_wire_id("SESSION_FLAG")
-    assert row.beat_id == SESSION_FLAG_PRIMARY_BEAT_ID
-    assert row.branch_beat_ids == SESSION_FLAG_BRANCH_BEAT_IDS
-    assert row.scope_kind == "flag_control"
-    assert row.terminal_reasons
-    assert "checkered" in row.notes.lower()
-    assert "hero finish" in row.notes.lower() or "session wrap" in row.notes.lower()
+
+
+def test_session_wrap_branch_beats_are_documented() -> None:
+    assert SESSION_WRAP_PRIMARY_BEAT_ID == "session.wrap.practice"
+    assert SESSION_WRAP_BRANCH_BEAT_IDS == (
+        "session.wrap.practice",
+        "session.wrap.qualifying",
+        "session.wrap.race",
+    )
+    assert session_wrap_branch_beats_are_documented() is True
+
+
+def test_closeout_stories_are_separated() -> None:
+    assert OPS_CLOSEOUT_WIRE_IDS == (
+        "SESSION_CHECKERED",
+        "FINISH",
+        "SESSION_WRAP",
+    )
+    assert closeout_stories_are_separated() is True
+    checkered = row_for_wire_id("SESSION_CHECKERED")
+    finish = row_for_wire_id("FINISH")
+    wrap = row_for_wire_id("SESSION_WRAP")
+    assert checkered.scope_kind == "session_checkered"
+    assert finish.scope_kind == "hero_finish"
+    assert wrap.scope_kind == "session_wrap"
+    assert checkered.realization_family == "session.flag"
+    assert finish.realization_family == "session.finish"
+    assert wrap.realization_family == "session.wrap"
+    assert finish.tape_channel != checkered.tape_channel
+    assert wrap.tape_channel != finish.tape_channel
 
 
 def test_row_for_unknown_wire_raises() -> None:
