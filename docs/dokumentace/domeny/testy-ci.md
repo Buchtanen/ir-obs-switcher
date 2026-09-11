@@ -285,3 +285,16 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 
 **Slice 18 locks:** F39 immutable utterance, callback sequence, consume-once, protocol quarantine, reset consumption rules, one restore, late no-op, manual new token; machine projection still matches frozen expectations; gap inventory **39/44** wired, **5** unwired.
 
+## #278 vertical-slice TTS software-boundary runtime (Slice 19)
+
+**Status:** offline F41 drivers on branch `cursor/vertical-slice-tts-boundaries-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Contract | Value |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_tts_boundaries_runtime.py`](../../../tests/test_vertical_slice_tts_boundaries_runtime.py) (**2** tests: **1** parametrized machine projection + F41 runtime driver) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **40/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 19](../../v2.0.0/vertical-slice-acceptance.md#slice-19--f41-tts-software-boundary-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F41 row; hashes **unchanged**) |
+
+**Slice 19 locks:** F41 exact software boundaries, no early consumption, ordered callbacks, protocol quarantine, watchdog authority, no backend retry; machine projection still matches frozen expectations; gap inventory **40/44** wired, **4** unwired.
+

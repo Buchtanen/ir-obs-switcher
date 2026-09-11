@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 18 — offline TTS request/callback protocol drivers for F39 (no live Windows §24.9 GO).
+**Status:** Slice 19 — offline TTS software-boundary drivers for F41 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -262,6 +262,22 @@
 **AC locks (Slice 18):**
 - Machine projection for F39 still matches frozen expectations.
 - Runtime drivers prove immutable utterance snapshots, accept→terminal callback sequence, consume-once, protocol quarantine, reset consumption rules, one higher-generation restore, late no-ops, and a later manual token.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+
+
+## Slice 19 — F41 TTS software-boundary runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F41` (every TTS backend acknowledges one auditable software boundary) |
+| Pytest | `tests/test_vertical_slice_tts_boundaries_runtime.py` |
+| Inventory | **40/44** wired; **4** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 19):**
+- Machine projection for F41 still matches frozen expectations.
+- Runtime drivers prove exact per-adapter acceptance boundaries, no early consumption, ordered accept→terminal callbacks, protocol quarantine, watchdog authority, and no backend retry.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 
