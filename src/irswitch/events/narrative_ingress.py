@@ -158,8 +158,10 @@ def _tape_component_projection(status: RuntimeStatus) -> dict[str, Any]:
             if isinstance(value, bool) or not isinstance(value, int) or value < 0:
                 continue
             drops_by_priority[key] = int(value)
-    drops = int(status.tape_drops) if isinstance(status.tape_drops, int) and status.tape_drops >= 0 else sum(
-        drops_by_priority.values()
+    drops = (
+        int(status.tape_drops)
+        if isinstance(status.tape_drops, int) and status.tape_drops >= 0
+        else sum(drops_by_priority.values())
     )
     size = 0
     if isinstance(status.tape_size, int) and status.tape_size >= 0:
