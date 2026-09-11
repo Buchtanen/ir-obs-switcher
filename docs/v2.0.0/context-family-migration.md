@@ -1,10 +1,10 @@
 # #277 Context family migration (session / filler / weather / field / bio)
 
-**Status:** Slice 2 — session leftovers + filler inventory (`STREAM_START`, `SESSION_PREVIEW`, `ENTER_CAR`, `FINAL_LAP`, `PARADE_PAD`; all `legacy`; no `FAMILY_ROUTE` flip).
+**Status:** Slice 3 — session leftovers + filler + weather/field (`STREAM_START`, `SESSION_PREVIEW`, `ENTER_CAR`, `FINAL_LAP`, `PARADE_PAD`, `WEATHER_BRIEF`, `WEATHER_CHANGE`, `FIELD_FACT`, `SOF_BRIEF`; all `legacy`; no `FAMILY_ROUTE` flip).
 **Issue:** [#277](https://github.com/Buchtanen/ir-obs-switcher/issues/277)  
 **Module:** `src/irswitch/contracts/context_family_map.py`  
-**Tests:** `tests/test_context_family_map.py` (**12**)
-**Lookup:** [inflight § #277 slice 2](../dokumentace/inflight/README.md#277-context-family-map-slice-2-lookup) · [events branch delta](../dokumentace/domeny/events.md#context-family-migration-map-contractscontext_family_mappy)
+**Tests:** `tests/test_context_family_map.py` (**14**)
+**Lookup:** [inflight § #277 slice 3](../dokumentace/inflight/README.md#277-context-family-map-slice-3-lookup) · [events branch delta](../dokumentace/domeny/events.md#context-family-migration-map-contractscontext_family_mappy)
 
 ## Guardrails
 
@@ -43,7 +43,7 @@
 | `ENTER_CAR` | `irswitch.commentary.opener:OpenerMutex` | `session_race_event_to_envelope` |
 | `FINAL_LAP` | `irswitch.events.session:SessionEmitter` | `session_race_event_to_envelope` |
 
-**`CONTEXT_WIRE_IDS`:** **5** wires (`CONTEXT_SESSION_WIRE_IDS` **4** + `CONTEXT_FILLER_WIRE_IDS` **1**).
+**`CONTEXT_WIRE_IDS`:** **9** wires (session **4** + filler **1** + weather/field **4**).
 
 ## AC locks (Slice 1)
 
@@ -77,9 +77,36 @@ Helpers (Slice 1): `Any()`, `ContractViolation()`, `LifecyclePhase()`, `Literal(
 
 Helpers (add): `filler_beats_are_documented()`, `filler_may_resolve_to_silence()`.
 
+
+## Slice 3 inventory — weather + field (with revalidation)
+
+| Wire id | Legacy node | Beat | Role | Family | Policy / TTL | Tape | Scope | Phase | Status |
+| --- | --- | --- | --- | --- | ---: | --- | --- | --- | --- |
+| `WEATHER_BRIEF` | `weather_brief` | `session.weather_brief` | `context` | `session.weather` | `context` / 20s | `session.context.weather` | `weather_brief` | — | legacy |
+| `WEATHER_CHANGE` | `weather_change` | `session.weather_change` | `update` | `session.weather` | `context` / 20s | `session.context.weather` | `weather_change` | — | legacy |
+| `FIELD_FACT` | `field_fact` | `session.field_fact` | `context` | `session.context` | `context` / 20s | `session.context.field` | `field_fact` | — | legacy |
+| `SOF_BRIEF` | `sof_brief` | `session.sof_brief` | `context` | `session.context` | `context` / 20s | `session.context.field` | `sof_brief` | — | legacy |
+
+**Emitters / adapters (Slice 3):**
+
+| Wire | Emitter | Adapter |
+| --- | --- | --- |
+| `WEATHER_BRIEF` | `irswitch.commentary.session_briefs:SessionBriefsDetector` | same |
+| `WEATHER_CHANGE` | `irswitch.race.observer:RaceObserver` | same |
+| `FIELD_FACT` | `irswitch.race.observer:RaceObserver` | same |
+| `SOF_BRIEF` | `irswitch.commentary.session_briefs:SessionBriefsDetector` | same |
+
+**AC locks (Slice 3):**
+- Weather/field currency is explicit **current** vs **historical** (`weather_and_field_currency_is_explicit()`).
+- Forecast weather is **not speakable** (notes + silence-clock source guard).
+- Field/SoF must not invent race outcomes or extrapolate beyond the selected fact.
+- Revalidation invalidate reasons include stale/superseded/roster_reset/forecast_rejected.
+
+Helpers (add): `weather_and_field_wires_are_documented()`, `weather_and_field_currency_is_explicit()`.
+
 ## Later #277 slices
 
-Deferred: weather + field revalidation; HR emotion as optional style fact; long-silence eligibility/fatigue; EN-only curation + remove generic forced filler; shadow activation.
+Deferred: HR emotion as optional style fact; long-silence eligibility/fatigue; EN-only curation + remove generic forced filler; shadow activation.
 
 ## Docs / config
 

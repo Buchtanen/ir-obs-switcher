@@ -1,14 +1,15 @@
-"""#277 context family migration map — session/stream leftovers + filler (Slices 1–2).
+"""#277 context family migration map — session/stream leftovers + filler + weather/field (Slices 1–3).
 
-Maps remaining non-race session/stream and filler wire identifiers onto legacy
+Maps remaining non-race session/stream, filler, weather and field wire identifiers onto legacy
 emitters, adapters, beat/story routes, predicates, realization families, policy
 TTL and tape channels.
 
-Slices 1–2 record these wires as ``legacy``. They do **not** rewrite frozen
+Slices 1–3 record these wires as ``legacy``. They do **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 Session intros/recaps stay owned by the timing map; session wrap/checkered/finish
-stay owned by the ops / race-outcome maps. Beat-only silence fillers are
-documented without inventing freeze wires.
+stay owned by the ops / race-outcome maps. Beat-only silence fillers are documented without inventing freeze wires.
+Weather/field wires require explicit current vs historical currency;
+forecast weather is not speakable inventory.
 """
 
 from __future__ import annotations
@@ -28,6 +29,10 @@ ScopeKind = Literal[
     "enter_car",
     "final_lap",
     "filler_parade",
+    "weather_brief",
+    "weather_change",
+    "field_fact",
+    "sof_brief",
 ]
 LifecyclePhase = Literal["stream_start", "preview", "enter_car", "final_lap"]
 FillerKind = Literal[
@@ -50,7 +55,20 @@ CONTEXT_SESSION_WIRE_IDS: tuple[str, ...] = (
 # Slice 2 inventory: parade pad is the only freeze wire for filler impulses.
 CONTEXT_FILLER_WIRE_IDS: tuple[str, ...] = ("PARADE_PAD",)
 
-CONTEXT_WIRE_IDS: tuple[str, ...] = CONTEXT_SESSION_WIRE_IDS + CONTEXT_FILLER_WIRE_IDS
+
+WeatherCurrency = Literal["current", "historical"]
+
+# Slice 3 inventory: weather + field context with explicit currency / revalidation.
+CONTEXT_WEATHER_FIELD_WIRE_IDS: tuple[str, ...] = (
+    "WEATHER_BRIEF",
+    "WEATHER_CHANGE",
+    "FIELD_FACT",
+    "SOF_BRIEF",
+)
+
+CONTEXT_WIRE_IDS: tuple[str, ...] = (
+    CONTEXT_SESSION_WIRE_IDS + CONTEXT_FILLER_WIRE_IDS + CONTEXT_WEATHER_FIELD_WIRE_IDS
+)
 
 # Silence-clock filler beats (policy filler). Parade also binds PARADE_PAD.
 CONTEXT_FILLER_BEAT_IDS: tuple[str, ...] = (
@@ -233,6 +251,74 @@ _STATIC: dict[str, _StaticSource] = {
             "when facts are missing — silence is a valid outcome."
         ),
     ),
+    "WEATHER_BRIEF": _StaticSource(
+        legacy_node_id="weather_brief",
+        race_event_name=None,
+        emitter_module="irswitch.commentary.session_briefs:SessionBriefsDetector",
+        adapter_module="irswitch.commentary.session_briefs:SessionBriefsDetector",
+        lifecycle_phase=None,
+        scope_kind="weather_brief",
+        invalidate_reasons=("stream_ended", "session_reset", "weather_stale", "forecast_rejected"),
+        terminal_reasons=(),
+        notes=(
+            "Session weather brief from confirmed current facts (live/session source). "
+            "Currency must be explicit: current (live|session) vs historical framing. "
+            "Forecast weather is not speakable — silence_clock source_guard rejects "
+            "forecast. Never invent dry→sunny or causal track effects."
+        ),
+    ),
+    "WEATHER_CHANGE": _StaticSource(
+        legacy_node_id="weather_change",
+        race_event_name="weather_change",
+        emitter_module="irswitch.race.observer:RaceObserver",
+        adapter_module="irswitch.race.observer:RaceObserver",
+        lifecycle_phase=None,
+        scope_kind="weather_change",
+        invalidate_reasons=(
+            "stream_ended",
+            "session_reset",
+            "change_superseded",
+            "forecast_rejected",
+        ),
+        terminal_reasons=(),
+        notes=(
+            "Material weather revision between current snapshots. Revalidation "
+            "compares oldFactId→newFactId; speak only confirmed current metrics. "
+            "Historical recap must be framed historical_only — never present "
+            "forecast or unobserved track effect as live weather."
+        ),
+    ),
+    "FIELD_FACT": _StaticSource(
+        legacy_node_id="field_fact",
+        race_event_name="field_fact",
+        emitter_module="irswitch.race.observer:RaceObserver",
+        adapter_module="irswitch.race.observer:RaceObserver",
+        lifecycle_phase=None,
+        scope_kind="field_fact",
+        invalidate_reasons=("stream_ended", "session_reset", "field_stale", "roster_reset"),
+        terminal_reasons=(),
+        notes=(
+            "Confirmed field context fact (W_field allowlist). Current roster/"
+            "field evidence only unless explicitly historical. Revalidate when "
+            "roster or SoF sample changes. Never extrapolate beyond the selected "
+            "fact or invent race outcomes."
+        ),
+    ),
+    "SOF_BRIEF": _StaticSource(
+        legacy_node_id="sof_brief",
+        race_event_name=None,
+        emitter_module="irswitch.commentary.session_briefs:SessionBriefsDetector",
+        adapter_module="irswitch.commentary.session_briefs:SessionBriefsDetector",
+        lifecycle_phase=None,
+        scope_kind="sof_brief",
+        invalidate_reasons=("stream_ended", "session_reset", "roster_reset", "sof_stale"),
+        terminal_reasons=(),
+        notes=(
+            "Field strength / SoF brief (field.strength). Current official sample "
+            "only; historical SoF must be framed historical. Never judge quality "
+            "or predict results from SoF alone."
+        ),
+    ),
 }
 
 
@@ -315,7 +401,7 @@ def _resolve_beat_ids(
 
 
 def context_family_rows() -> tuple[ContextFamilyRow, ...]:
-    """Return the closed context migration inventory (Slices 1–2: session leftovers + filler, legacy)."""
+    """Return the closed context migration inventory (Slices 1–3: session leftovers + filler + weather/field, legacy)."""
 
     registry = _load("freeze-registry.json")
     beat_doc = _load("beat-catalog.json")
@@ -508,5 +594,68 @@ def filler_may_resolve_to_silence() -> bool:
         return False
     # Beat-only fillers must remain outside CONTEXT_WIRE_IDS (no invented wires).
     if set(CONTEXT_FILLER_BEAT_ONLY_IDS) & set(CONTEXT_WIRE_IDS):
+        return False
+    return True
+
+
+def weather_and_field_wires_are_documented() -> bool:
+    """Slice 3 helper: weather/field freeze set stays closed with currency notes."""
+
+    if CONTEXT_WEATHER_FIELD_WIRE_IDS != (
+        "WEATHER_BRIEF",
+        "WEATHER_CHANGE",
+        "FIELD_FACT",
+        "SOF_BRIEF",
+    ):
+        return False
+    expect = {
+        "WEATHER_BRIEF": ("session.weather_brief", "weather_brief", "session.weather"),
+        "WEATHER_CHANGE": ("session.weather_change", "weather_change", "session.weather"),
+        "FIELD_FACT": ("session.field_fact", "field_fact", "session.context"),
+        "SOF_BRIEF": ("session.sof_brief", "sof_brief", "session.context"),
+    }
+    for wire_id, (beat_id, scope_kind, family) in expect.items():
+        row = row_for_wire_id(wire_id)
+        if row.beat_id != beat_id:
+            return False
+        if row.scope_kind != scope_kind:
+            return False
+        if row.realization_family != family:
+            return False
+        if row.policy_id != "context":
+            return False
+        if not row.invalidate_reasons:
+            return False
+        if row.lifecycle_phase is not None:
+            return False
+    return True
+
+
+def weather_and_field_currency_is_explicit() -> bool:
+    """AC helper: weather/history must be current or historical; forecast rejected."""
+
+    if not weather_and_field_wires_are_documented():
+        return False
+    weather_brief = row_for_wire_id("WEATHER_BRIEF")
+    weather_change = row_for_wire_id("WEATHER_CHANGE")
+    field_fact = row_for_wire_id("FIELD_FACT")
+    sof = row_for_wire_id("SOF_BRIEF")
+    for row in (weather_brief, weather_change, field_fact, sof):
+        lowered = row.notes.lower()
+        if "current" not in lowered:
+            return False
+        if "historical" not in lowered:
+            return False
+    # Forecast must be explicitly non-speakable on weather wires.
+    for row in (weather_brief, weather_change):
+        lowered = row.notes.lower()
+        if "forecast" not in lowered:
+            return False
+        if "not speakable" not in lowered and "reject" not in lowered and "never" not in lowered:
+            return False
+    # Field must forbid inventing race outcomes / extrapolation.
+    if "never" not in field_fact.notes.lower() and "not invent" not in field_fact.notes.lower():
+        return False
+    if "never" not in sof.notes.lower() and "not" not in sof.notes.lower():
         return False
     return True

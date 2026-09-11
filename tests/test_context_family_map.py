@@ -1,4 +1,4 @@
-"""#277 Slices 1–2 — context family map (session leftovers + filler)."""
+"""#277 Slices 1–3 — context family map (session + filler + weather/field)."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from irswitch.contracts.context_family_map import (
     CONTEXT_OWNED_ELSEWHERE,
     CONTEXT_SESSION_PHASE_ORDER,
     CONTEXT_SESSION_WIRE_IDS,
+    CONTEXT_WEATHER_FIELD_WIRE_IDS,
     CONTEXT_WIRE_IDS,
     ENTER_CAR_BRANCH_BEAT_IDS,
     ENTER_CAR_PRIMARY_BEAT_ID,
@@ -27,11 +28,13 @@ from irswitch.contracts.context_family_map import (
     owned_elsewhere_session_wires_are_documented,
     row_for_wire_id,
     rows_by_migration_status,
+    weather_and_field_currency_is_explicit,
+    weather_and_field_wires_are_documented,
 )
 from irswitch.contracts.coverage_matrix import can_create_event_opportunity
-from irswitch.contracts.ops_family_map import INCIDENT_TERMINAL_WIRE_IDS
+from irswitch.contracts.ops_family_map import OPS_WIRE_IDS
 from irswitch.contracts.primitives import ContractViolation
-from irswitch.contracts.timing_family_map import RACE_FINISH_WIRE_IDS
+from irswitch.contracts.timing_family_map import TIMING_WIRE_IDS
 
 _EXPECT = {
     "STREAM_START": {
@@ -98,10 +101,58 @@ _EXPECT = {
         "branch_beat_ids": ("filler.parade_lap",),
         "terminal": False,
     },
+    "WEATHER_BRIEF": {
+        "beat_id": "session.weather_brief",
+        "beat_role": "context",
+        "policy_id": "context",
+        "outcome_ttl_ms": 20000,
+        "lifecycle_phase": None,
+        "scope_kind": "weather_brief",
+        "legacy_node_id": "weather_brief",
+        "realization_family": "session.weather",
+        "branch_beat_ids": ("session.weather_brief",),
+        "terminal": False,
+    },
+    "WEATHER_CHANGE": {
+        "beat_id": "session.weather_change",
+        "beat_role": "update",
+        "policy_id": "context",
+        "outcome_ttl_ms": 20000,
+        "lifecycle_phase": None,
+        "scope_kind": "weather_change",
+        "legacy_node_id": "weather_change",
+        "realization_family": "session.weather",
+        "branch_beat_ids": ("session.weather_change",),
+        "terminal": False,
+    },
+    "FIELD_FACT": {
+        "beat_id": "session.field_fact",
+        "beat_role": "context",
+        "policy_id": "context",
+        "outcome_ttl_ms": 20000,
+        "lifecycle_phase": None,
+        "scope_kind": "field_fact",
+        "legacy_node_id": "field_fact",
+        "realization_family": "session.context",
+        "branch_beat_ids": ("session.field_fact",),
+        "terminal": False,
+    },
+    "SOF_BRIEF": {
+        "beat_id": "session.sof_brief",
+        "beat_role": "context",
+        "policy_id": "context",
+        "outcome_ttl_ms": 20000,
+        "lifecycle_phase": None,
+        "scope_kind": "sof_brief",
+        "legacy_node_id": "sof_brief",
+        "realization_family": "session.context",
+        "branch_beat_ids": ("session.sof_brief",),
+        "terminal": False,
+    },
 }
 
 
-def test_context_family_rows_cover_session_and_filler_inventory() -> None:
+def test_context_family_rows_cover_session_filler_and_weather_field_inventory() -> None:
     rows = context_family_rows()
     assert tuple(row.wire_id for row in rows) == CONTEXT_WIRE_IDS
     assert CONTEXT_SESSION_WIRE_IDS == (
@@ -111,13 +162,21 @@ def test_context_family_rows_cover_session_and_filler_inventory() -> None:
         "FINAL_LAP",
     )
     assert CONTEXT_FILLER_WIRE_IDS == ("PARADE_PAD",)
-    assert CONTEXT_WIRE_IDS == CONTEXT_SESSION_WIRE_IDS + CONTEXT_FILLER_WIRE_IDS
-    assert len(rows) == 5
+    assert CONTEXT_WEATHER_FIELD_WIRE_IDS == (
+        "WEATHER_BRIEF",
+        "WEATHER_CHANGE",
+        "FIELD_FACT",
+        "SOF_BRIEF",
+    )
+    assert CONTEXT_WIRE_IDS == (
+        CONTEXT_SESSION_WIRE_IDS + CONTEXT_FILLER_WIRE_IDS + CONTEXT_WEATHER_FIELD_WIRE_IDS
+    )
+    assert len(rows) == 9
 
 
 def test_every_context_row_is_legacy_before_shadow_cutover() -> None:
     assert migration_status_by_wire_id() == dict.fromkeys(CONTEXT_WIRE_IDS, "legacy")
-    assert len(rows_by_migration_status("legacy")) == 5
+    assert len(rows_by_migration_status("legacy")) == 9
     assert rows_by_migration_status("shadow") == ()
     assert rows_by_migration_status("v2") == ()
 
@@ -145,10 +204,8 @@ def test_context_rows_match_freeze_and_beat_catalog() -> None:
 
 
 def test_context_wires_do_not_overlap_timing_or_ops_inventory() -> None:
-    overlap = set(CONTEXT_WIRE_IDS) & set(RACE_FINISH_WIRE_IDS) & set(INCIDENT_TERMINAL_WIRE_IDS)
-    assert overlap == set()
-    assert set(CONTEXT_WIRE_IDS).isdisjoint(set(RACE_FINISH_WIRE_IDS))
-    assert set(CONTEXT_WIRE_IDS).isdisjoint(set(INCIDENT_TERMINAL_WIRE_IDS))
+    assert set(CONTEXT_WIRE_IDS).isdisjoint(set(TIMING_WIRE_IDS))
+    assert set(CONTEXT_WIRE_IDS).isdisjoint(set(OPS_WIRE_IDS))
     assert set(CONTEXT_OWNED_ELSEWHERE).isdisjoint(set(CONTEXT_WIRE_IDS))
 
 
@@ -199,8 +256,6 @@ def test_filler_beats_are_documented() -> None:
     assert row.beat_id == "filler.parade_lap"
     assert row.scope_kind == "filler_parade"
     assert row.policy_id == "filler"
-    assert row.outcome_ttl_ms == 12000
-    assert row.lifecycle_phase is None
     assert "silence" in row.notes.lower()
 
 
@@ -208,3 +263,30 @@ def test_filler_may_resolve_to_silence() -> None:
     assert filler_may_resolve_to_silence() is True
     assert set(CONTEXT_FILLER_BEAT_ONLY_IDS).isdisjoint(set(CONTEXT_WIRE_IDS))
     assert set(CONTEXT_FILLER_BEAT_ONLY_IDS) | {"filler.parade_lap"} == set(CONTEXT_FILLER_BEAT_IDS)
+
+
+def test_weather_and_field_wires_are_documented() -> None:
+    assert weather_and_field_wires_are_documented() is True
+    brief = row_for_wire_id("WEATHER_BRIEF")
+    change = row_for_wire_id("WEATHER_CHANGE")
+    field = row_for_wire_id("FIELD_FACT")
+    sof = row_for_wire_id("SOF_BRIEF")
+    assert brief.beat_id == "session.weather_brief"
+    assert change.beat_id == "session.weather_change"
+    assert field.beat_id == "session.field_fact"
+    assert sof.beat_id == "session.sof_brief"
+    assert brief.realization_family == change.realization_family == "session.weather"
+    assert field.realization_family == sof.realization_family == "session.context"
+    assert all(row.policy_id == "context" for row in (brief, change, field, sof))
+    assert all(row.outcome_ttl_ms == 20000 for row in (brief, change, field, sof))
+
+
+def test_weather_and_field_currency_is_explicit() -> None:
+    assert weather_and_field_currency_is_explicit() is True
+    brief = row_for_wire_id("WEATHER_BRIEF")
+    change = row_for_wire_id("WEATHER_CHANGE")
+    for row in (brief, change):
+        lowered = row.notes.lower()
+        assert "current" in lowered
+        assert "historical" in lowered
+        assert "forecast" in lowered
