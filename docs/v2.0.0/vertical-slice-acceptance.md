@@ -1,6 +1,6 @@
 # #278 Vertical-slice acceptance
 
-**Status:** Slice 20 — offline tape-channel funnel drivers for F43 (no live Windows §24.9 GO).
+**Status:** Slice 21 — offline Qwen request/stream/deadline authority drivers for F40 (no live Windows §24.9 GO).
 
 ## Slice 1 — frozen projection harness
 
@@ -294,6 +294,22 @@
 **AC locks (Slice 20):**
 - Machine projection for F43 still matches frozen expectations.
 - Runtime drivers prove FunnelLink identity/exact links, once-only stage counts, terminal stage shapes, live counters without tape, incomplete-gap rates, and valid denominators.
+- Does **not** claim live §24.9 GO; CONFIG/API unchanged.
+
+
+
+## Slice 21 — F40 Qwen request/stream/deadline authority runtime drivers
+
+| Contract | Value |
+| --- | --- |
+| Fixtures | `F40` (Qwen request, streaming result and deadline have one authority) |
+| Pytest | `tests/test_vertical_slice_qwen_authority_runtime.py` |
+| Inventory | **42/44** wired; **2** unwired |
+| Machine hashes | unchanged |
+
+**AC locks (Slice 21):**
+- Machine projection for F40 still matches frozen expectations.
+- Runtime drivers prove exact prompt projection, one terminal result, fail-closed SSE, deadline authority, protected deadline under mailbox pressure, no request queue, duplicate result protocol, warmup without retry, and exact latency metrics.
 - Does **not** claim live §24.9 GO; CONFIG/API unchanged.
 
 

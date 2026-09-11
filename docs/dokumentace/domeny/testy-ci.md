@@ -311,3 +311,17 @@ Lookup: [inflight § #278 slice 8](../inflight/README.md#278-vertical-slice-qwen
 
 **Slice 20 locks:** F43 FunnelLink identity/exact links, once-only counts, terminal stages, live counters without tape, incomplete-gap rates, valid denominators; machine projection still matches frozen expectations; gap inventory **41/44** wired, **3** unwired.
 
+
+
+## #278 vertical-slice Qwen authority runtime (Slice 21)
+
+**Status:** offline F40 drivers on branch `cursor/vertical-slice-qwen-authority-278-cad3` — **does not** claim live Windows §24.9 GO.
+
+| Artifact | Path |
+| --- | --- |
+| Pytest module | [`tests/test_vertical_slice_qwen_authority_runtime.py`](../../../tests/test_vertical_slice_qwen_authority_runtime.py) (**2** tests: **1** parametrized machine projection + F40 runtime driver) |
+| Slice 1 harness | [`tests/test_vertical_slice_fixtures.py`](../../../tests/test_vertical_slice_fixtures.py) (inventory row updated to **42/44** wired) |
+| Acceptance doc | [vertical-slice-acceptance.md § Slice 21](../../v2.0.0/vertical-slice-acceptance.md#slice-21--f40-qwen-requeststreamdeadline-authority-runtime-drivers) |
+| Frozen projection | `docs/v2.0.0/machine/vertical-slice-fixtures.json` (F40 row; hashes **unchanged**) |
+
+**Slice 21 locks:** F40 exact prompt projection, one terminal result, fail-closed SSE, deadline authority, protected deadline under mailbox pressure, no request queue, duplicate protocol, warmup without retry, exact metrics; machine projection still matches frozen expectations; gap inventory **42/44** wired, **2** unwired.
