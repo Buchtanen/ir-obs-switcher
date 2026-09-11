@@ -181,6 +181,51 @@ async def test_runtime_speak_component_unavailable_matches_error_golden() -> Non
             assert await resp.json() == expected
 
 
+@pytest.mark.asyncio
+async def test_runtime_validate_invalid_json_matches_error_golden() -> None:
+    """#273: non-JSON validate body freezes to error_invalid_json.json before handlers."""
+
+    expected = json.loads((FIXTURES / "error_invalid_json.json").read_text(encoding="utf-8"))
+    app = _app_with_provider(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post(
+                "/api/commentary/runtime/validate",
+                data=b"not-json",
+                headers={"Content-Type": "application/json"},
+            )
+            assert resp.status == 400
+            assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_validate_invalid_request_matches_error_golden() -> None:
+    """#273: non-object JSON validate body freezes to error_invalid_request.json."""
+
+    expected = json.loads((FIXTURES / "error_invalid_request.json").read_text(encoding="utf-8"))
+    app = _app_with_provider(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/api/commentary/runtime/validate", json=["not-an-object"])
+            assert resp.status == 400
+            assert await resp.json() == expected
+
+
+@pytest.mark.asyncio
+async def test_runtime_speak_validation_failed_matches_error_golden() -> None:
+    """#273: empty speak text freezes to error_validation_failed.json (422)."""
+
+    expected = json.loads((FIXTURES / "error_validation_failed.json").read_text(encoding="utf-8"))
+    request = json.loads((FIXTURES / "speak_request.json").read_text(encoding="utf-8"))
+    request = {**request, "text": ""}
+    app = _app_with_provider(None)
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.post("/api/commentary/runtime/speak", json=request)
+            assert resp.status == 422
+            assert await resp.json() == expected
+
+
 def test_health_commentary_ready_matches_machine_golden() -> None:
     """#273: /health commentary ready shape is frozen to machine health_ready."""
     machine = json.loads(MACHINE_GOLDENS.read_text(encoding="utf-8"))
