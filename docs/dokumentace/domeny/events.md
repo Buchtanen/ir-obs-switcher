@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 1 open; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 slice 2 open; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
 
@@ -25,14 +25,19 @@ Detail: [timing-family-migration.md](../../v2.0.0/timing-family-migration.md). N
 
 ## Ops family migration map (`contracts/ops_family_map.py`)
 
-Slice 1 inventory for Wave G #276 (all `migration_status=legacy`):
+Slices 1–2 inventory for Wave G #276 (all `migration_status=legacy`):
 
 | Helper | Role |
 | --- | --- |
-| `ops_family_rows()` | Closed rows for pit cycle wires |
+| `ops_family_rows()` | Closed rows for pit cycle + incident/aftermath/recovery wires |
 | `migration_status_by_wire_id()` | Coverage-matrix companion |
-| `pit_cycle_phase_order_is_monotonic()` | AC: entry→service→exit→outcome |
-| `pit_cycle_stories_have_explicit_terminals()` | AC: exit/outcome terminals + invalidate reasons |
+| `pit_cycle_phase_order_is_monotonic()` | Slice 1 AC: entry→service→exit→outcome |
+| `pit_cycle_stories_have_explicit_terminals()` | Slice 1 AC: exit/outcome terminals + invalidate reasons |
+| `incident_cycle_phase_order_is_monotonic()` | Slice 2 AC: event→aftermath→recovery |
+| `incident_stories_have_explicit_terminals()` | Slice 2 AC: only `BACK_UNDER_WAY` terminal + invalidate reasons |
+| `incident_branch_beats_are_documented()` | Slice 2 AC: `INCIDENT` primary `incident.off_track` + branch `incident.unclassified` |
+
+**Slice 2 wires:** `INCIDENT` (`IncidentEmitter` + `incident_race_event_to_envelope`); `INCIDENT_AFTERMATH` / `BACK_UNDER_WAY` (`IncidentAftermathFsm`, FSM direct).
 
 Detail: [ops-family-migration.md](../../v2.0.0/ops-family-migration.md). No `FAMILY_ROUTE` flip. **Docs: CONFIG.md / API.md unchanged.**
 
