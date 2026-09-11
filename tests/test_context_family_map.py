@@ -7,10 +7,8 @@ import dataclasses
 import pytest
 
 from irswitch.contracts.context_family_map import (
-    CONTEXT_BIO_STYLE_WIRE_IDS,
     CONTEXT_BIO_ALIAS_WIRE_IDS,
-    CONTEXT_FILLER_BEAT_IDS,
-    CONTEXT_FILLER_BEAT_ONLY_IDS,
+    CONTEXT_BIO_STYLE_WIRE_IDS,
     CONTEXT_FILLER_WIRE_IDS,
     CONTEXT_OWNED_ELSEWHERE,
     CONTEXT_SESSION_PHASE_ORDER,
