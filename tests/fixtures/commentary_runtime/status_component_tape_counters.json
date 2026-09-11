@@ -1,6 +1,6 @@
 {
-  "status": "ready",
-  "reason": null,
+  "status": "degraded",
+  "reason": "tape_queue_drop",
   "path": "narrative-process_race-s1-f0000.ndjson",
   "size": 1280,
   "drops": 3,

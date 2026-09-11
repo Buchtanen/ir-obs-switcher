@@ -1316,6 +1316,7 @@ async def test_speech_deadline_stages_start_then_stop() -> None:
     assert not runtime.speech_deadline_task_active()
     status = runtime.status()
     assert status.speech_quarantined_generation == 1
+    assert status.speech_quarantine_reason == "tts_start_timeout"
     assert status.component_health["tts"] == "unavailable"
     assert status.runtime_state == "degraded"
     assert "tts_backend_quarantined" in stop_elapsed.effects

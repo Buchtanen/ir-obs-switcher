@@ -259,6 +259,10 @@ def _tape_component_projection(status: RuntimeStatus) -> dict[str, Any]:
     if tape_status == "unavailable":
         component["status"] = "unavailable"
         component["reason"] = "capture_unavailable"
+    elif drops > 0:
+        # Loss-accumulator signal: any out-of-queue drop degrades tape health.
+        component["status"] = "degraded"
+        component["reason"] = "tape_queue_drop"
     return component
 
 
@@ -364,9 +368,18 @@ def _tts_component_projection(
     quarantined = status.speech_quarantined_generation
     if not isinstance(quarantined, int) or isinstance(quarantined, bool) or quarantined < 0:
         quarantined = None
+    reason = None
+    if quarantined is not None:
+        raw_reason = status.speech_quarantine_reason
+        if raw_reason in {"tts_start_timeout", "tts_stop_timeout"}:
+            reason = raw_reason
+        else:
+            reason = "tts_stop_timeout"
+        if component_status == "ready":
+            component_status = "unavailable"
     return {
         "status": component_status,
-        "reason": None,
+        "reason": reason,
         "backend": mapped_backend,
         "backendGeneration": int(status.speech_backend_generation or 0),
         "configGeneration": _config_desired_generation(status),

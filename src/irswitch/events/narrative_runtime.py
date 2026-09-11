@@ -250,6 +250,7 @@ class RuntimeStatus:
     speech_backend: str | None
     speech_backend_generation: int | None
     speech_quarantined_generation: int | None
+    speech_quarantine_reason: str | None
     speech_dispatched_at_mono_ms: int | None
     speech_accepted_at_mono_ms: int | None
     speech_last_terminal: dict[str, object] | None
@@ -334,6 +335,8 @@ class NarrativeRuntime:
         self._speech_backend: str | None = None
         self._speech_backend_generation: int | None = None
         self._speech_quarantined_generation: int | None = None
+        self._speech_quarantine_reason: str | None = None
+        self._pending_tts_timeout_reason: str | None = None
         self._speech_dispatched_at_mono_ms: int | None = None
         self._speech_accepted_at_mono_ms: int | None = None
         self._speech_last_terminal: dict[str, object] | None = None
@@ -528,6 +531,7 @@ class NarrativeRuntime:
             speech_backend=self._speech_backend,
             speech_backend_generation=self._speech_backend_generation,
             speech_quarantined_generation=self._speech_quarantined_generation,
+            speech_quarantine_reason=self._speech_quarantine_reason,
             speech_dispatched_at_mono_ms=self._speech_dispatched_at_mono_ms,
             speech_accepted_at_mono_ms=self._speech_accepted_at_mono_ms,
             speech_last_terminal=(
@@ -2167,6 +2171,11 @@ class NarrativeRuntime:
         if self._lane not in {"committed", "speaking", "stopping"}:
             return "ignored_stale_or_inapplicable", ["lane_inapplicable"]
         if self._lane in {"committed", "speaking"}:
+            self._pending_tts_timeout_reason = (
+                "tts_start_timeout"
+                if self._speech_deadline_stage == "start"
+                else "tts_stop_timeout"
+            )
             self._lane = "stopping"
             self._speech_deadline_stage = "stop"
             return "handled", [
@@ -2196,6 +2205,8 @@ class NarrativeRuntime:
         effects = ["speech_deadline_stopped", "effect:cancel_speech_deadline"]
         if backend_generation is not None:
             self._speech_quarantined_generation = backend_generation
+            self._speech_quarantine_reason = self._pending_tts_timeout_reason or "tts_stop_timeout"
+            self._pending_tts_timeout_reason = None
             self._component_health["tts"] = "unavailable"
             if self._runtime == "ready":
                 self._runtime = "degraded"
@@ -2266,6 +2277,8 @@ class NarrativeRuntime:
         if component == "tts" and self._speech_quarantined_generation is not None:
             if status == "ready" and generation > self._speech_quarantined_generation:
                 self._speech_quarantined_generation = None
+                self._speech_quarantine_reason = None
+                self._pending_tts_timeout_reason = None
                 self._component_health["tts"] = "ready"
                 return "handled", ["tts_quarantine_cleared", "component_health_updated"]
             if status == "ready" and generation <= self._speech_quarantined_generation:

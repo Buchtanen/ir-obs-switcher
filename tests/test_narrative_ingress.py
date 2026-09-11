@@ -447,18 +447,57 @@ def test_project_runtime_status_tts_voice_prefers_effective_over_desired() -> No
 
 
 def test_project_runtime_status_tts_quarantined_generation_from_status() -> None:
-    """quarantinedGeneration mirrors RuntimeStatus after stop-timeout quarantine."""
+    """quarantinedGeneration + timeout reason after stop/start-timeout quarantine."""
+    import json
+    from dataclasses import replace
+    from pathlib import Path
+
     runtime = NarrativeRuntime()
     runtime.enable()
     assert (
         project_runtime_status(runtime.status())["components"]["tts"]["quarantinedGeneration"]
         is None
     )
-    runtime._speech_quarantined_generation = 3  # library seam after stop-timeout quarantine
-    runtime._component_health["tts"] = "unavailable"
-    projection = project_runtime_status(runtime.status())
-    assert projection["components"]["tts"]["quarantinedGeneration"] == 3
-    assert projection["components"]["tts"]["status"] == "unavailable"
+    status = replace(
+        runtime.status(),
+        speech_backend="supertonic",
+        speech_backend_generation=3,
+        speech_quarantined_generation=3,
+        speech_quarantine_reason="tts_start_timeout",
+        component_health={**runtime.status().component_health, "tts": "unavailable"},
+    )
+    projection = project_runtime_status(status)
+    tts = projection["components"]["tts"]
+    assert tts["quarantinedGeneration"] == 3
+    assert tts["status"] == "unavailable"
+    assert tts["reason"] == "tts_start_timeout"
+    golden = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "status_component_tts_quarantine_timeout.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert tts == golden
+
+
+def test_project_runtime_status_tts_quarantine_defaults_stop_timeout_reason() -> None:
+    """Missing quarantine reason still projects the bounded tts_stop_timeout id."""
+    from dataclasses import replace
+
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    status = replace(
+        runtime.status(),
+        speech_quarantined_generation=2,
+        speech_quarantine_reason=None,
+        component_health={**runtime.status().component_health, "tts": "unavailable"},
+    )
+    tts = project_runtime_status(status)["components"]["tts"]
+    assert tts["reason"] == "tts_stop_timeout"
+    assert tts["status"] == "unavailable"
 
 
 def test_project_runtime_status_llm_last_attempt_after_qwen_success() -> None:
@@ -887,6 +926,8 @@ def test_project_tape_counters_live_from_attached_writer() -> None:
     tape = projected["components"]["tape"]
     assert tape["drops"] >= 1
     assert tape["drops"] == sum(tape["dropsByPriority"].values())
+    assert tape["status"] == "degraded"
+    assert tape["reason"] == "tape_queue_drop"
     assert isinstance(tape["size"], int)
     assert tape["size"] >= 0
     assert isinstance(tape["purposeCounts"], list)
