@@ -1,4 +1,4 @@
-# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 slice 3 open; #284 **CLOSED** merged @ `77452a9`)
+# Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 slice 4 open; #284 **CLOSED** merged @ `77452a9`)
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).
 
@@ -8,11 +8,12 @@ Slice 1–2 inventory for Wave G #275 (all `migration_status=legacy`):
 
 | Helper | Role |
 | --- | --- |
-| `timing_family_rows()` | Closed rows for lap/SF, sector, PB/pace, `HOT_LAP` / `PROJECTED_LAP` / `INVALID_LAP` |
+| `timing_family_rows()` | Closed rows for timing wires + `SESSION_INTRO_*` / `QUALI_RECAP` |
 | `migration_status_by_wire_id()` | Coverage-matrix companion |
 | `lap_complete_is_not_race_finish()` | AC: lap completion ≠ race finish |
 | `gain_and_loss_polarities_are_distinct()` | Slice 2: pace gain ≠ time lost |
 | `invalid_lap_scope_is_explicit()` | Slice 3 AC: PRACTICE\|QUALIFYING only |
+| `inherited_facts_use_active_lineage_only()` | Slice 4 AC: session intros/recaps require active lineage |
 | Scope / polarity | `lap_sf` vs `sector`; `lap_complete` / `sector_split` / `sector_best` |
 
 Detail: [timing-family-migration.md](../../v2.0.0/timing-family-migration.md). No `FAMILY_ROUTE` flip. **Docs: `CONFIG.md` / `API.md` unchanged.**

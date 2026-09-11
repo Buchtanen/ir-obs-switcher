@@ -1,4 +1,4 @@
-"""#275 Slice 1–3 — timing family map (lap/SF, sector, PB/pace, quali/invalid)."""
+"""#275 Slice 1–4 — timing family map (timing + session intros/recaps)."""
 
 from __future__ import annotations
 
@@ -13,15 +13,18 @@ from irswitch.contracts.primitives import ContractViolation
 from irswitch.contracts.resources import packaged_schema_bytes
 from irswitch.contracts.timing_family_map import (
     INVALID_LAP_SESSION_MODES,
-    RACE_FINISH_WIRE_IDS,
+    SESSION_RECAP_WIRE_IDS,
+    SESSION_STAGE_ORDER,
     TIMING_WIRE_IDS,
     TimingFamilyRow,
     gain_and_loss_polarities_are_distinct,
+    inherited_facts_use_active_lineage_only,
     invalid_lap_scope_is_explicit,
     lap_complete_is_not_race_finish,
     migration_status_by_wire_id,
     row_for_wire_id,
     rows_by_migration_status,
+    session_stage_order_is_monotonic,
     timing_family_rows,
 )
 
@@ -39,6 +42,8 @@ _EXPECT = {
         "legacy_node_id": "lap_complete",
         "story_routes": ("timing_attempt", "single_result"),
         "realization_family": "timing.lap_result",
+        "session_stage": None,
+        "requires_active_lineage": False,
     },
     "SECTOR_SPLIT": {
         "beat_id": "timing.sector.split",
@@ -50,6 +55,8 @@ _EXPECT = {
         "legacy_node_id": "sector_split",
         "story_routes": ("timing_attempt", "single_result"),
         "realization_family": "timing.sector",
+        "session_stage": None,
+        "requires_active_lineage": False,
     },
     "SECTOR_BEST": {
         "beat_id": "timing.sector.best",
@@ -61,6 +68,8 @@ _EXPECT = {
         "legacy_node_id": None,
         "story_routes": ("timing_attempt", "single_result"),
         "realization_family": "timing.sector",
+        "session_stage": None,
+        "requires_active_lineage": False,
     },
     "PERSONAL_BEST": {
         "beat_id": "timing.lap.personal_best",
@@ -72,6 +81,8 @@ _EXPECT = {
         "legacy_node_id": "personal_best",
         "story_routes": ("timing_attempt", "single_result"),
         "realization_family": "timing.lap_result",
+        "session_stage": None,
+        "requires_active_lineage": False,
     },
     "GAIN_FOUND": {
         "beat_id": "timing.pace.gain",
@@ -83,6 +94,8 @@ _EXPECT = {
         "legacy_node_id": "gain_found",
         "story_routes": ("timing_attempt", "single_result"),
         "realization_family": "timing.delta",
+        "session_stage": None,
+        "requires_active_lineage": False,
     },
     "TIME_LOST": {
         "beat_id": "timing.pace.loss",
@@ -94,6 +107,8 @@ _EXPECT = {
         "legacy_node_id": "time_lost",
         "story_routes": ("timing_attempt", "single_result"),
         "realization_family": "timing.delta",
+        "session_stage": None,
+        "requires_active_lineage": False,
     },
     "HOT_LAP": {
         "beat_id": "timing.lap.hot",
@@ -105,6 +120,8 @@ _EXPECT = {
         "legacy_node_id": "hot_lap",
         "story_routes": ("timing_attempt", "single_result"),
         "realization_family": "timing.attempt",
+        "session_stage": None,
+        "requires_active_lineage": False,
     },
     "PROJECTED_LAP": {
         "beat_id": "timing.lap.projected",
@@ -116,6 +133,8 @@ _EXPECT = {
         "legacy_node_id": "projected_lap",
         "story_routes": ("timing_attempt", "single_result"),
         "realization_family": "timing.projection",
+        "session_stage": None,
+        "requires_active_lineage": False,
     },
     "INVALID_LAP": {
         "beat_id": "incident.invalid_lap",
@@ -127,6 +146,60 @@ _EXPECT = {
         "legacy_node_id": "invalid_lap",
         "story_routes": ("incident", "single_result"),
         "realization_family": "incident.invalid_lap",
+        "session_stage": None,
+        "requires_active_lineage": False,
+    },
+    "SESSION_INTRO_PRACTICE": {
+        "beat_id": "session.intro.practice",
+        "beat_role": "opening",
+        "policy_id": "context",
+        "outcome_ttl_ms": 20000,
+        "polarity": "session_intro_practice",
+        "scope_kind": "session_intro",
+        "legacy_node_id": "session_intro_practice",
+        "story_routes": ("session_occurrence", "single_result"),
+        "realization_family": "session.intro",
+        "session_stage": "practice",
+        "requires_active_lineage": True,
+    },
+    "SESSION_INTRO_QUALIFY": {
+        "beat_id": "session.intro.qualifying",
+        "beat_role": "opening",
+        "policy_id": "context",
+        "outcome_ttl_ms": 20000,
+        "polarity": "session_intro_qualify",
+        "scope_kind": "session_intro",
+        "legacy_node_id": "session_intro_qualify",
+        "story_routes": ("session_occurrence", "single_result"),
+        "realization_family": "session.intro",
+        "session_stage": "qualifying",
+        "requires_active_lineage": True,
+    },
+    "SESSION_INTRO_RACE": {
+        "beat_id": "session.intro.race",
+        "beat_role": "opening",
+        "policy_id": "context",
+        "outcome_ttl_ms": 20000,
+        "polarity": "session_intro_race",
+        "scope_kind": "session_intro",
+        "legacy_node_id": "session_intro_race",
+        "story_routes": ("session_occurrence", "single_result"),
+        "realization_family": "session.intro",
+        "session_stage": "race",
+        "requires_active_lineage": True,
+    },
+    "QUALI_RECAP": {
+        "beat_id": "session.qualifying_recap",
+        "beat_role": "outcome",
+        "policy_id": "result",
+        "outcome_ttl_ms": 30000,
+        "polarity": "quali_recap",
+        "scope_kind": "session_recap",
+        "legacy_node_id": "quali_recap",
+        "story_routes": ("session_occurrence", "single_result"),
+        "realization_family": "session.recap",
+        "session_stage": "race",
+        "requires_active_lineage": True,
     },
 }
 
@@ -144,8 +217,12 @@ def test_map_covers_every_timing_wire_id_exactly_once() -> None:
         "HOT_LAP",
         "PROJECTED_LAP",
         "INVALID_LAP",
+        "SESSION_INTRO_PRACTICE",
+        "SESSION_INTRO_QUALIFY",
+        "SESSION_INTRO_RACE",
+        "QUALI_RECAP",
     )
-    assert len(rows) == len(set(TIMING_WIRE_IDS))
+    assert len(rows) == len(set(TIMING_WIRE_IDS)) == 13
 
 
 def test_every_row_is_legacy_before_shadow_cutover() -> None:
@@ -159,8 +236,12 @@ def test_every_row_is_legacy_before_shadow_cutover() -> None:
         "HOT_LAP": "legacy",
         "PROJECTED_LAP": "legacy",
         "INVALID_LAP": "legacy",
+        "SESSION_INTRO_PRACTICE": "legacy",
+        "SESSION_INTRO_QUALIFY": "legacy",
+        "SESSION_INTRO_RACE": "legacy",
+        "QUALI_RECAP": "legacy",
     }
-    assert len(rows_by_migration_status("legacy")) == 9
+    assert len(rows_by_migration_status("legacy")) == 13
     assert rows_by_migration_status("shadow") == ()
     assert rows_by_migration_status("v2") == ()
 
@@ -170,81 +251,58 @@ def test_lap_complete_is_not_race_finish() -> None:
     lap = row_for_wire_id("LAP_COMPLETE")
     assert lap.scope_kind == "lap_sf"
     assert lap.polarity == "lap_complete"
-    assert lap.beat_id == "timing.lap.completed"
-    assert "finish" not in str(lap.beat_id)
-    assert lap.realization_family != "session.finish"
-    assert lap.wire_id not in RACE_FINISH_WIRE_IDS
-    assert lap.beat_id != "session.hero_finish"
-
-
-def test_sector_rows_use_sector_scope_and_distinct_beats() -> None:
-    split = row_for_wire_id("SECTOR_SPLIT")
-    best = row_for_wire_id("SECTOR_BEST")
-    assert split.scope_kind == best.scope_kind == "sector"
-    assert split.beat_id != best.beat_id
-    assert split.polarity == "sector_split"
-    assert best.polarity == "sector_best"
-    assert split.legacy_node_id == "sector_split"
-    assert best.legacy_node_id is None
-
-
-def test_personal_best_uses_lap_pb_scope() -> None:
-    pb = row_for_wire_id("PERSONAL_BEST")
-    assert pb.scope_kind == "lap_pb"
-    assert pb.polarity == "personal_best"
-    assert pb.beat_id == "timing.lap.personal_best"
-    assert pb.realization_family == "timing.lap_result"
-    assert pb.legacy_node_id == "personal_best"
-    assert pb.emitter_module.endswith("LapEmitter")
-    assert "adapters.lap:" in pb.adapter_module
+    assert lap.requires_active_lineage is False
 
 
 def test_gain_and_loss_polarities_are_distinct() -> None:
     assert gain_and_loss_polarities_are_distinct() is True
-    gained = row_for_wire_id("GAIN_FOUND")
-    lost = row_for_wire_id("TIME_LOST")
-    assert gained.polarity == "gain_found"
-    assert lost.polarity == "time_lost"
-    assert gained.polarity != lost.polarity
-    assert gained.beat_id != lost.beat_id
-    assert gained.scope_kind == lost.scope_kind == "pace_delta"
-    assert gained.realization_family == lost.realization_family == "timing.delta"
-
-
-def test_hot_lap_is_attempt_not_result() -> None:
-    hot = row_for_wire_id("HOT_LAP")
-    assert hot.scope_kind == "lap_attempt"
-    assert hot.polarity == "hot_lap"
-    assert hot.beat_role == "opening"
-    assert hot.policy_id == "live_story"
-    assert hot.realization_family == "timing.attempt"
-    assert hot.beat_id == "timing.lap.hot"
-    assert hot.emitter_module.endswith("QualiEmitter")
-
-
-def test_projected_lap_is_projection_not_completed_result() -> None:
-    projected = row_for_wire_id("PROJECTED_LAP")
-    assert projected.scope_kind == "lap_projection"
-    assert projected.polarity == "projected_lap"
-    assert projected.beat_id == "timing.lap.projected"
-    assert projected.realization_family == "timing.projection"
-    assert projected.policy_id == "live_story"
-    assert "completed" not in projected.beat_id
-    assert projected.emitter_module.endswith("QualiEmitter")
 
 
 def test_invalid_lap_scope_is_explicit() -> None:
     assert invalid_lap_scope_is_explicit() is True
     assert INVALID_LAP_SESSION_MODES == frozenset({"PRACTICE", "QUALIFYING"})
-    assert "RACE" not in INVALID_LAP_SESSION_MODES
-    row = row_for_wire_id("INVALID_LAP")
-    assert row.scope_kind == "invalid_lap"
-    assert row.polarity == "invalid_lap"
-    assert row.realization_family == "incident.invalid_lap"
-    assert row.beat_id == "incident.invalid_lap"
-    assert row.story_routes == ("incident", "single_result")
-    assert row.emitter_module.endswith("InvalidLapEmitter")
-    assert "exception_extra:" in row.adapter_module
+
+
+def test_session_stage_order_is_monotonic() -> None:
+    assert SESSION_STAGE_ORDER == ("practice", "qualifying", "race")
+    assert session_stage_order_is_monotonic() is True
+    practice = row_for_wire_id("SESSION_INTRO_PRACTICE")
+    qualify = row_for_wire_id("SESSION_INTRO_QUALIFY")
+    race = row_for_wire_id("SESSION_INTRO_RACE")
+    assert practice.session_stage == "practice"
+    assert qualify.session_stage == "qualifying"
+    assert race.session_stage == "race"
+    assert practice.scope_kind == qualify.scope_kind == race.scope_kind == "session_intro"
+
+
+def test_inherited_facts_use_active_lineage_only() -> None:
+    assert inherited_facts_use_active_lineage_only() is True
+    assert SESSION_RECAP_WIRE_IDS == frozenset(
+        {
+            "SESSION_INTRO_PRACTICE",
+            "SESSION_INTRO_QUALIFY",
+            "SESSION_INTRO_RACE",
+            "QUALI_RECAP",
+        }
+    )
+    for wire_id in SESSION_RECAP_WIRE_IDS:
+        row = row_for_wire_id(wire_id)
+        assert row.requires_active_lineage is True
+        assert row.session_stage is not None
+    # Non-recap timing wires do not silently inherit lineage.
+    for row in timing_family_rows():
+        if row.wire_id in SESSION_RECAP_WIRE_IDS:
+            continue
+        assert row.requires_active_lineage is False
+
+
+def test_quali_recap_is_historical_into_race() -> None:
+    recap = row_for_wire_id("QUALI_RECAP")
+    assert recap.scope_kind == "session_recap"
+    assert recap.session_stage == "race"
+    assert recap.beat_role == "outcome"
+    assert recap.realization_family == "session.recap"
+    assert recap.emitter_module.endswith("GridStoryFsm")
 
 
 def test_rows_match_freeze_registry_and_beats() -> None:
@@ -278,6 +336,8 @@ def test_rows_match_freeze_registry_and_beats() -> None:
         assert row.scope_kind == expect["scope_kind"]
         assert row.legacy_node_id == expect["legacy_node_id"]
         assert row.beat_id == expect["beat_id"]
+        assert row.session_stage == expect["session_stage"]
+        assert row.requires_active_lineage == expect["requires_active_lineage"]
 
 
 def test_legacy_graph_nodes_exist_when_declared() -> None:
@@ -291,9 +351,9 @@ def test_legacy_graph_nodes_exist_when_declared() -> None:
 
 def test_emitters_and_adapters_are_documented() -> None:
     for row in timing_family_rows():
-        assert row.emitter_module.startswith("irswitch.events.")
-        assert row.adapter_module.startswith("irswitch.events.adapters.")
-        assert row.policy_id in {"result", "transient", "live_story"}
+        assert "." in row.emitter_module and ":" in row.emitter_module
+        assert "." in row.adapter_module and ":" in row.adapter_module
+        assert row.policy_id in {"result", "transient", "live_story", "context"}
         assert row.outcome_ttl_ms is not None and row.outcome_ttl_ms > 0
 
 

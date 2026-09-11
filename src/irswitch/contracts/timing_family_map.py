@@ -1,11 +1,10 @@
-"""#275 timing family migration map (lap/SF, sector, PB/pace, quali/invalid).
+"""#275 timing family migration map (timing + session intros/recaps).
 
-Maps wire identifiers for lap completion (start/finish crossing), sector
-split/best, personal best, pace gain/loss, hot-lap attempt, projected lap,
-and invalid lap onto legacy emitters, adapters, beat/story routes, predicates,
-realization families, policy TTL and tape channels.
+Maps wire identifiers for lap/sector/PB/pace/hot/projected/invalid lap and
+practice→qualifying→race session intros/recaps onto legacy emitters, adapters,
+beat/story routes, predicates, realization families, policy TTL and tape channels.
 
-Slices 1–3 record every family as ``legacy``. They do **not** rewrite frozen
+Slices 1–4 record every family as ``legacy``. They do **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 """
 
@@ -30,12 +29,25 @@ Polarity = Literal[
     "hot_lap",
     "projected_lap",
     "invalid_lap",
+    "session_intro_practice",
+    "session_intro_qualify",
+    "session_intro_race",
+    "quali_recap",
 ]
 ScopeKind = Literal[
-    "lap_sf", "sector", "lap_pb", "pace_delta", "lap_attempt", "lap_projection", "invalid_lap"
+    "lap_sf",
+    "sector",
+    "lap_pb",
+    "pace_delta",
+    "lap_attempt",
+    "lap_projection",
+    "invalid_lap",
+    "session_intro",
+    "session_recap",
 ]
+SessionStage = Literal["practice", "qualifying", "race"]
 
-# Slice 1–3 inventory: lap/SF + sector + PB/pace + hot/projected/invalid lap.
+# Slice 1–4 inventory: timing wires + practice→qualifying→race session intros/recaps.
 TIMING_WIRE_IDS: tuple[str, ...] = (
     "LAP_COMPLETE",
     "SECTOR_SPLIT",
@@ -46,6 +58,10 @@ TIMING_WIRE_IDS: tuple[str, ...] = (
     "HOT_LAP",
     "PROJECTED_LAP",
     "INVALID_LAP",
+    "SESSION_INTRO_PRACTICE",
+    "SESSION_INTRO_QUALIFY",
+    "SESSION_INTRO_RACE",
+    "QUALI_RECAP",
 )
 
 # Finish/race outcome wires that must never share lap-complete semantics.
@@ -53,6 +69,18 @@ RACE_FINISH_WIRE_IDS: frozenset[str] = frozenset({"FINISH"})
 
 # Invalid-lap AC: explicit session-mode scope (not race finish / not race mode).
 INVALID_LAP_SESSION_MODES: frozenset[str] = frozenset({"PRACTICE", "QUALIFYING"})
+
+# Historical practice → qualifying → race order for session intros/recaps.
+SESSION_STAGE_ORDER: tuple[SessionStage, ...] = ("practice", "qualifying", "race")
+
+SESSION_RECAP_WIRE_IDS: frozenset[str] = frozenset(
+    {
+        "SESSION_INTRO_PRACTICE",
+        "SESSION_INTRO_QUALIFY",
+        "SESSION_INTRO_RACE",
+        "QUALI_RECAP",
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,6 +106,8 @@ class TimingFamilyRow:
     polarity: Polarity
     scope_kind: ScopeKind
     migration_status: MigrationStatus
+    session_stage: SessionStage | None = None
+    requires_active_lineage: bool = False
     notes: str = ""
 
 
@@ -89,6 +119,8 @@ class _StaticSource:
     adapter_module: str
     polarity: Polarity
     scope_kind: ScopeKind
+    session_stage: SessionStage | None = None
+    requires_active_lineage: bool = False
     notes: str = ""
 
 
@@ -173,6 +205,50 @@ _STATIC: dict[str, _StaticSource] = {
         polarity="invalid_lap",
         scope_kind="invalid_lap",
         notes="Invalid-lap scope is PRACTICE|QUALIFYING only (not RACE); incident.invalid_lap family.",
+    ),
+    "SESSION_INTRO_PRACTICE": _StaticSource(
+        legacy_node_id="session_intro_practice",
+        race_event_name="session_intro_practice",
+        emitter_module="irswitch.commentary.session_briefs:SessionBriefsDetector",
+        adapter_module="irswitch.commentary.session_briefs:SessionBriefsDetector",
+        polarity="session_intro_practice",
+        scope_kind="session_intro",
+        session_stage="practice",
+        requires_active_lineage=True,
+        notes="Practice session opener; inherited facts require active lineage.",
+    ),
+    "SESSION_INTRO_QUALIFY": _StaticSource(
+        legacy_node_id="session_intro_qualify",
+        race_event_name="session_intro_qualify",
+        emitter_module="irswitch.commentary.session_briefs:SessionBriefsDetector",
+        adapter_module="irswitch.commentary.session_briefs:SessionBriefsDetector",
+        polarity="session_intro_qualify",
+        scope_kind="session_intro",
+        session_stage="qualifying",
+        requires_active_lineage=True,
+        notes="Qualifying session opener; follows practice in SESSION_STAGE_ORDER.",
+    ),
+    "SESSION_INTRO_RACE": _StaticSource(
+        legacy_node_id="session_intro_race",
+        race_event_name="session_intro_race",
+        emitter_module="irswitch.commentary.session_briefs:SessionBriefsDetector",
+        adapter_module="irswitch.commentary.session_briefs:SessionBriefsDetector",
+        polarity="session_intro_race",
+        scope_kind="session_intro",
+        session_stage="race",
+        requires_active_lineage=True,
+        notes="Race session opener; may yield to QUALI_RECAP when quali bag exists.",
+    ),
+    "QUALI_RECAP": _StaticSource(
+        legacy_node_id="quali_recap",
+        race_event_name="quali_recap",
+        emitter_module="irswitch.race.grid_story:GridStoryFsm",
+        adapter_module="irswitch.race.grid_story:GridStoryFsm",
+        polarity="quali_recap",
+        scope_kind="session_recap",
+        session_stage="race",
+        requires_active_lineage=True,
+        notes="Historical qualifying recap into race; active lineage only; not a live result claim.",
     ),
 }
 
@@ -283,6 +359,8 @@ def timing_family_rows() -> tuple[TimingFamilyRow, ...]:
                 polarity=static.polarity,
                 scope_kind=static.scope_kind,
                 migration_status="legacy",
+                session_stage=static.session_stage,
+                requires_active_lineage=static.requires_active_lineage,
                 notes=static.notes,
             )
         )
@@ -354,3 +432,44 @@ def invalid_lap_scope_is_explicit() -> bool:
     if "RACE" in INVALID_LAP_SESSION_MODES:
         return False
     return INVALID_LAP_SESSION_MODES == frozenset({"PRACTICE", "QUALIFYING"})
+
+
+def session_stage_order_is_monotonic() -> bool:
+    """Slice 4 helper: practice → qualifying → race order stays closed and ordered."""
+
+    if SESSION_STAGE_ORDER != ("practice", "qualifying", "race"):
+        return False
+    by_stage = {
+        row.session_stage: row.wire_id
+        for row in timing_family_rows()
+        if row.wire_id.startswith("SESSION_INTRO_") and row.session_stage is not None
+    }
+    if set(by_stage) != set(SESSION_STAGE_ORDER):
+        return False
+    expected = {
+        "practice": "SESSION_INTRO_PRACTICE",
+        "qualifying": "SESSION_INTRO_QUALIFY",
+        "race": "SESSION_INTRO_RACE",
+    }
+    return by_stage == expected
+
+
+def inherited_facts_use_active_lineage_only() -> bool:
+    """AC helper: session intros/recaps require active lineage; no silent inheritance."""
+
+    recap_rows = tuple(row for row in timing_family_rows() if row.wire_id in SESSION_RECAP_WIRE_IDS)
+    if {row.wire_id for row in recap_rows} != set(SESSION_RECAP_WIRE_IDS):
+        return False
+    if not recap_rows:
+        return False
+    if not all(row.requires_active_lineage for row in recap_rows):
+        return False
+    if any(row.session_stage is None for row in recap_rows):
+        return False
+    # Non-recap timing wires must not silently claim lineage inheritance.
+    for row in timing_family_rows():
+        if row.wire_id in SESSION_RECAP_WIRE_IDS:
+            continue
+        if row.requires_active_lineage:
+            return False
+    return session_stage_order_is_monotonic()
