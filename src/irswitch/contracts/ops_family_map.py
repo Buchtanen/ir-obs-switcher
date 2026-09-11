@@ -1,4 +1,4 @@
-"""#276 ops family migration map — pit + incident + flag + closeout inventory (Slices 1–4).
+"""#276 ops family migration map — pit + incident + flag + closeout + unknown/tow/teleport contract (Slices 1–5).
 
 Maps pit-cycle and incident/aftermath/recovery wire identifiers onto legacy
 emitters, adapters, beat/story routes, predicates, realization families,
@@ -110,6 +110,33 @@ SESSION_WRAP_BRANCH_BEAT_IDS: tuple[str, ...] = (
 )
 SESSION_WRAP_PRIMARY_BEAT_ID = "session.wrap.practice"
 
+# Slice 5 — unknown / tow / teleport outcome taxonomy (no dedicated freeze wires).
+OPS_UNKNOWN_OUTCOME_REASON_IDS: frozenset[str] = frozenset(
+    {
+        "unknown_delta_explicit",
+        "unknown_exit_explicit",
+        "unknown_motion_explicit",
+        "unknown_flag_explicit",
+        "unknown_checkered_explicit",
+        "unknown_finish_explicit",
+        "unknown_wrap_explicit",
+    }
+)
+OPS_TOW_OUTCOME_REASON_IDS: frozenset[str] = frozenset(
+    {
+        "hero_towing",
+        "tow_keeps_stalled",
+        "tow_blocks_recovery",
+    }
+)
+OPS_TELEPORT_OUTCOME_REASON_IDS: frozenset[str] = frozenset(
+    {
+        "hero_teleport",
+        "esc_teleport",
+        "teleport_invalidates_motion",
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class OpsFamilyRow:
@@ -172,7 +199,10 @@ _STATIC: dict[str, _StaticSource] = {
             "cycle_superseded",
         ),
         terminal_reasons=(),
-        notes="Opens a pit cycle when hero enters pit road; not a service/outcome claim.",
+        notes=(
+            "Opens a pit cycle when hero enters pit road; not a service/outcome claim. "
+            "Missing/ambiguous entry evidence stays unknown — never invent pit service."
+        ),
     ),
     "PIT_LANE": _StaticSource(
         legacy_node_id=None,
@@ -190,7 +220,10 @@ _STATIC: dict[str, _StaticSource] = {
             "left_pit_road_without_stop",
         ),
         terminal_reasons=(),
-        notes="In-lane transit update; must not claim stop/release/exit outcomes.",
+        notes=(
+            "In-lane transit update; must not claim stop/release/exit outcomes. Ambiguous "
+            "lane evidence stays unknown — never invent a stop."
+        ),
     ),
     "PIT_STOPPED": _StaticSource(
         legacy_node_id="pit_stopped",
@@ -208,7 +241,10 @@ _STATIC: dict[str, _StaticSource] = {
             "motion_resumed_without_release",
         ),
         terminal_reasons=(),
-        notes="Stationary service update; must not invent service work without bound evidence.",
+        notes=(
+            "Stationary service update; must not invent service work without bound evidence. "
+            "Ambiguous stopped evidence stays unknown."
+        ),
     ),
     "PIT_RELEASED": _StaticSource(
         legacy_node_id=None,
@@ -225,7 +261,10 @@ _STATIC: dict[str, _StaticSource] = {
             "cycle_superseded",
         ),
         terminal_reasons=(),
-        notes="Released-from-box update; must not claim completed pit exit.",
+        notes=(
+            "Released-from-box update; must not claim completed pit exit. Ambiguous release "
+            "evidence stays unknown — never invent exit/outcome."
+        ),
     ),
     "PIT_EXIT": _StaticSource(
         legacy_node_id=None,
@@ -239,9 +278,12 @@ _STATIC: dict[str, _StaticSource] = {
         terminal_reasons=(
             "left_pit_road",
             "cycle_closed_without_outcome",
-            "superseded_by_outcome",
+            "unknown_exit_explicit",
         ),
-        notes="Closes the live pit-cycle phase when hero leaves pit road.",
+        notes=(
+            "Closes the live pit-cycle phase when hero leaves pit road. Ambiguous exit "
+            "evidence stays unknown_exit_explicit — never invent a completed service/outcome."
+        ),
     ),
     "PIT_OUTCOME": _StaticSource(
         legacy_node_id="pit_outcome",
@@ -293,13 +335,17 @@ _STATIC: dict[str, _StaticSource] = {
             "stream_ended",
             "session_reset",
             "hero_teleport",
+            "esc_teleport",
+            "hero_towing",
+            "tow_keeps_stalled",
             "cycle_superseded",
             "recovered_before_classify",
         ),
         terminal_reasons=(),
         notes=(
             "Aftermath update (stalled|rolling). Tow/off-track keep stalled; must not claim "
-            "recovery or damage. Same-tick director prefers INCIDENT over aftermath."
+            "recovery or damage. Tow/teleport invalidate motion claims; ambiguous aftermath "
+            "stays unknown — never invent recovery. Same-tick director prefers INCIDENT."
         ),
     ),
     "BACK_UNDER_WAY": _StaticSource(
@@ -310,15 +356,23 @@ _STATIC: dict[str, _StaticSource] = {
         pit_phase=None,
         incident_phase="recovery",
         scope_kind="incident_recovery",
-        invalidate_reasons=("stream_ended", "session_reset", "hero_teleport"),
+        invalidate_reasons=(
+            "stream_ended",
+            "session_reset",
+            "hero_teleport",
+            "esc_teleport",
+            "hero_towing",
+            "tow_blocks_recovery",
+            "teleport_invalidates_motion",
+        ),
         terminal_reasons=(
             "recovered_motion_held",
             "cycle_closed",
             "unknown_motion_explicit",
         ),
         notes=(
-            "Recovery closure after stalled aftermath; must not claim no-damage. Missing "
-            "motion evidence stays stalled/unknown (no invention)."
+            "Recovery closure after stalled aftermath; must not claim no-damage. Tow/teleport "
+            "block recovery speech; missing motion evidence stays stalled/unknown (no invention)."
         ),
     ),
     "SESSION_FLAG": _StaticSource(
@@ -745,5 +799,43 @@ def closeout_stories_are_separated() -> bool:
     if "session.checkered" not in flag.branch_beat_ids:
         return False
     if checkered.wire_id == flag.wire_id:
+        return False
+    return True
+
+
+def unknown_tow_teleport_outcomes_are_defined() -> bool:
+    """Slice 5 AC: unknown/tow/teleport dispositions are explicit across ops inventory."""
+
+    if not OPS_UNKNOWN_OUTCOME_REASON_IDS:
+        return False
+    if not OPS_TOW_OUTCOME_REASON_IDS or not OPS_TELEPORT_OUTCOME_REASON_IDS:
+        return False
+
+    for row in ops_family_rows():
+        if "hero_teleport" not in row.invalidate_reasons:
+            return False
+        lowered = row.notes.lower()
+        if (
+            "unknown" not in lowered
+            and "never invent" not in lowered
+            and "no invention" not in lowered
+        ):
+            return False
+        if row.terminal_reasons and not (
+            OPS_UNKNOWN_OUTCOME_REASON_IDS & set(row.terminal_reasons)
+        ):
+            return False
+
+    aftermath = row_for_wire_id("INCIDENT_AFTERMATH")
+    recovery = row_for_wire_id("BACK_UNDER_WAY")
+    if not (OPS_TOW_OUTCOME_REASON_IDS & set(aftermath.invalidate_reasons)):
+        return False
+    if not (OPS_TOW_OUTCOME_REASON_IDS & set(recovery.invalidate_reasons)):
+        return False
+    if not (OPS_TELEPORT_OUTCOME_REASON_IDS & set(recovery.invalidate_reasons)):
+        return False
+    if "tow" not in aftermath.notes.lower() or "tow" not in recovery.notes.lower():
+        return False
+    if "teleport" not in recovery.notes.lower() and "teleport" not in aftermath.notes.lower():
         return False
     return True

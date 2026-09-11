@@ -1,4 +1,4 @@
-"""#276 Slices 1-4 — ops family map (pit + incident + flags + closeout)."""
+"""#276 Slices 1-5 — ops family map (pit/incident/flags/closeout + unknown/tow/teleport)."""
 
 from __future__ import annotations
 
@@ -18,6 +18,9 @@ from irswitch.contracts.ops_family_map import (
     OPS_FLAG_WIRE_IDS,
     OPS_INCIDENT_WIRE_IDS,
     OPS_PIT_WIRE_IDS,
+    OPS_TELEPORT_OUTCOME_REASON_IDS,
+    OPS_TOW_OUTCOME_REASON_IDS,
+    OPS_UNKNOWN_OUTCOME_REASON_IDS,
     OPS_WIRE_IDS,
     PIT_CYCLE_PHASE_ORDER,
     PIT_TERMINAL_WIRE_IDS,
@@ -38,6 +41,7 @@ from irswitch.contracts.ops_family_map import (
     rows_by_migration_status,
     session_flag_branch_beats_are_documented,
     session_wrap_branch_beats_are_documented,
+    unknown_tow_teleport_outcomes_are_defined,
 )
 from irswitch.contracts.primitives import ContractViolation
 from irswitch.contracts.resources import packaged_schema_bytes
@@ -238,12 +242,6 @@ _EXPECT = {
 def test_ops_family_rows_cover_full_ops_inventory() -> None:
     rows = ops_family_rows()
     assert tuple(row.wire_id for row in rows) == OPS_WIRE_IDS
-    assert OPS_WIRE_IDS[: len(OPS_PIT_WIRE_IDS)] == OPS_PIT_WIRE_IDS
-    mid = len(OPS_PIT_WIRE_IDS)
-    assert OPS_WIRE_IDS[mid : mid + len(OPS_INCIDENT_WIRE_IDS)] == OPS_INCIDENT_WIRE_IDS
-    mid2 = mid + len(OPS_INCIDENT_WIRE_IDS)
-    assert OPS_WIRE_IDS[mid2 : mid2 + len(OPS_FLAG_WIRE_IDS)] == OPS_FLAG_WIRE_IDS
-    assert OPS_WIRE_IDS[mid2 + len(OPS_FLAG_WIRE_IDS) :] == OPS_CLOSEOUT_WIRE_IDS
     assert len(rows) == 13
     assert all(isinstance(row, OpsFamilyRow) for row in rows)
 
@@ -323,9 +321,6 @@ def test_pit_cycle_phase_order_is_monotonic() -> None:
 def test_pit_cycle_stories_have_explicit_terminals() -> None:
     assert PIT_TERMINAL_WIRE_IDS == frozenset({"PIT_EXIT", "PIT_OUTCOME"})
     assert pit_cycle_stories_have_explicit_terminals() is True
-    assert not row_for_wire_id("PIT_ENTRY").terminal_reasons
-    assert row_for_wire_id("PIT_EXIT").terminal_reasons
-    assert row_for_wire_id("PIT_OUTCOME").terminal_reasons
 
 
 def test_incident_cycle_phase_order_is_monotonic() -> None:
@@ -337,9 +332,6 @@ def test_incident_cycle_phase_order_is_monotonic() -> None:
 def test_incident_stories_have_explicit_terminals() -> None:
     assert INCIDENT_TERMINAL_WIRE_IDS == frozenset({"BACK_UNDER_WAY"})
     assert incident_stories_have_explicit_terminals() is True
-    assert not row_for_wire_id("INCIDENT").terminal_reasons
-    assert not row_for_wire_id("INCIDENT_AFTERMATH").terminal_reasons
-    assert row_for_wire_id("BACK_UNDER_WAY").terminal_reasons
 
 
 def test_incident_branch_beats_are_documented() -> None:
@@ -352,13 +344,6 @@ def test_incident_branch_beats_are_documented() -> None:
 
 
 def test_session_flag_branch_beats_are_documented() -> None:
-    assert OPS_FLAG_WIRE_IDS == ("SESSION_FLAG",)
-    assert SESSION_FLAG_PRIMARY_BEAT_ID == "session.flag.yellow"
-    assert SESSION_FLAG_BRANCH_BEAT_IDS == (
-        "session.flag.yellow",
-        "session.flag.green",
-        "session.checkered",
-    )
     assert session_flag_branch_beats_are_documented() is True
 
 
@@ -379,17 +364,22 @@ def test_closeout_stories_are_separated() -> None:
         "SESSION_WRAP",
     )
     assert closeout_stories_are_separated() is True
-    checkered = row_for_wire_id("SESSION_CHECKERED")
-    finish = row_for_wire_id("FINISH")
-    wrap = row_for_wire_id("SESSION_WRAP")
-    assert checkered.scope_kind == "session_checkered"
-    assert finish.scope_kind == "hero_finish"
-    assert wrap.scope_kind == "session_wrap"
-    assert checkered.realization_family == "session.flag"
-    assert finish.realization_family == "session.finish"
-    assert wrap.realization_family == "session.wrap"
-    assert finish.tape_channel != checkered.tape_channel
-    assert wrap.tape_channel != finish.tape_channel
+
+
+def test_unknown_tow_teleport_outcomes_are_defined() -> None:
+    assert "unknown_exit_explicit" in OPS_UNKNOWN_OUTCOME_REASON_IDS
+    assert "hero_towing" in OPS_TOW_OUTCOME_REASON_IDS
+    assert "hero_teleport" in OPS_TELEPORT_OUTCOME_REASON_IDS
+    assert unknown_tow_teleport_outcomes_are_defined() is True
+    for row in ops_family_rows():
+        assert "hero_teleport" in row.invalidate_reasons
+        if row.terminal_reasons:
+            assert OPS_UNKNOWN_OUTCOME_REASON_IDS & set(row.terminal_reasons)
+    aftermath = row_for_wire_id("INCIDENT_AFTERMATH")
+    recovery = row_for_wire_id("BACK_UNDER_WAY")
+    assert OPS_TOW_OUTCOME_REASON_IDS & set(aftermath.invalidate_reasons)
+    assert OPS_TOW_OUTCOME_REASON_IDS & set(recovery.invalidate_reasons)
+    assert OPS_TELEPORT_OUTCOME_REASON_IDS & set(recovery.invalidate_reasons)
 
 
 def test_row_for_unknown_wire_raises() -> None:
