@@ -1,25 +1,20 @@
-"""Commentary test page + speak/validate API. Localhost + CSRF for writes."""
+"""Commentary test page + status/decisions API.
+
+``POST /api/commentary/validate`` and ``POST /api/commentary/speak`` are cut
+over to NarrativeRuntime handlers (#284 / #273). Runtime paths remain aliases.
+"""
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
 from aiohttp import web
 
 from irswitch.commentary.assignments import render_assignments
-from irswitch.commentary.duck import duck_for_speech
 from irswitch.commentary.graph import GraphNode, load_sequence_graph
-from irswitch.commentary.tts import (
-    TtsResult,
-    detect_backend,
-    list_voices,
-    speak_text,
-    speak_timeout_s,
-)
-from irswitch.commentary.validator import validate_utterance
-from irswitch.overlay.http import _file_response, _require_csrf
+from irswitch.commentary.tts import detect_backend, list_voices
+from irswitch.overlay.http import _file_response
 from irswitch.overlay.i18n import normalize_language
 
 logger = logging.getLogger(__name__)
@@ -123,91 +118,6 @@ async def handle_commentary_decisions(request: web.Request) -> web.Response:
     return web.json_response({"decisions": director.decisions(limit), "runtime": True})
 
 
-async def handle_commentary_validate(request: web.Request) -> web.Response:
-    denied = _require_csrf(request)
-    if denied is not None:
-        return denied
-    try:
-        body = await request.json()
-    except Exception:
-        return web.json_response({"error": "invalid JSON"}, status=400)
-    text = str(body.get("text") or "")
-    node = _node_or_default(str(body.get("nodeId") or ""))
-    issues = [
-        {"code": item.code, "message": item.message, "severity": item.severity}
-        for item in validate_utterance(text, node)
-    ]
-    return web.json_response({"ok": not issues, "issues": issues, "text": text, "nodeId": node.id})
-
-
-async def handle_commentary_speak(request: web.Request) -> web.Response:
-    denied = _require_csrf(request)
-    if denied is not None:
-        return denied
-    try:
-        body = await request.json()
-    except Exception:
-        return web.json_response({"error": "invalid JSON"}, status=400)
-    text = str(body.get("text") or "").strip()
-    node = _node_or_default(str(body.get("nodeId") or ""))
-    issues = validate_utterance(text, node)
-    force = bool(body.get("force"))
-    if issues and not force:
-        return web.json_response(
-            {
-                "spoken": False,
-                "error": "validation failed",
-                "issues": [
-                    {"code": item.code, "message": item.message, "severity": item.severity}
-                    for item in issues
-                ],
-            },
-            status=400,
-        )
-    settings = _commentary_settings()
-    locale = str(body.get("locale") or _language())
-    voice = str(body.get("voice") if body.get("voice") is not None else settings.tts_voice)
-    try:
-        rate = int(body.get("rate", settings.tts_rate))
-    except (TypeError, ValueError):
-        rate = settings.tts_rate
-    backend = str(body.get("backend") or settings.tts_backend)
-    timeout = speak_timeout_s(
-        settings,
-        event_type=node.event_types[0] if node.event_types else "",
-        node=node,
-    )
-
-    def _speak_job() -> TtsResult:
-        with duck_for_speech(settings) as ducker:
-            return speak_text(
-                text,
-                locale=locale,
-                voice=voice,
-                rate=rate,
-                backend=backend,
-                device=settings.audio_device,
-                timeout_s=timeout,
-                steps=settings.tts_steps,
-                wait_before_play=ducker.wait_faded,
-            )
-
-    loop = asyncio.get_running_loop()
-    result = await loop.run_in_executor(None, _speak_job)
-    return web.json_response(
-        {
-            "spoken": result.spoken,
-            "backend": result.backend,
-            "error": result.error,
-            "text": text,
-            "issues": [
-                {"code": item.code, "message": item.message, "severity": item.severity}
-                for item in issues
-            ],
-        }
-    )
-
-
 async def handle_commentary_assignments(_request: web.Request) -> web.Response:
     return web.Response(
         text=render_assignments(locale=_language()),
@@ -245,10 +155,19 @@ def _sample_for_node(node: GraphNode) -> str:
 
 
 def register_commentary_routes(app: web.Application) -> None:
+    # #284/#273: public validate/speak cut over to NarrativeRuntime handlers.
+    # /api/commentary/runtime/validate|speak remain aliases of the same handlers.
+    from irswitch.events.narrative_runtime_http import (
+        handle_commentary_runtime_speak,
+        handle_commentary_runtime_validate,
+        register_narrative_runtime_routes,
+    )
+
     app.router.add_get("/commentary", handle_commentary_page)
     app.router.add_get("/commentary/", handle_commentary_page)
     app.router.add_get("/api/commentary/status", handle_commentary_status)
     app.router.add_get("/api/commentary/decisions", handle_commentary_decisions)
     app.router.add_get("/api/commentary/assignments", handle_commentary_assignments)
-    app.router.add_post("/api/commentary/validate", handle_commentary_validate)
-    app.router.add_post("/api/commentary/speak", handle_commentary_speak)
+    app.router.add_post("/api/commentary/validate", handle_commentary_runtime_validate)
+    app.router.add_post("/api/commentary/speak", handle_commentary_runtime_speak)
+    register_narrative_runtime_routes(app)

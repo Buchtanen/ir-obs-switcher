@@ -15,15 +15,39 @@ from irswitch.commentary.bridge import merge_speech_envelopes, speech_envelope_f
 from irswitch.commentary.consumer import CommentaryConsumer
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.in_car import InCarDetector
+from irswitch.commentary.mailbox import NarrativeMailbox
 from irswitch.commentary.session_briefs import SessionBriefsDetector
 from irswitch.commentary.tts import build_tts_sink
 from irswitch.config import AppConfig
+from irswitch.contracts.command import NarrativeCommand
 from irswitch.events.async_fanout import AsyncEventFanout
 from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope, make_envelope
+from irswitch.events.episode_registry import EpisodeRegistry
+from irswitch.events.exposure_store import ExposureStore
+from irswitch.events.freshness_commit import FreshnessGate
 from irswitch.events.manager import EventManager
 from irswitch.events.manager_v2 import EventManagerV2
+from irswitch.events.narrative_ingress import NarrativeIngress
+from irswitch.events.narrative_realization_bridge import (
+    SpeechDraftCache,
+    build_realization_effect,
+    warmup_qwen_component,
+)
+from irswitch.events.narrative_runtime import NarrativeRuntime
+from irswitch.events.narrative_runtime_http import set_narrative_runtime
+from irswitch.events.narrative_shadow_adapter import adapt_batch_for_shadow
+from irswitch.events.narrative_shadow_consumer import NarrativeShadowConsumer
+from irswitch.events.narrative_tape_bridge import (
+    build_tape_flush_effect,
+    open_narrative_tape_writer,
+)
+from irswitch.events.narrative_tts_bridge import build_tts_effect
+from irswitch.events.opportunity_queue import OpportunityQueue
+from irswitch.events.qwen_transport import LlmComponent, RealizerService, StdlibTransport
 from irswitch.events.replay import is_n12_replay, load_n12_replay
+from irswitch.events.semantic_verifier import SemanticVerifier
+from irswitch.events.story_director import StoryDirector
 from irswitch.events.stream import (
     ConfigUpdate,
     FillerResult,
@@ -111,7 +135,14 @@ class RaceRuntime:
         self._sequence_allocator = SessionSequenceAllocator()
         self._event_fanout = AsyncEventFanout()
         self._overlay_subscription = self._event_fanout.subscribe("overlay", capacity=64)
-        self._commentary_subscription = self._event_fanout.subscribe("commentary", capacity=64)
+        # #284 EventSubscription full replace (human kick): commentary no longer
+        # owns a fanout subscription; shadow mirrors stream items into
+        # CommentaryConsumer.handle for TTS while idle-ticking without get().
+        self._narrative_subscription_cutover = True
+        if self._narrative_subscription_cutover:
+            self._commentary_subscription = None
+        else:
+            self._commentary_subscription = self._event_fanout.subscribe("commentary", capacity=64)
         self.story_registry = MiniStoryRegistry()
         self.pipeline = RacePipeline(
             self._event_fanout,
@@ -172,6 +203,7 @@ class RaceRuntime:
             self._commentary_settings,
             decision_hook=self._record_commentary_decision,
             story_registry=self.story_registry,
+            idle_speech_enabled=False,
         )
         director.filler_formatter = lambda envelope: self.race_observer.format_filler_text(
             envelope, locale=self._overlay_settings().language
@@ -199,6 +231,136 @@ class RaceRuntime:
         self._commentary_supervisor = WorkerSupervisor(
             "commentary_consumer", self.commentary_consumer.run
         )
+        # #284: shadow fanout cutover + actor run + EventSubscription cutover
+        # (human kick). Path: fanout → adapt_batch_for_shadow → ingress → mailbox
+        # → NarrativeRuntime.run() (reduce_after_admit=False). Commentary has no
+        # fanout subscription; shadow mirrors lifecycle/context only.
+        # TTS via tts_effect; realization_effect + StoryDirector composition feed speakable
+        # drafts from shadow events. Idle-lane speech disabled (idle_speech_enabled=False).
+        # Optional #269 Qwen path: enabled with short soft-fail warmup
+        # (_narrative_qwen_enabled=True). Missing Ollama leaves component not-ready;
+        # authored/template realization still works. No INI key.
+        self._narrative_shadow_enabled = True
+        self._narrative_qwen_enabled = True
+        self._narrative_shadow_subscription = None
+        self.narrative_shadow_consumer = None
+        self._narrative_shadow_supervisor = None
+        self._narrative_runtime_supervisor = None
+        self.narrative_runtime = None
+        self._narrative_tape_writer = None
+        self._speech_draft_cache = None
+        self._narrative_qwen_service = None
+        self._narrative_llm_component = None
+        if self._narrative_shadow_enabled:
+            self._narrative_shadow_subscription = self._event_fanout.subscribe(
+                "narrative_shadow", capacity=64
+            )
+            mailbox = NarrativeMailbox()
+            ingress = NarrativeIngress(mailbox)
+            locale = str(
+                getattr(
+                    self._overlay_settings().language, "value", self._overlay_settings().language
+                )
+                or "en"
+            )
+            tts_effect = build_tts_effect(
+                self.commentary_consumer.director.sink,
+                locale=locale,
+            )
+            self._speech_draft_cache = SpeechDraftCache()
+            opportunity_queue = OpportunityQueue()
+            exposure_store = ExposureStore()
+            qwen_service = None
+            llm_component = None
+            if self._narrative_qwen_enabled:
+                # Live StdlibTransport + short soft-fail warmup; qwen_ready only
+                # when Ollama answers 200. Authored/template remain on miss.
+                llm_component = LlmComponent()
+                transport = StdlibTransport()
+                qwen_service = RealizerService(transport=transport)
+                warmup_qwen_component(
+                    llm_component,
+                    transport,
+                    generation=1,
+                    timeout_ms=500,
+                )
+                self._narrative_llm_component = llm_component
+                self._narrative_qwen_service = qwen_service
+            realization_effect = build_realization_effect(
+                self._speech_draft_cache,
+                prefer_authored=True,
+                allow_qwen=self._narrative_qwen_enabled,
+                qwen_service=qwen_service,
+                llm_component=llm_component,
+            )
+            cfg = self._get_config()
+            journal_dir = Path(
+                getattr(getattr(self, "_tape", None), "directory", None)
+                or getattr(cfg, "recordings_dir", None)
+                or "recordings"
+            )
+            tape_effect = None
+            try:
+                app_version = str(getattr(cfg, "version", None) or "0.0.0")
+                tape_writer = open_narrative_tape_writer(
+                    journal_dir / "narrative-tape",
+                    shutdown_flush_timeout_s=2.0,
+                    app_version=app_version,
+                )
+                self._narrative_tape_writer = tape_writer
+                tape_effect = build_tape_flush_effect(tape_writer)
+            except Exception:
+                logger.exception(
+                    "narrative tape writer unavailable; continuing without tape_effect"
+                )
+                self._narrative_tape_writer = None
+                tape_effect = None
+            runtime = NarrativeRuntime(
+                mailbox=mailbox,
+                realization_effect=realization_effect,
+                tts_effect=tts_effect,
+                story_director=StoryDirector(),
+                opportunity_queue=opportunity_queue,
+                episode_registry=EpisodeRegistry(),
+                exposure_store=exposure_store,
+                freshness_gate=FreshnessGate(opportunity_queue),
+                llm_component=llm_component,
+                command_journal_path=journal_dir / "narrative-command-journal.ndjson",
+                semantic_verifier=SemanticVerifier(),
+                tape_effect=tape_effect,
+            )
+            runtime.enable()
+            self.narrative_runtime = runtime
+            set_narrative_runtime(runtime)
+            # #284 EventSubscription full replace: no CommentaryConsumer stream
+            # mirror — SessionReset/ConfigUpdate/batches enter only via
+            # NarrativeMailbox (shadow admit). CommentaryConsumer remains for
+            # TTS sink / status / filler plumbing with idle speech off.
+            self.narrative_shadow_consumer = NarrativeShadowConsumer(
+                self._narrative_shadow_subscription,
+                enabled=True,
+                ingress=ingress,
+                runtime=runtime,
+                publication_adapter=self._adapt_batch_for_shadow_with_drafts,
+                reduce_after_admit=False,
+                legacy_stream_handler=None,
+            )
+            self._narrative_shadow_supervisor = WorkerSupervisor(
+                "narrative_shadow_consumer",
+                self.narrative_shadow_consumer.run,
+            )
+            self._narrative_runtime_supervisor = WorkerSupervisor(
+                "narrative_runtime",
+                self._run_narrative_runtime_actor,
+            )
+            runtime.attach_supervisor_heartbeat(
+                "narrativeRuntime",
+                self._narrative_runtime_supervisor.status_snapshot,
+            )
+            runtime.attach_supervisor_heartbeat(
+                "narrativeShadow",
+                self._narrative_shadow_supervisor.status_snapshot,
+            )
         self.in_car = InCarDetector()
         self.session_briefs = SessionBriefsDetector()
         self._weekend_track: str | None = None
@@ -769,6 +931,16 @@ class RaceRuntime:
         # Subscriptions and workers exist before the producer can publish.
         self._registry.spawn("overlay_consumer", self._overlay_supervisor.run())
         self._registry.spawn("commentary_consumer", self._commentary_supervisor.run())
+        if self._narrative_shadow_supervisor is not None:
+            self._registry.spawn(
+                "narrative_shadow_consumer",
+                self._narrative_shadow_supervisor.run(),
+            )
+        if self._narrative_runtime_supervisor is not None:
+            self._registry.spawn(
+                "narrative_runtime",
+                self._narrative_runtime_supervisor.run(),
+            )
         self._registry.spawn(
             "race_producer", SamplingScheduler("race", self._race_hz, self._tick_race).run()
         )
@@ -782,6 +954,7 @@ class RaceRuntime:
                 await asyncio.sleep(3600)
         except asyncio.CancelledError:
             self._running = False
+            await self._request_narrative_shutdown(reason="application_exit")
             self._tape.close()
             self._event_fanout.close()
             await self._registry.cancel_all()
@@ -796,6 +969,16 @@ class RaceRuntime:
             logger.info("N12 replay: %s", path)
             self._registry.spawn("overlay_consumer", self._overlay_supervisor.run())
             self._registry.spawn("commentary_consumer", self._commentary_supervisor.run())
+            if self._narrative_shadow_supervisor is not None:
+                self._registry.spawn(
+                    "narrative_shadow_consumer",
+                    self._narrative_shadow_supervisor.run(),
+                )
+            if self._narrative_runtime_supervisor is not None:
+                self._registry.spawn(
+                    "narrative_runtime",
+                    self._narrative_runtime_supervisor.run(),
+                )
             try:
                 await load_n12_replay(path).replay(self._event_fanout)
                 await self._drain_consumer_queues()
@@ -809,12 +992,75 @@ class RaceRuntime:
         logger.info("Overlay replay: %s", path)
         await OverlayReplayer(str(path), self.bus).run()
 
+    def _adapt_batch_for_shadow_with_drafts(self, batch: object):
+        """Adapt live batch for shadow and cache speakable drafts for realization."""
+        publication = adapt_batch_for_shadow(batch)  # type: ignore[arg-type]
+        if publication is not None and self._speech_draft_cache is not None:
+            self._speech_draft_cache.observe_publication(publication)
+        return publication
+
+    async def _run_narrative_runtime_actor(self) -> None:
+        """Own NarrativeRuntime.run(); re-arm if a prior SHUTDOWN stopped it."""
+        runtime = self.narrative_runtime
+        if runtime is None:
+            return
+        writer = self._narrative_tape_writer
+        if writer is not None and writer.task is None:
+            try:
+                writer.start()
+            except Exception:
+                logger.exception("narrative tape writer failed to start")
+        state = runtime.status().runtime_state
+        if state in {"stopped", "disabled", "stopping"}:
+            runtime.enable()
+        await runtime.run()
+
+    async def _request_narrative_shutdown(self, *, reason: str = "application_exit") -> None:
+        """Admit SHUTDOWN so owned tape_effect can flush before worker cancel."""
+
+        runtime = self.narrative_runtime
+        if runtime is None:
+            return
+        try:
+            runtime.admit(
+                NarrativeCommand.shutdown(
+                    "race:stop",
+                    int(time.monotonic() * 1000),
+                    reason,
+                )
+            )
+            deadline = time.monotonic() + 2.0
+            while time.monotonic() < deadline:
+                status = runtime.status()
+                if status.runtime_state == "stopped" and not runtime.tape_task_active():
+                    return
+                await asyncio.sleep(0.02)
+        except Exception:
+            logger.exception("narrative runtime shutdown request failed")
+
     async def _drain_consumer_queues(self, timeout_s: float = 1.0) -> None:
         deadline = time.monotonic() + timeout_s
         while time.monotonic() < deadline:
             overlay = self._overlay_subscription.snapshot(producer_stream_sequence=0)
-            commentary = self._commentary_subscription.snapshot(producer_stream_sequence=0)
-            if overlay.depth == 0 and commentary.depth == 0:
+            commentary_depth = 0
+            if self._commentary_subscription is not None:
+                commentary_depth = self._commentary_subscription.snapshot(
+                    producer_stream_sequence=0
+                ).depth
+            shadow_depth = 0
+            if self._narrative_shadow_subscription is not None:
+                shadow_depth = self._narrative_shadow_subscription.snapshot(
+                    producer_stream_sequence=0
+                ).depth
+            mailbox_depth = 0
+            if self.narrative_runtime is not None:
+                mailbox_depth = int(self.narrative_runtime.status().mailbox_depth)
+            if (
+                overlay.depth == 0
+                and commentary_depth == 0
+                and shadow_depth == 0
+                and mailbox_depth == 0
+            ):
                 await asyncio.sleep(0.05)
                 return
             await asyncio.sleep(0.02)
@@ -1085,6 +1331,7 @@ class RaceRuntime:
 
     async def stop(self) -> None:
         self._running = False
+        await self._request_narrative_shutdown(reason="application_exit")
         self._tape.close()
         self._event_fanout.close()
         try:

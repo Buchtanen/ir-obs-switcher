@@ -212,6 +212,7 @@ async def test_health_healthy(app: web.Application) -> None:
             assert data["status"] == "healthy"
             assert "checks" in data
             assert "timestamp" in data
+            assert data["commentary"] == {"status": "disabled", "reason": None}
 
             checks = data["checks"]
             assert "iracing" in checks

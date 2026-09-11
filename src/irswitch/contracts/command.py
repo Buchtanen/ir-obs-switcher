@@ -6,6 +6,7 @@ import json
 from dataclasses import dataclass, replace
 from typing import Any, ClassVar, Literal, Self
 
+from .coalesce_policy import coalesce_key_for
 from .context import ContextBatchPart, ContextRevision, ExternalOrder
 from .primitives import (
     MAX_SIGNED_INT64,
@@ -995,32 +996,7 @@ class NarrativeCommand:
 
     @property
     def coalesce_key(self) -> tuple[object, ...] | None:
-        token = self.token or {}
-        payload = self.payload
-        if self.kind in {"LONG_SILENCE_ELAPSED", "VALIDITY_DEADLINE_ELAPSED"}:
-            return (self.kind, token.get("generation"))
-        if self.kind == "REALIZATION_DEADLINE_ELAPSED":
-            return (
-                self.kind,
-                token.get("requestId"),
-                token.get("requestOrdinal"),
-                token.get("dispatchGeneration"),
-            )
-        if self.kind == "TAPE_HEALTH_CHANGED":
-            return (
-                self.kind,
-                payload.get("recorderGeneration"),
-                payload.get("status"),
-                tuple(payload.get("affectedDetectorIds") or ()),
-            )
-        if self.kind == "COMPONENT_HEALTH_CHANGED":
-            return (
-                self.kind,
-                payload.get("component"),
-                payload.get("generation"),
-                payload.get("status"),
-            )
-        return None
+        return coalesce_key_for(self.kind, token=self.token, payload=self.payload)
 
     @property
     def fingerprint(self) -> str:

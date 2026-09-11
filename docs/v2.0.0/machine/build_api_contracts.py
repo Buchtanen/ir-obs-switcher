@@ -81,8 +81,15 @@ def build_schema() -> dict[str, Any]:
     all_reason_ids = sorted(
         {reason for domain in registry["reasonRegistry"] for reason in domain["ids"]}
     )
-    health_reasons = next(
-        row["ids"] for row in registry["reasonRegistry"] if row["domain"] == "config/runtime health"
+    # /health commentary.reason + runtime status.reason must cover both
+    # config/runtime health and actor mailbox/tape recovery codes (#284).
+    health_reasons = sorted(
+        {
+            reason
+            for row in registry["reasonRegistry"]
+            if row["domain"] in {"config/runtime health", "mailbox/tape health"}
+            for reason in row["ids"]
+        }
     )
     director_reasons = sorted(
         {

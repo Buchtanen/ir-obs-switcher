@@ -203,6 +203,27 @@ class EpisodeRegistry:
     def current(self) -> tuple[Episode, ...]:
         return tuple(sorted(self._current.values(), key=lambda item: item.episode_id))
 
+    def status_counts(self) -> dict[str, int]:
+        """Schema-shaped episode counters for commentary-runtime status."""
+
+        active = candidate = suspended = 0
+        for episode in self._current.values():
+            if episode.state == "active":
+                active += 1
+            elif episode.state == "candidate":
+                candidate += 1
+            elif episode.state == "suspended":
+                suspended += 1
+        resolved = sum(1 for episode in self._resolved.values() if episode.state == "resolved")
+        return {
+            "active": active,
+            "candidate": candidate,
+            "suspended": suspended,
+            "retainedCurrentCapacity": int(self.active_capacity),
+            "resolved": resolved,
+            "resolvedCapacity": int(self.resolved_capacity),
+        }
+
     def get(self, episode_id: str) -> Episode | None:
         return self._current.get(episode_id) or self._resolved.get(episode_id)
 

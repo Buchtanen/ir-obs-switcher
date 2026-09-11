@@ -1,0 +1,24 @@
+{
+  "schemaVersion": "commentary-runtime/2",
+  "status": "disabled",
+  "components": {
+    "llm": {
+      "status": "ready",
+      "reason": null,
+      "generation": 0,
+      "configGeneration": 0,
+      "model": "unconfigured",
+      "residencyEvidence": "not_requested",
+      "lastAttempt": null
+    },
+    "tts": {
+      "status": "ready",
+      "reason": null,
+      "backend": null,
+      "backendGeneration": 0,
+      "configGeneration": 0,
+      "quarantinedGeneration": null,
+      "voice": null
+    }
+  }
+}

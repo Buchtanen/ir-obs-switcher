@@ -285,6 +285,7 @@ class DetectorBank:
         )
         self._instances: dict[DetectorInstanceKey, _Instance] = {}
         self._disabled: set[str] = set()
+        self._disabled_reasons: dict[str, str] = {}
         self._last_frame_sequence: int | None = None
         self._parameter_snapshot_id = str(Identifier(parameter_snapshot_id))
         self._detector_config_hash = detector_config_hash or _catalog_hash()
@@ -303,6 +304,7 @@ class DetectorBank:
         expired: list[str] = []
         for detector_id in detector_ids:
             self._disabled.add(detector_id)
+            self._disabled_reasons[str(detector_id)] = str(reason)
             live = [
                 item for item in self._instances.values() if item.key.detector_id == detector_id
             ]
@@ -318,6 +320,18 @@ class DetectorBank:
             transitions=tuple(transitions),
             expired_facts=tuple(dict.fromkeys(expired)),
         )
+
+    def disabled_for_status(self) -> tuple[dict[str, str], ...]:
+        """Bounded status projection: sorted ``{id, reason}`` rows for disabled detectors."""
+
+        rows = [
+            {
+                "id": detector_id,
+                "reason": self._disabled_reasons.get(detector_id, "required_capture_lost"),
+            }
+            for detector_id in sorted(self._disabled)
+        ]
+        return tuple(rows[:128])
 
     def step(
         self,

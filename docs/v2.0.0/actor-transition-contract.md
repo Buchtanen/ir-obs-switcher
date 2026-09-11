@@ -13,7 +13,7 @@ Only `NarrativeRuntime.run()` mutates:
 - ExposureStore and bounded decision records;
 - automatic/manual speech-lane state and worker tokens;
 - the last applied immutable ConfigLedger snapshot used by narrative decisions;
-- silence/validity deadline generations and commentary component health;
+- silence/validity/realization/speech deadline generations and commentary component health;
 - current planning-cycle ID, dispatched-plan count (`0..2`) and source impulse.
 
 StreamTimeline, FeatureEngine, FactLedger and DetectorBank remain upstream owners. Qwen, TTS and tape workers perform I/O but cannot mutate actor state. Server handlers post commands and read immutable status snapshots.
@@ -273,5 +273,162 @@ Issues #235/#284 cannot close until tests or model-based transition enumeration 
 - overflow/recovery cannot resurrect lost events or stale facts;
 - reset/disable/shutdown cancellation follows the matrix;
 - tape replay over reducer sequence reproduces director decisions when recorded Qwen completions are supplied.
+
+
+## Complete command matrix
+
+Authoritative machine freeze: `machine/actor-transition-model.json` (`commands`).
+Human-readable mirror of the closed 17-kind `NarrativeCommand` union:
+
+| Kind | Protected when | Coalesce key | Atomic bundle |
+| --- | --- | --- | --- |
+| `APPLY_CONTEXT_BATCH` | `timeline_transition_or_protected_event` | — | — |
+| `CONFIG_UPDATE` | `always` | — | `config_then_context` |
+| `LONG_SILENCE_ELAPSED` | `never` | `kind, token.generation` | — |
+| `VALIDITY_DEADLINE_ELAPSED` | `never` | `kind, token.generation` | — |
+| `REALIZATION_SUCCEEDED` | `always` | — | — |
+| `REALIZATION_FAILED` | `always` | — | — |
+| `REALIZATION_DEADLINE_ELAPSED` | `always` | `kind, token.requestId, token.requestOrdinal, token.dispatchGeneration` | — |
+| `PLAYBACK_ACCEPTED` | `always` | — | — |
+| `SPEECH_COMPLETED` | `always` | — | — |
+| `SPEECH_INTERRUPTED` | `always` | — | — |
+| `SPEECH_FAILED` | `always` | — | — |
+| `SPEECH_DEADLINE_ELAPSED` | `always` | — | — |
+| `MANUAL_SPEAK_REQUEST` | `never` | — | — |
+| `TAPE_HEALTH_CHANGED` | `required_capture_loss` | `kind, payload.recorderGeneration, payload.status, payload.affectedDetectorIds` | `capture_health_then_context` |
+| `COMPONENT_HEALTH_CHANGED` | `status_unavailable` | `kind, payload.component, payload.generation, payload.status` | — |
+| `MAILBOX_RECOVERY` | `always` | — | — |
+| `SHUTDOWN` | `always` | — | — |
+
+## Complete lane × command transition matrix
+
+Authoritative machine freeze: `machine/actor-transition-model.json` (`transitionMatrix`).
+Every lane×command pair is enumerated (**85** = 5 lanes × 17 commands).
+Disposition is exactly one of: `handled`, `ignored_stale_or_inapplicable`, `rejected_busy`.
+`possibleNextLanes` lists legal post-reduce lanes when disposition is `handled` (empty when ignored/rejected).
+
+### Lane `idle`
+
+| Command | Disposition | Possible next lanes |
+| --- | --- | --- |
+| `APPLY_CONTEXT_BATCH` | `handled` | `idle`, `building` |
+| `CONFIG_UPDATE` | `handled` | `idle` |
+| `LONG_SILENCE_ELAPSED` | `handled` | `idle`, `building` |
+| `VALIDITY_DEADLINE_ELAPSED` | `handled` | `idle` |
+| `REALIZATION_SUCCEEDED` | `ignored_stale_or_inapplicable` | `idle` |
+| `REALIZATION_FAILED` | `ignored_stale_or_inapplicable` | `idle` |
+| `REALIZATION_DEADLINE_ELAPSED` | `ignored_stale_or_inapplicable` | `idle` |
+| `PLAYBACK_ACCEPTED` | `ignored_stale_or_inapplicable` | `idle` |
+| `SPEECH_COMPLETED` | `ignored_stale_or_inapplicable` | `idle` |
+| `SPEECH_INTERRUPTED` | `ignored_stale_or_inapplicable` | `idle` |
+| `SPEECH_FAILED` | `ignored_stale_or_inapplicable` | `idle` |
+| `SPEECH_DEADLINE_ELAPSED` | `ignored_stale_or_inapplicable` | `idle` |
+| `MANUAL_SPEAK_REQUEST` | `handled` | `idle`, `committed` |
+| `TAPE_HEALTH_CHANGED` | `handled` | `idle` |
+| `COMPONENT_HEALTH_CHANGED` | `handled` | `idle` |
+| `MAILBOX_RECOVERY` | `handled` | `idle` |
+| `SHUTDOWN` | `handled` | `idle` |
+
+### Lane `building`
+
+| Command | Disposition | Possible next lanes |
+| --- | --- | --- |
+| `APPLY_CONTEXT_BATCH` | `handled` | `idle`, `building` |
+| `CONFIG_UPDATE` | `handled` | `building` |
+| `LONG_SILENCE_ELAPSED` | `handled` | `building` |
+| `VALIDITY_DEADLINE_ELAPSED` | `handled` | `idle` |
+| `REALIZATION_SUCCEEDED` | `handled` | `idle`, `building`, `committed` |
+| `REALIZATION_FAILED` | `handled` | `idle`, `building` |
+| `REALIZATION_DEADLINE_ELAPSED` | `handled` | `idle`, `building` |
+| `PLAYBACK_ACCEPTED` | `ignored_stale_or_inapplicable` | `building` |
+| `SPEECH_COMPLETED` | `ignored_stale_or_inapplicable` | `building` |
+| `SPEECH_INTERRUPTED` | `ignored_stale_or_inapplicable` | `building` |
+| `SPEECH_FAILED` | `ignored_stale_or_inapplicable` | `building` |
+| `SPEECH_DEADLINE_ELAPSED` | `ignored_stale_or_inapplicable` | `building` |
+| `MANUAL_SPEAK_REQUEST` | `rejected_busy` | `building` |
+| `TAPE_HEALTH_CHANGED` | `handled` | `building` |
+| `COMPONENT_HEALTH_CHANGED` | `handled` | `building` |
+| `MAILBOX_RECOVERY` | `handled` | `idle` |
+| `SHUTDOWN` | `handled` | `idle` |
+
+### Lane `committed`
+
+| Command | Disposition | Possible next lanes |
+| --- | --- | --- |
+| `APPLY_CONTEXT_BATCH` | `handled` | `committed`, `stopping` |
+| `CONFIG_UPDATE` | `handled` | `committed` |
+| `LONG_SILENCE_ELAPSED` | `handled` | `committed` |
+| `VALIDITY_DEADLINE_ELAPSED` | `handled` | `committed`, `stopping` |
+| `REALIZATION_SUCCEEDED` | `ignored_stale_or_inapplicable` | `committed` |
+| `REALIZATION_FAILED` | `ignored_stale_or_inapplicable` | `committed` |
+| `REALIZATION_DEADLINE_ELAPSED` | `ignored_stale_or_inapplicable` | `committed` |
+| `PLAYBACK_ACCEPTED` | `handled` | `speaking` |
+| `SPEECH_COMPLETED` | `handled` | `stopping` |
+| `SPEECH_INTERRUPTED` | `handled` | `stopping` |
+| `SPEECH_FAILED` | `handled` | `idle`, `building` |
+| `SPEECH_DEADLINE_ELAPSED` | `handled` | `stopping` |
+| `MANUAL_SPEAK_REQUEST` | `rejected_busy` | `committed` |
+| `TAPE_HEALTH_CHANGED` | `handled` | `committed` |
+| `COMPONENT_HEALTH_CHANGED` | `handled` | `committed` |
+| `MAILBOX_RECOVERY` | `handled` | `stopping` |
+| `SHUTDOWN` | `handled` | `stopping` |
+
+### Lane `speaking`
+
+| Command | Disposition | Possible next lanes |
+| --- | --- | --- |
+| `APPLY_CONTEXT_BATCH` | `handled` | `speaking`, `stopping` |
+| `CONFIG_UPDATE` | `handled` | `speaking` |
+| `LONG_SILENCE_ELAPSED` | `handled` | `speaking` |
+| `VALIDITY_DEADLINE_ELAPSED` | `handled` | `speaking` |
+| `REALIZATION_SUCCEEDED` | `ignored_stale_or_inapplicable` | `speaking` |
+| `REALIZATION_FAILED` | `ignored_stale_or_inapplicable` | `speaking` |
+| `REALIZATION_DEADLINE_ELAPSED` | `ignored_stale_or_inapplicable` | `speaking` |
+| `PLAYBACK_ACCEPTED` | `handled` | `stopping` |
+| `SPEECH_COMPLETED` | `handled` | `idle`, `building` |
+| `SPEECH_INTERRUPTED` | `handled` | `idle`, `building` |
+| `SPEECH_FAILED` | `handled` | `idle`, `building` |
+| `SPEECH_DEADLINE_ELAPSED` | `handled` | `stopping` |
+| `MANUAL_SPEAK_REQUEST` | `rejected_busy` | `speaking` |
+| `TAPE_HEALTH_CHANGED` | `handled` | `speaking` |
+| `COMPONENT_HEALTH_CHANGED` | `handled` | `speaking` |
+| `MAILBOX_RECOVERY` | `handled` | `speaking`, `stopping` |
+| `SHUTDOWN` | `handled` | `stopping` |
+
+### Lane `stopping`
+
+| Command | Disposition | Possible next lanes |
+| --- | --- | --- |
+| `APPLY_CONTEXT_BATCH` | `handled` | `stopping` |
+| `CONFIG_UPDATE` | `handled` | `stopping` |
+| `LONG_SILENCE_ELAPSED` | `handled` | `stopping` |
+| `VALIDITY_DEADLINE_ELAPSED` | `handled` | `stopping` |
+| `REALIZATION_SUCCEEDED` | `ignored_stale_or_inapplicable` | `stopping` |
+| `REALIZATION_FAILED` | `ignored_stale_or_inapplicable` | `stopping` |
+| `REALIZATION_DEADLINE_ELAPSED` | `ignored_stale_or_inapplicable` | `stopping` |
+| `PLAYBACK_ACCEPTED` | `ignored_stale_or_inapplicable` | `stopping` |
+| `SPEECH_COMPLETED` | `handled` | `idle` |
+| `SPEECH_INTERRUPTED` | `handled` | `idle` |
+| `SPEECH_FAILED` | `handled` | `idle` |
+| `SPEECH_DEADLINE_ELAPSED` | `handled` | `idle`, `stopping` |
+| `MANUAL_SPEAK_REQUEST` | `rejected_busy` | `stopping` |
+| `TAPE_HEALTH_CHANGED` | `handled` | `stopping` |
+| `COMPONENT_HEALTH_CHANGED` | `handled` | `stopping` |
+| `MAILBOX_RECOVERY` | `handled` | `stopping` |
+| `SHUTDOWN` | `handled` | `stopping` |
+
+### Disposition overview (lane × command)
+
+Legend: `H` = handled, `I` = ignored_stale_or_inapplicable, `R` = rejected_busy.
+
+| Lane | CTX | CFG | SIL | VAL | ROK | RNO | RDL | ACC | CMP | INT | SFL | SDL | MAN | TAP | CMPH | REC | OFF |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `idle` | H | H | H | H | I | I | I | I | I | I | I | I | H | H | H | H | H |
+| `building` | H | H | H | H | H | H | H | I | I | I | I | I | R | H | H | H | H |
+| `committed` | H | H | H | H | I | I | I | H | H | H | H | H | R | H | H | H | H |
+| `speaking` | H | H | H | H | I | I | I | H | H | H | H | H | R | H | H | H | H |
+| `stopping` | H | H | H | H | I | I | I | I | H | H | H | H | R | H | H | H | H |
+
+Short headers: CTX=`APPLY_CONTEXT_BATCH`, CFG=`CONFIG_UPDATE`, SIL=`LONG_SILENCE_ELAPSED`, VAL=`VALIDITY_DEADLINE_ELAPSED`, ROK=`REALIZATION_SUCCEEDED`, RNO=`REALIZATION_FAILED`, RDL=`REALIZATION_DEADLINE_ELAPSED`, ACC=`PLAYBACK_ACCEPTED`, CMP=`SPEECH_COMPLETED`, INT=`SPEECH_INTERRUPTED`, SFL=`SPEECH_FAILED`, SDL=`SPEECH_DEADLINE_ELAPSED`, MAN=`MANUAL_SPEAK_REQUEST`, TAP=`TAPE_HEALTH_CHANGED`, CMPH=`COMPONENT_HEALTH_CHANGED`, REC=`MAILBOX_RECOVERY`, OFF=`SHUTDOWN`.
 
 The branch-only model evidence is `machine/actor-transition-model.json` with its closed schema, goldens and mutation set. Its checker cross-checks the exact 17-kind NarrativeCommand union, enumerates all 85 lane/command pairs, verifies the 56/7/1 single-mailbox partition and exact protected/coalescing allowlists, then executes race, ordering and overflow traces. These fixtures close the pre-implementation design gate; implementation still owes focused pytest/pytest-asyncio tests using byte-equivalent rules.
