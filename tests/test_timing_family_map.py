@@ -1,4 +1,4 @@
-"""#275 Slice 1–2 — timing family map (lap/SF, sector, PB/gain/loss)."""
+"""#275 Slice 1–3 — timing family map (lap/SF, sector, PB/pace, quali/invalid)."""
 
 from __future__ import annotations
 
@@ -12,10 +12,12 @@ from irswitch.contracts.coverage_matrix import can_create_event_opportunity
 from irswitch.contracts.primitives import ContractViolation
 from irswitch.contracts.resources import packaged_schema_bytes
 from irswitch.contracts.timing_family_map import (
+    INVALID_LAP_SESSION_MODES,
     RACE_FINISH_WIRE_IDS,
     TIMING_WIRE_IDS,
     TimingFamilyRow,
     gain_and_loss_polarities_are_distinct,
+    invalid_lap_scope_is_explicit,
     lap_complete_is_not_race_finish,
     migration_status_by_wire_id,
     row_for_wire_id,
@@ -31,7 +33,7 @@ _EXPECT = {
         "beat_id": "timing.lap.completed",
         "beat_role": "result",
         "policy_id": "result",
-        "outcome_ttl_ms": 30_000,
+        "outcome_ttl_ms": 30000,
         "polarity": "lap_complete",
         "scope_kind": "lap_sf",
         "legacy_node_id": "lap_complete",
@@ -42,7 +44,7 @@ _EXPECT = {
         "beat_id": "timing.sector.split",
         "beat_role": "update",
         "policy_id": "transient",
-        "outcome_ttl_ms": 6_000,
+        "outcome_ttl_ms": 6000,
         "polarity": "sector_split",
         "scope_kind": "sector",
         "legacy_node_id": "sector_split",
@@ -53,7 +55,7 @@ _EXPECT = {
         "beat_id": "timing.sector.best",
         "beat_role": "result",
         "policy_id": "result",
-        "outcome_ttl_ms": 30_000,
+        "outcome_ttl_ms": 30000,
         "polarity": "sector_best",
         "scope_kind": "sector",
         "legacy_node_id": None,
@@ -64,7 +66,7 @@ _EXPECT = {
         "beat_id": "timing.lap.personal_best",
         "beat_role": "result",
         "policy_id": "result",
-        "outcome_ttl_ms": 30_000,
+        "outcome_ttl_ms": 30000,
         "polarity": "personal_best",
         "scope_kind": "lap_pb",
         "legacy_node_id": "personal_best",
@@ -75,7 +77,7 @@ _EXPECT = {
         "beat_id": "timing.pace.gain",
         "beat_role": "update",
         "policy_id": "transient",
-        "outcome_ttl_ms": 6_000,
+        "outcome_ttl_ms": 6000,
         "polarity": "gain_found",
         "scope_kind": "pace_delta",
         "legacy_node_id": "gain_found",
@@ -86,12 +88,45 @@ _EXPECT = {
         "beat_id": "timing.pace.loss",
         "beat_role": "update",
         "policy_id": "transient",
-        "outcome_ttl_ms": 6_000,
+        "outcome_ttl_ms": 6000,
         "polarity": "time_lost",
         "scope_kind": "pace_delta",
         "legacy_node_id": "time_lost",
         "story_routes": ("timing_attempt", "single_result"),
         "realization_family": "timing.delta",
+    },
+    "HOT_LAP": {
+        "beat_id": "timing.lap.hot",
+        "beat_role": "opening",
+        "policy_id": "live_story",
+        "outcome_ttl_ms": 10000,
+        "polarity": "hot_lap",
+        "scope_kind": "lap_attempt",
+        "legacy_node_id": "hot_lap",
+        "story_routes": ("timing_attempt", "single_result"),
+        "realization_family": "timing.attempt",
+    },
+    "PROJECTED_LAP": {
+        "beat_id": "timing.lap.projected",
+        "beat_role": "update",
+        "policy_id": "live_story",
+        "outcome_ttl_ms": 10000,
+        "polarity": "projected_lap",
+        "scope_kind": "lap_projection",
+        "legacy_node_id": "projected_lap",
+        "story_routes": ("timing_attempt", "single_result"),
+        "realization_family": "timing.projection",
+    },
+    "INVALID_LAP": {
+        "beat_id": "incident.invalid_lap",
+        "beat_role": "result",
+        "policy_id": "result",
+        "outcome_ttl_ms": 30000,
+        "polarity": "invalid_lap",
+        "scope_kind": "invalid_lap",
+        "legacy_node_id": "invalid_lap",
+        "story_routes": ("incident", "single_result"),
+        "realization_family": "incident.invalid_lap",
     },
 }
 
@@ -106,6 +141,9 @@ def test_map_covers_every_timing_wire_id_exactly_once() -> None:
         "PERSONAL_BEST",
         "GAIN_FOUND",
         "TIME_LOST",
+        "HOT_LAP",
+        "PROJECTED_LAP",
+        "INVALID_LAP",
     )
     assert len(rows) == len(set(TIMING_WIRE_IDS))
 
@@ -118,8 +156,11 @@ def test_every_row_is_legacy_before_shadow_cutover() -> None:
         "PERSONAL_BEST": "legacy",
         "GAIN_FOUND": "legacy",
         "TIME_LOST": "legacy",
+        "HOT_LAP": "legacy",
+        "PROJECTED_LAP": "legacy",
+        "INVALID_LAP": "legacy",
     }
-    assert len(rows_by_migration_status("legacy")) == 6
+    assert len(rows_by_migration_status("legacy")) == 9
     assert rows_by_migration_status("shadow") == ()
     assert rows_by_migration_status("v2") == ()
 
@@ -168,8 +209,42 @@ def test_gain_and_loss_polarities_are_distinct() -> None:
     assert gained.beat_id != lost.beat_id
     assert gained.scope_kind == lost.scope_kind == "pace_delta"
     assert gained.realization_family == lost.realization_family == "timing.delta"
-    assert gained.emitter_module.endswith("PracticeEmitter")
-    assert lost.emitter_module.endswith("PracticeEmitter")
+
+
+def test_hot_lap_is_attempt_not_result() -> None:
+    hot = row_for_wire_id("HOT_LAP")
+    assert hot.scope_kind == "lap_attempt"
+    assert hot.polarity == "hot_lap"
+    assert hot.beat_role == "opening"
+    assert hot.policy_id == "live_story"
+    assert hot.realization_family == "timing.attempt"
+    assert hot.beat_id == "timing.lap.hot"
+    assert hot.emitter_module.endswith("QualiEmitter")
+
+
+def test_projected_lap_is_projection_not_completed_result() -> None:
+    projected = row_for_wire_id("PROJECTED_LAP")
+    assert projected.scope_kind == "lap_projection"
+    assert projected.polarity == "projected_lap"
+    assert projected.beat_id == "timing.lap.projected"
+    assert projected.realization_family == "timing.projection"
+    assert projected.policy_id == "live_story"
+    assert "completed" not in projected.beat_id
+    assert projected.emitter_module.endswith("QualiEmitter")
+
+
+def test_invalid_lap_scope_is_explicit() -> None:
+    assert invalid_lap_scope_is_explicit() is True
+    assert INVALID_LAP_SESSION_MODES == frozenset({"PRACTICE", "QUALIFYING"})
+    assert "RACE" not in INVALID_LAP_SESSION_MODES
+    row = row_for_wire_id("INVALID_LAP")
+    assert row.scope_kind == "invalid_lap"
+    assert row.polarity == "invalid_lap"
+    assert row.realization_family == "incident.invalid_lap"
+    assert row.beat_id == "incident.invalid_lap"
+    assert row.story_routes == ("incident", "single_result")
+    assert row.emitter_module.endswith("InvalidLapEmitter")
+    assert "exception_extra:" in row.adapter_module
 
 
 def test_rows_match_freeze_registry_and_beats() -> None:
@@ -209,7 +284,6 @@ def test_legacy_graph_nodes_exist_when_declared() -> None:
     nodes = json.loads(GRAPH.read_text(encoding="utf-8"))["nodes"]
     for row in timing_family_rows():
         if row.legacy_node_id is None:
-            # SECTOR_BEST: creatable speakable without dedicated sequence-graph node.
             assert row.wire_id == "SECTOR_BEST"
             continue
         assert row.legacy_node_id in nodes
@@ -219,7 +293,7 @@ def test_emitters_and_adapters_are_documented() -> None:
     for row in timing_family_rows():
         assert row.emitter_module.startswith("irswitch.events.")
         assert row.adapter_module.startswith("irswitch.events.adapters.")
-        assert row.policy_id in {"result", "transient"}
+        assert row.policy_id in {"result", "transient", "live_story"}
         assert row.outcome_ttl_ms is not None and row.outcome_ttl_ms > 0
 
 

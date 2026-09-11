@@ -1,11 +1,11 @@
-"""#275 timing family migration map (lap/SF, sector, PB/gain/loss).
+"""#275 timing family migration map (lap/SF, sector, PB/pace, quali/invalid).
 
 Maps wire identifiers for lap completion (start/finish crossing), sector
-split/best, personal best, and pace gain/loss onto legacy emitters, adapters,
-beat/story routes, predicates, realization families, policy TTL and tape
-channels.
+split/best, personal best, pace gain/loss, hot-lap attempt, projected lap,
+and invalid lap onto legacy emitters, adapters, beat/story routes, predicates,
+realization families, policy TTL and tape channels.
 
-Slices 1–2 record every family as ``legacy``. They do **not** rewrite frozen
+Slices 1–3 record every family as ``legacy``. They do **not** rewrite frozen
 ``docs/v2.0.0/machine/*`` hashes and do **not** flip ``FAMILY_ROUTE``.
 """
 
@@ -27,10 +27,15 @@ Polarity = Literal[
     "personal_best",
     "gain_found",
     "time_lost",
+    "hot_lap",
+    "projected_lap",
+    "invalid_lap",
 ]
-ScopeKind = Literal["lap_sf", "sector", "lap_pb", "pace_delta"]
+ScopeKind = Literal[
+    "lap_sf", "sector", "lap_pb", "pace_delta", "lap_attempt", "lap_projection", "invalid_lap"
+]
 
-# Slice 1–2 inventory: lap/SF + sector + personal best / pace gain / time lost.
+# Slice 1–3 inventory: lap/SF + sector + PB/pace + hot/projected/invalid lap.
 TIMING_WIRE_IDS: tuple[str, ...] = (
     "LAP_COMPLETE",
     "SECTOR_SPLIT",
@@ -38,10 +43,16 @@ TIMING_WIRE_IDS: tuple[str, ...] = (
     "PERSONAL_BEST",
     "GAIN_FOUND",
     "TIME_LOST",
+    "HOT_LAP",
+    "PROJECTED_LAP",
+    "INVALID_LAP",
 )
 
 # Finish/race outcome wires that must never share lap-complete semantics.
 RACE_FINISH_WIRE_IDS: frozenset[str] = frozenset({"FINISH"})
+
+# Invalid-lap AC: explicit session-mode scope (not race finish / not race mode).
+INVALID_LAP_SESSION_MODES: frozenset[str] = frozenset({"PRACTICE", "QUALIFYING"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -135,6 +146,33 @@ _STATIC: dict[str, _StaticSource] = {
         polarity="time_lost",
         scope_kind="pace_delta",
         notes="Pace worsened vs reference; opposite polarity of gain_found.",
+    ),
+    "HOT_LAP": _StaticSource(
+        legacy_node_id="hot_lap",
+        race_event_name="hot_lap",
+        emitter_module="irswitch.events.quali:QualiEmitter",
+        adapter_module="irswitch.events.adapters.timing:timing_race_event_to_envelope",
+        polarity="hot_lap",
+        scope_kind="lap_attempt",
+        notes="Active qualifying/practice attempt (hot lap); not a completed result.",
+    ),
+    "PROJECTED_LAP": _StaticSource(
+        legacy_node_id="projected_lap",
+        race_event_name="projected_lap",
+        emitter_module="irswitch.events.quali:QualiEmitter",
+        adapter_module="irswitch.events.adapters.timing:timing_race_event_to_envelope",
+        polarity="projected_lap",
+        scope_kind="lap_projection",
+        notes="In-lap projection only; must not claim a completed lap result.",
+    ),
+    "INVALID_LAP": _StaticSource(
+        legacy_node_id="invalid_lap",
+        race_event_name="invalid_lap",
+        emitter_module="irswitch.events.invalid_lap:InvalidLapEmitter",
+        adapter_module="irswitch.events.adapters.exception_extra:invalid_lap_race_event_to_envelope",
+        polarity="invalid_lap",
+        scope_kind="invalid_lap",
+        notes="Invalid-lap scope is PRACTICE|QUALIFYING only (not RACE); incident.invalid_lap family.",
     ),
 }
 
@@ -267,7 +305,7 @@ def rows_by_migration_status(status: MigrationStatus) -> tuple[TimingFamilyRow, 
 
 
 def migration_status_by_wire_id() -> dict[str, MigrationStatus]:
-    """Coverage-matrix companion: every timing inventory family → migration status."""
+    """Coverage-matrix companion: every timing inventory family -> migration status."""
 
     return {row.wire_id: row.migration_status for row in timing_family_rows()}
 
@@ -301,3 +339,18 @@ def gain_and_loss_polarities_are_distinct() -> bool:
     if gained.scope_kind != "pace_delta" or lost.scope_kind != "pace_delta":
         return False
     return gained.realization_family == lost.realization_family == "timing.delta"
+
+
+def invalid_lap_scope_is_explicit() -> bool:
+    """AC helper: invalid-lap scope stays PRACTICE|QUALIFYING, never race finish."""
+
+    row = row_for_wire_id("INVALID_LAP")
+    if row.scope_kind != "invalid_lap" or row.polarity != "invalid_lap":
+        return False
+    if row.realization_family != "incident.invalid_lap":
+        return False
+    if row.beat_id == "session.hero_finish" or row.wire_id in RACE_FINISH_WIRE_IDS:
+        return False
+    if "RACE" in INVALID_LAP_SESSION_MODES:
+        return False
+    return INVALID_LAP_SESSION_MODES == frozenset({"PRACTICE", "QUALIFYING"})

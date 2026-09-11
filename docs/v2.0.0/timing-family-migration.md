@@ -1,19 +1,19 @@
-# #275 Timing family migration (lap / SF / sector / PB / pace)
+# #275 Timing family migration (lap / SF / sector / PB / pace / quali / invalid)
 
-**Status:** Slice 2 — lap/SF + sector + personal best / gain / time lost inventory (all `legacy`; no `FAMILY_ROUTE` flip).  
+**Status:** Slice 3 — lap/SF + sector + PB/pace + hot/projected/invalid lap inventory (all `legacy`; no `FAMILY_ROUTE` flip).  
 **Issue:** [#275](https://github.com/Buchtanen/ir-obs-switcher/issues/275)  
 **Module:** `src/irswitch/contracts/timing_family_map.py`  
 **Tests:** `tests/test_timing_family_map.py`  
-**Lookup:** [inflight § #275](../dokumentace/inflight/README.md#275-timing-family-map-slice-2-lookup) · [events branch delta](../dokumentace/domeny/events.md#timing-family-migration-map-contractstiming_family_mappy)
+**Lookup:** [inflight § #275](../dokumentace/inflight/README.md#275-timing-family-map-slice-3-lookup) · [events branch delta](../dokumentace/domeny/events.md#timing-family-migration-map-contractstiming_family_mappy)
 
 ## Guardrails
 
 - Does **not** rewrite frozen `docs/v2.0.0/machine/*` hashes.
-- Does **not** flip `FAMILY_ROUTE` (timing stays observational-legacy until a later #275 shadow slice).
+- Does **not** flip `FAMILY_ROUTE`.
 - Does **not** cut over live `v2` speech.
 - Integration-only; no master PR until cutover (#279).
 
-## Slice 1–2 inventory
+## Slice 1–3 inventory
 
 | Wire id | Legacy node | Beat | Role | Predicate | Family | Policy / TTL | Tape | Scope | Status |
 | --- | --- | --- | --- | --- | --- | ---: | --- | --- | --- |
@@ -23,16 +23,18 @@
 | `PERSONAL_BEST` | `personal_best` | `timing.lap.personal_best` | result | `timing.personal_best` | `timing.lap_result` | result / 30s | `race.timing.lap` | `lap_pb` | legacy |
 | `GAIN_FOUND` | `gain_found` | `timing.pace.gain` | update | `timing.delta_improved` | `timing.delta` | transient / 6s | `race.timing.delta` | `pace_delta` | legacy |
 | `TIME_LOST` | `time_lost` | `timing.pace.loss` | update | `timing.delta_worsened` | `timing.delta` | transient / 6s | `race.timing.delta` | `pace_delta` | legacy |
+| `HOT_LAP` | `hot_lap` | `timing.lap.hot` | opening | `timing.active_attempt` | `timing.attempt` | live_story / 10s | `race.timing.attempt` | `lap_attempt` | legacy |
+| `PROJECTED_LAP` | `projected_lap` | `timing.lap.projected` | update | `timing.lap_projection` | `timing.projection` | live_story / 10s | `race.timing.attempt` | `lap_projection` | legacy |
+| `INVALID_LAP` | `invalid_lap` | `incident.invalid_lap` | result | `incident.lap_invalid` | `incident.invalid_lap` | result / 30s | `race.incident.invalid_lap` | `invalid_lap` | legacy |
 
-Helpers: `timing_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `lap_complete_is_not_race_finish()`, `gain_and_loss_polarities_are_distinct()`.
+Helpers: `timing_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status()`, `migration_status_by_wire_id()`, `lap_complete_is_not_race_finish()`, `gain_and_loss_polarities_are_distinct()`, `invalid_lap_scope_is_explicit()`.
 
 ## AC locks
 
-- **Completed lap ≠ completed race:** `LAP_COMPLETE` uses `scope_kind=lap_sf`, polarity `lap_complete`, beat `timing.lap.completed`, realization `timing.lap_result` — never `session.finish` / `session.hero_finish` / wire `FINISH`.
-- Helper: `lap_complete_is_not_race_finish()`.
-- **Gain ≠ loss:** `GAIN_FOUND` / `TIME_LOST` keep opposite polarity and distinct beats under `scope_kind=pace_delta` (`timing.delta`).
-- Helper: `gain_and_loss_polarities_are_distinct()`.
-- `SECTOR_BEST` is creatable speakable without a dedicated sequence-graph node (`legacy_node_id=None`).
+- **Completed lap ≠ completed race:** `LAP_COMPLETE` stays on `lap_sf` / `timing.lap.completed` / `timing.lap_result` — never `session.finish` / wire `FINISH`.
+- **Gain ≠ loss:** `GAIN_FOUND` / `TIME_LOST` opposite polarities under `pace_delta`.
+- **Invalid-lap scope explicit:** `INVALID_LAP` uses `scope_kind=invalid_lap`, family `incident.invalid_lap`, session modes `['PRACTICE', 'QUALIFYING']` only (not RACE).
+- Helpers: `lap_complete_is_not_race_finish()`, `gain_and_loss_polarities_are_distinct()`, `invalid_lap_scope_is_explicit()`.
 
 ## Emitters / adapters
 
@@ -44,10 +46,13 @@ Helpers: `timing_family_rows()`, `row_for_wire_id()`, `rows_by_migration_status(
 | `PERSONAL_BEST` | `irswitch.events.lap:LapEmitter` | `irswitch.events.adapters.lap:lap_race_event_to_envelope` |
 | `GAIN_FOUND` | `irswitch.events.practice:PracticeEmitter` | `irswitch.events.adapters.timing:timing_race_event_to_envelope` |
 | `TIME_LOST` | `irswitch.events.practice:PracticeEmitter` | `irswitch.events.adapters.timing:timing_race_event_to_envelope` |
+| `HOT_LAP` | `irswitch.events.quali:QualiEmitter` | `irswitch.events.adapters.timing:timing_race_event_to_envelope` |
+| `PROJECTED_LAP` | `irswitch.events.quali:QualiEmitter` | `irswitch.events.adapters.timing:timing_race_event_to_envelope` |
+| `INVALID_LAP` | `irswitch.events.invalid_lap:InvalidLapEmitter` | `irswitch.events.adapters.exception_extra:invalid_lap_race_event_to_envelope` |
 
 ## Later #275 slices (not in this map yet)
 
-Deferred inventory (examples): projected lap, invalid lap, qualifying attempt/projection, practice→quali→race recaps, EN patterns / TTS slots, restart/rewind replay cases.
+Deferred: practice→quali→race recaps (`QUALI_RECAP` / session intros), EN patterns / TTS slots, restart/rewind replay cases.
 
 ## Docs / config
 
