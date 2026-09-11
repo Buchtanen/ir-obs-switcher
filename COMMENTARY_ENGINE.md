@@ -272,13 +272,16 @@ Spoken lines live in `variants.{en|cs}.{emotion}`. With `llm_polish=false`, the 
 
 Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine behaviour is unchanged (`in_car` is commentary-only).
 
-### Live-path kill-switch (#349 Slice 1)
+### Live-path composition safety (#349)
 
-`commentary.enabled` is authoritative for **composition**, not only audible TTS:
+**Slice 1 — kill-switch:** `commentary.enabled` is authoritative for **composition**, not only audible TTS:
 
 - `false` → `RaceRuntime` does **not** enable narrative shadow fanout or Qwen realization wiring (`_narrative_shadow_enabled` / `_narrative_qwen_enabled` follow the flag).
 - Shadow adapter `narrativeRunActive` follows the same flag (default inactive); it must not invent an active narrative run while commentary is off.
-- Remaining live-path blockers (mailbox `SessionReset`/`ConfigUpdate`, real TTS protocol, Qwen fail-closed, HTTP contract) are tracked under [#349](https://github.com/Buchtanen/ir-obs-switcher/issues/349) before §24.9 Windows gates (#278).
+
+**Slice 2 — mailbox cutover:** `NarrativeShadowConsumer` admits stream `ConfigUpdate` / `SessionReset` into `NarrativeMailbox` (no `shadow_non_batch` drop). Shadow timeline/fact revisions follow `stream_sequence` so post-recovery context can clear the recovery barrier floor.
+
+- Remaining live-path blockers (real TTS protocol, Qwen fail-closed, HTTP contract) are tracked under [#349](https://github.com/Buchtanen/ir-obs-switcher/issues/349) before §24.9 Windows gates (#278).
 
 ## Content DB + fill plan
 

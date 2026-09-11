@@ -44,7 +44,7 @@ def test_warmup_qwen_component_fails_closed_on_transport_error() -> None:
 
 def test_race_enables_qwen_and_calls_warmup() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
-    assert "_narrative_qwen_enabled = True" in race
+    assert "self._narrative_qwen_enabled = commentary_enabled" in race
     assert "warmup_qwen_component" in race
     assert "StdlibTransport" in race
     # Soft-fail path must remain so missing Ollama does not crash startup.

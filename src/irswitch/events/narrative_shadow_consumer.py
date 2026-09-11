@@ -6,7 +6,8 @@ optionally ``reduce_next`` on a shared ``NarrativeRuntime``. When the live
 actor owns drain (``NarrativeRuntime.run()``), race wiring sets
 ``reduce_after_admit=False``. Under EventSubscription full replace, race sets
 ``legacy_stream_handler=None`` so SessionReset/ConfigUpdate/batches enter
-only via ``NarrativeMailbox``; ``CommentaryConsumer`` keeps TTS sink/status
+only via ``NarrativeMailbox`` (Slice 2 admits ConfigUpdate commands and
+SessionReset empty publications instead of ``shadow_non_batch`` drops); ``CommentaryConsumer`` keeps TTS sink/status
 with idle speech off and no fanout subscription.
 
 Not exported from ``events/__init__.py``. No INI / product config key in this
@@ -22,6 +23,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
+from irswitch.contracts.command import NarrativeCommand
 from irswitch.events.async_fanout import EventSubscription
 from irswitch.events.narrative import NarrativeEvent
 from irswitch.events.narrative_ingress import IngressAdmission, NarrativeIngress
@@ -151,22 +153,106 @@ class NarrativeShadowConsumer:
             drained += 1
         return drained
 
+    def _admit_config_update(self, item: ConfigUpdate) -> ShadowAdmission:
+        """Admit ConfigUpdate into NarrativeMailbox (#349 Slice 2)."""
+
+        if not self.enabled:
+            result = ShadowAdmission(
+                accepted=False,
+                reason="shadow_disabled",
+                command_ids=(),
+                mailbox_sequences=(),
+                effects=("shadow_disabled",),
+            )
+            self.last_admission = result
+            return result
+        command = NarrativeCommand.config_update(
+            f"shadow-config:{item.stream_sequence}:{item.generation}",
+            max(0, int(item.stream_sequence) * 1000),
+            valid=False,
+            ledger=None,
+            diagnostics=(),
+        )
+        admitted = self.ingress.mailbox.admit(command)
+        if not admitted.accepted:
+            self.skipped += 1
+            result = ShadowAdmission(
+                accepted=False,
+                reason=str(admitted.reason),
+                command_ids=(),
+                mailbox_sequences=(),
+                effects=("shadow_config_rejected", f"mailbox:{admitted.reason}"),
+            )
+            self.last_admission = result
+            return result
+        self.processed += 1
+        result = ShadowAdmission(
+            accepted=True,
+            reason="accepted",
+            command_ids=(str(admitted.command.command_id),),
+            mailbox_sequences=(int(admitted.command.mailbox_sequence),),
+            effects=("shadow_config_admitted",),
+        )
+        if self.runtime is not None and self.reduce_after_admit:
+            drained = self._reduce_admitted()
+            if drained:
+                self.reduced += drained
+                result = ShadowAdmission(
+                    accepted=result.accepted,
+                    reason=result.reason,
+                    command_ids=result.command_ids,
+                    mailbox_sequences=result.mailbox_sequences,
+                    effects=result.effects + ("shadow_reduced",),
+                )
+        self.last_admission = result
+        return result
+
+    def _admit_session_reset(self, item: SessionReset) -> ShadowAdmission:
+        """Admit SessionReset as empty context publication (#349 Slice 2)."""
+
+        from irswitch.events.narrative_shadow_adapter import adapt_session_reset_for_shadow
+
+        publication = adapt_session_reset_for_shadow(item)
+        result = self.handle_adapted_publication(publication)
+        if result.accepted:
+            result = ShadowAdmission(
+                accepted=result.accepted,
+                reason=result.reason,
+                command_ids=result.command_ids,
+                mailbox_sequences=result.mailbox_sequences,
+                effects=result.effects + ("shadow_session_reset_admitted",),
+            )
+            self.last_admission = result
+        return result
+
     async def handle(self, item: StreamItem) -> ShadowAdmission | None:
         if not self.enabled:
             return None
         self.last_stream_sequence = int(getattr(item, "stream_sequence", 0) or 0)
         await self._mirror_legacy(item)
-        if isinstance(item, (SessionReset, ConfigUpdate)):
-            self.skipped += 1
-            result = ShadowAdmission(
-                accepted=False,
-                reason="shadow_non_batch",
-                command_ids=(),
-                mailbox_sequences=(),
-                effects=("shadow_non_batch",)
-                + (("shadow_legacy_mirrored",) if self.legacy_stream_handler is not None else ()),
-            )
-            self.last_admission = result
+        if isinstance(item, ConfigUpdate):
+            result = self._admit_config_update(item)
+            if self.legacy_stream_handler is not None:
+                result = ShadowAdmission(
+                    accepted=result.accepted,
+                    reason=result.reason,
+                    command_ids=result.command_ids,
+                    mailbox_sequences=result.mailbox_sequences,
+                    effects=result.effects + ("shadow_legacy_mirrored",),
+                )
+                self.last_admission = result
+            return result
+        if isinstance(item, SessionReset):
+            result = self._admit_session_reset(item)
+            if self.legacy_stream_handler is not None:
+                result = ShadowAdmission(
+                    accepted=result.accepted,
+                    reason=result.reason,
+                    command_ids=result.command_ids,
+                    mailbox_sequences=result.mailbox_sequences,
+                    effects=result.effects + ("shadow_legacy_mirrored",),
+                )
+                self.last_admission = result
             return result
         if not isinstance(item, FrozenAcceptedEventBatch):
             self.skipped += 1

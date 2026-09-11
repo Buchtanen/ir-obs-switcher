@@ -12,7 +12,7 @@ ownership. Not exported from ``events/__init__.py``.
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from irswitch.contracts.primitives import ContractViolation, LineageId, OccurrenceId
 from irswitch.contracts.session import SessionRef
@@ -20,11 +20,13 @@ from irswitch.events.narrative import NarrativeAdmissionError, adapt_accepted_ev
 from irswitch.events.narrative_shadow_consumer import AdaptedPublication
 from irswitch.events.stream import FrozenAcceptedEventBatch
 
+if TYPE_CHECKING:
+    from irswitch.events.stream import SessionReset
+
 logger = logging.getLogger(__name__)
 
 _BROADCAST_EPOCH = 4
 _STREAM_EPOCH = 1
-_FACT_VIEW_REVISION = 9
 _OCCURRENCE = "1:race:0"
 _LINEAGE = "1:race:0"
 
@@ -40,12 +42,17 @@ def adapt_batch_for_shadow(
     (``commentary.enabled``). Default ``False`` so callers cannot silently
     invent an active narrative run.
 
+    Timeline/fact revisions follow ``batch.stream_sequence`` so later live
+    batches can clear a recovery barrier floor (Slice 2 / #349). Fixed
+    synthetic revisions must not permanently lose to recovery.
+
     Returns ``None`` when nothing can be admitted (no commentary events or all
     adaptations fail closed). Never raises into the consumer loop.
     """
 
     if not isinstance(batch, FrozenAcceptedEventBatch):
         return None
+    revision = max(1, int(batch.stream_sequence))
     adapted_events = []
     facts: list[dict[str, Any]] = []
     for index, accepted in enumerate(batch.events):
@@ -62,7 +69,7 @@ def adapt_batch_for_shadow(
                 occurrence_id=OccurrenceId.parse(_OCCURRENCE),
                 lineage_id=LineageId.parse(_LINEAGE),
                 fact_ids=(fact_id,),
-                fact_view_revision=_FACT_VIEW_REVISION,
+                fact_view_revision=revision,
                 material_revision=0,
                 correlation_key=("shadow", str(accepted.event_id)),
                 semantic_payload={},
@@ -82,10 +89,12 @@ def adapt_batch_for_shadow(
         timeline=_shadow_timeline(
             observed_mono_ms=int(batch.accepted_monotonic_ms),
             narrative_run_active=bool(narrative_run_active),
+            timeline_revision=revision,
         ),
         fact_view=_shadow_fact_view(
             facts,
             observed_mono_ms=int(batch.accepted_monotonic_ms),
+            view_revision=revision,
         ),
         events=tuple(adapted_events),
         fanout_stream_sequence=int(batch.stream_sequence),
@@ -94,12 +103,46 @@ def adapt_batch_for_shadow(
     )
 
 
+def adapt_session_reset_for_shadow(
+    reset: SessionReset,
+    *,
+    observed_mono_ms: int | None = None,
+) -> AdaptedPublication:
+    """Empty shadow publication for SessionReset mailbox cutover (#349 Slice 2).
+
+    Revisions follow ``reset.stream_sequence`` so post-recovery context is not
+    permanently stale. ``narrativeRunActive`` is False — reset clears the run.
+    """
+
+    from irswitch.events.stream import SessionReset
+
+    if not isinstance(reset, SessionReset):
+        raise TypeError("adapt_session_reset_for_shadow requires SessionReset")
+    revision = max(1, int(reset.stream_sequence))
+    mono = int(observed_mono_ms) if observed_mono_ms is not None else revision * 1000
+    return AdaptedPublication(
+        timeline=_shadow_timeline(
+            observed_mono_ms=mono,
+            narrative_run_active=False,
+            timeline_revision=revision,
+        ),
+        fact_view=_shadow_fact_view([], observed_mono_ms=mono, view_revision=revision),
+        events=(),
+        fanout_stream_sequence=revision,
+        command_id_prefix=f"shadow-reset:{revision}",
+        enqueued_mono_ms=mono,
+    )
+
+
 def _shadow_timeline(
-    *, observed_mono_ms: int, narrative_run_active: bool = False
+    *,
+    observed_mono_ms: int,
+    narrative_run_active: bool = False,
+    timeline_revision: int = 1,
 ) -> dict[str, Any]:
     return {
         "schemaVersion": "timeline-snapshot/2",
-        "timelineRevision": 3,
+        "timelineRevision": int(timeline_revision),
         "observedMonoMs": observed_mono_ms,
         "broadcastEpoch": _BROADCAST_EPOCH,
         "streamEpoch": _STREAM_EPOCH,
@@ -115,10 +158,15 @@ def _shadow_timeline(
     }
 
 
-def _shadow_fact_view(facts: list[dict[str, Any]], *, observed_mono_ms: int) -> dict[str, Any]:
+def _shadow_fact_view(
+    facts: list[dict[str, Any]],
+    *,
+    observed_mono_ms: int,
+    view_revision: int = 1,
+) -> dict[str, Any]:
     return {
         "schemaVersion": "fact-view/2",
-        "viewRevision": _FACT_VIEW_REVISION,
+        "viewRevision": int(view_revision),
         "createdMonoMs": observed_mono_ms,
         "broadcastEpoch": _BROADCAST_EPOCH,
         "streamEpoch": _STREAM_EPOCH,

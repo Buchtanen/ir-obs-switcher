@@ -138,8 +138,8 @@ def test_race_shadow_cutover_wires_actor_run_and_subscription_cutover() -> None:
 
 
 @pytest.mark.asyncio
-async def test_shadow_without_legacy_handler_skips_session_reset_and_config() -> None:
-    """Full replace: SessionReset/ConfigUpdate do not require a commentary mirror."""
+async def test_shadow_without_legacy_handler_admits_session_reset_and_config() -> None:
+    """Full replace: SessionReset/ConfigUpdate enter NarrativeMailbox without a commentary mirror."""
     from irswitch.events.stream import ConfigUpdate, SessionReset
 
     mailbox = NarrativeMailbox()
@@ -161,17 +161,17 @@ async def test_shadow_without_legacy_handler_skips_session_reset_and_config() ->
     )
     result = await consumer.handle(reset)
     assert result is not None
-    assert result.accepted is False
-    assert result.reason == "shadow_non_batch"
+    assert result.accepted is True
+    assert "shadow_session_reset_admitted" in result.effects
     assert "shadow_legacy_mirrored" not in result.effects
     assert consumer.mirrored == 0
-    assert len(mailbox) == 0
+    assert len(mailbox) >= 1
 
     config = ConfigUpdate(generation=1, frozen_config=b"{}", stream_sequence=8)
     result = await consumer.handle(config)
     assert result is not None
-    assert result.accepted is False
-    assert result.reason == "shadow_non_batch"
+    assert result.accepted is True
+    assert "shadow_config_admitted" in result.effects
     assert consumer.mirrored == 0
 
 

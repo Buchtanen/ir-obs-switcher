@@ -129,7 +129,7 @@ async def test_realization_effect_skips_qwen_when_disabled() -> None:
 def test_race_wires_optional_qwen_flag_enabled() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
     assert "_narrative_qwen_enabled" in race
-    assert "_narrative_qwen_enabled = True" in race
+    assert "self._narrative_qwen_enabled = commentary_enabled" in race
     assert "allow_qwen=" in race
     assert "RealizerService" in race
     assert "StdlibTransport" in race
