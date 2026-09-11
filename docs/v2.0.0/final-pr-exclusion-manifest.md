@@ -36,6 +36,21 @@ The exclusion of `docs/v2.0.0/machine/**` removes only planning copies/generator
 - prepared utterance waiter/queue and any second worker-result inbox;
 - CS commentary catalog/routing. General overlay localization remains unaffected.
 
+### #272 legacy↔v2 shadow harness (explicit removal list)
+
+These branch-only symbols/paths must be absent from the final master cutover diff (owned by #272 until removed by #279/#282):
+
+- `src/irswitch/events/legacy_v2_shadow_compare.py`
+- `tests/test_legacy_v2_shadow_compare.py`
+- `FAMILY_ROUTE`
+- `compare_director_decisions`
+- `compare_event_decisions`
+- `compare_episode_decisions`
+- `observe_family_safely`
+- `legacy_v2_shadow_compare` import/reachability from packaged service entrypoints
+
+Architecture proof required before cutover: one NarrativeRuntime, one mailbox, one FactLedger/StreamTimeline owner and unchanged V4 overlay wire after the harness is deleted.
+
 Existing modules may be deleted, replaced or retained for non-runtime migration tooling only if import/reachability tests prove none of these mechanisms is callable in the packaged v2 service. File name alone is not sufficient evidence.
 
 ## Required final behavior docs
