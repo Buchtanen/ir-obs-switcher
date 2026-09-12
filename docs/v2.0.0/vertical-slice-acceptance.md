@@ -346,5 +346,5 @@
 
 ## Later slices
 
-- Live-path composition safety before Windows gates: [#349](https://github.com/Buchtanen/ir-obs-switcher/issues/349) (Slices 1–5 (kill-switch, mailbox cutover, TTS protocol, Qwen fail-closed, HTTP/mediums) landed; §24.9 Windows gates remain under #278).
-- Live Windows/iRSDK/OBS/Ollama/TTS §24.9 gates (offline F inventory complete; blocked on #349).
+- Live-path composition safety before Windows gates: [#349](https://github.com/Buchtanen/ir-obs-switcher/issues/349) — Slices 1–5 landed on tip (`a063143`, CI green). Composition blocker cleared.
+- Live Windows/iRSDK/OBS/Ollama/TTS §24.9 gates under [#278](https://github.com/Buchtanen/ir-obs-switcher/issues/278): operator smoke checklist → [`stream-test-checklist-24.9.md`](./stream-test-checklist-24.9.md). Formal §24.9 GO is **not** claimed by offline F inventory alone.
