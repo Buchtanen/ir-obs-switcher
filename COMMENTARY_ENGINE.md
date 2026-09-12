@@ -285,7 +285,9 @@ Live speak still requires `commentary.enabled=true`. Overlay HUD / Event Engine 
 
 **Slice 4 — Qwen/verifier fail-closed:** with `allow_qwen=True`, authored+Qwen miss returns `REALIZATION_FAILED` (`failureReason=realization_transport`) — no silent template live fallback (cached authored drafts may still speak). When `SemanticVerifier` is attached, missing #270 verify frame rejects (`realization_verify_rejected`, `semantic_reason:missing_verify_frame`) and does not dispatch TTS.
 
-- Remaining live-path blocker (HTTP contract + mediums) is tracked under [#349](https://github.com/Buchtanen/ir-obs-switcher/issues/349) before §24.9 Windows gates (#278).
+**Slice 5 — HTTP contract + mediums:** live race opens narrative tape only when `commentary.tape.enabled=true`; sync command journal stays off the reduce hot path (`command_journal_path=None` on live wiring). `components.tape.enabled` projects on commentary runtime status. Shutdown without tape completes without `effect:flush_tape`.
+
+- #349 live-path composition-safety slices 1–5 are implemented on tip; Windows §24.9 gates remain under [#278](https://github.com/Buchtanen/ir-obs-switcher/issues/278).
 
 ## Content DB + fill plan
 

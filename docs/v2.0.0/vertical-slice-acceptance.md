@@ -346,5 +346,5 @@
 
 ## Later slices
 
-- Live-path composition safety before Windows gates: [#349](https://github.com/Buchtanen/ir-obs-switcher/issues/349) (Slices 1–4 (kill-switch, mailbox cutover, TTS protocol, Qwen fail-closed) landed; HTTP/mediums still open).
+- Live-path composition safety before Windows gates: [#349](https://github.com/Buchtanen/ir-obs-switcher/issues/349) (Slices 1–5 (kill-switch, mailbox cutover, TTS protocol, Qwen fail-closed, HTTP/mediums) landed; §24.9 Windows gates remain under #278).
 - Live Windows/iRSDK/OBS/Ollama/TTS §24.9 gates (offline F inventory complete; blocked on #349).

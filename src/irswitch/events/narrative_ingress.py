@@ -247,7 +247,9 @@ def _tape_component_projection(status: RuntimeStatus) -> dict[str, Any]:
             purpose_counts.append({"purposeChannel": channel, "count": int(count)})
         purpose_counts.sort(key=lambda item: str(item["purposeChannel"]))
     path = status.tape_path if isinstance(status.tape_path, str) else None
+    enabled = tape_status not in (None, "disabled")
     component = {
+        "enabled": enabled,
         "status": "disabled" if not tape_status else str(tape_status),
         "reason": None,
         "path": path,

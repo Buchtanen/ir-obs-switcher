@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "status": "unavailable",
   "reason": "capture_unavailable",
   "path": null,

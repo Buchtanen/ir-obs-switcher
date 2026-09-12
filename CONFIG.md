@@ -700,6 +700,8 @@ GR dashboard po reloadu zobrazí toast a panel s oběma seznamy.
 
 ## Sekce `[commentary.tape]` — NarrativeTape (NDJSON)
 
+**Live race (#349 Slice 5):** `enabled=false` (default) means NarrativeRuntime is composed **without** a live tape writer and without sync command-journal I/O on `reduce_next`. Offline/library callers may still pass `command_journal_path=` explicitly.
+
 Samostatný NDJSON zápis narrative runtime stop (ne `app.log_level` a ne overlay `session_tape`).
 
 | Klíč | Význam |

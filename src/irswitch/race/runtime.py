@@ -115,6 +115,23 @@ _SITUATION_SUPPRESS_TYPES = frozenset(
 )
 
 
+def commentary_tape_enabled(config: object | None) -> bool:
+    """Live mediums gate: ``commentary.tape.enabled`` (fail-closed when absent)."""
+
+    if config is None:
+        return False
+    candidate = getattr(config, "commentary_v2", None)
+    if candidate is None or not bool(getattr(candidate, "valid", False)):
+        return False
+    snapshot = getattr(candidate, "snapshot", None)
+    if snapshot is None:
+        return False
+    values = getattr(snapshot, "values", None)
+    if not isinstance(values, dict):
+        return False
+    return bool(values.get("commentary.tape.enabled", False))
+
+
 class RaceRuntime:
     def __init__(
         self,
@@ -299,22 +316,29 @@ class RaceRuntime:
                 or getattr(cfg, "recordings_dir", None)
                 or "recordings"
             )
+            # #349 Slice 5: narrative tape is a medium gated by commentary.tape.enabled.
+            # Sync command journal stays off the live reduce hot path (library-only).
             tape_effect = None
-            try:
-                app_version = str(getattr(cfg, "version", None) or "0.0.0")
-                tape_writer = open_narrative_tape_writer(
-                    journal_dir / "narrative-tape",
-                    shutdown_flush_timeout_s=2.0,
-                    app_version=app_version,
-                )
-                self._narrative_tape_writer = tape_writer
-                tape_effect = build_tape_flush_effect(tape_writer)
-            except Exception:
-                logger.exception(
-                    "narrative tape writer unavailable; continuing without tape_effect"
-                )
+            tape_writer = None
+            if commentary_tape_enabled(cfg):
+                try:
+                    app_version = str(getattr(cfg, "version", None) or "0.0.0")
+                    tape_writer = open_narrative_tape_writer(
+                        journal_dir / "narrative-tape",
+                        shutdown_flush_timeout_s=2.0,
+                        app_version=app_version,
+                    )
+                    self._narrative_tape_writer = tape_writer
+                    tape_effect = build_tape_flush_effect(tape_writer)
+                except Exception:
+                    logger.exception(
+                        "narrative tape writer unavailable; continuing without tape_effect"
+                    )
+                    self._narrative_tape_writer = None
+                    tape_writer = None
+                    tape_effect = None
+            else:
                 self._narrative_tape_writer = None
-                tape_effect = None
             runtime = NarrativeRuntime(
                 mailbox=mailbox,
                 realization_effect=realization_effect,
@@ -325,7 +349,7 @@ class RaceRuntime:
                 exposure_store=exposure_store,
                 freshness_gate=FreshnessGate(opportunity_queue),
                 llm_component=llm_component,
-                command_journal_path=journal_dir / "narrative-command-journal.ndjson",
+                command_journal_path=None,
                 semantic_verifier=SemanticVerifier(),
                 tape_effect=tape_effect,
                 tape_writer=tape_writer,

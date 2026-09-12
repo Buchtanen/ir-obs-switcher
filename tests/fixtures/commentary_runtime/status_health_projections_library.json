@@ -23,6 +23,7 @@
       "lastAttempt": null
     },
     "tape": {
+      "enabled": false,
       "status": "disabled",
       "reason": null,
       "path": null,

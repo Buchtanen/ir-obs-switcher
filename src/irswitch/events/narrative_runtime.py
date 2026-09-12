@@ -361,6 +361,9 @@ class NarrativeRuntime:
         self._tts_effect = tts_effect
         self._tape_effect = tape_effect
         self._tape_writer = tape_writer
+        # Idle (not disabled) when a live writer is composed; HTTP projects enabled=true.
+        if tape_writer is not None and self._tape_status is None:
+            self._tape_status = "idle"
         self._shutdown_flush_timeout_s = float(shutdown_flush_timeout_s)
         self._realization_task: asyncio.Task[None] | None = None
         self._tts_task: asyncio.Task[None] | None = None

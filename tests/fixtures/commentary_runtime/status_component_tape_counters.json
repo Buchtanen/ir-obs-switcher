@@ -1,4 +1,5 @@
 {
+  "enabled": true,
   "status": "degraded",
   "reason": "tape_queue_drop",
   "path": "narrative-process_race-s1-f0000.ndjson",
@@ -10,7 +11,13 @@
     "critical": 1
   },
   "purposeCounts": [
-    {"purposeChannel": "detector_tuning", "count": 2},
-    {"purposeChannel": "flow", "count": 5}
+    {
+      "purposeChannel": "detector_tuning",
+      "count": 2
+    },
+    {
+      "purposeChannel": "flow",
+      "count": 5
+    }
   ]
 }
