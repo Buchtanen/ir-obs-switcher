@@ -212,11 +212,16 @@ def test_journal_replay_reproduces_director_decisions_with_recorded_qwen(tmp_pat
     assert from_file.steps[1].lane_after == "committed"
 
 
-def test_race_wires_command_journal_path() -> None:
+def test_race_keeps_command_journal_off_live_hot_path() -> None:
+    """#349 Slice 5: live race must not sync-journal every reduce.
+
+    Offline capture/replay stays library-side (command_journal_path optional on
+    NarrativeRuntime). Race wires ``command_journal_path=None``.
+    """
     race = RACE_SOURCE.read_text(encoding="utf-8")
-    assert "command_journal_path=" in race
-    assert "narrative-command-journal.ndjson" in race
-    # Full write/read/replay helpers stay library-side; race only passes the path.
+    assert "command_journal_path=None" in race
+    assert 'command_journal_path=journal_dir / "narrative-command-journal.ndjson"' not in race
+    # Full write/read/replay helpers stay library-side; race does not call them.
     assert "write_command_journal" not in race
     assert "read_commands_from_journal" not in race
     assert "replay_command_journal" not in race
