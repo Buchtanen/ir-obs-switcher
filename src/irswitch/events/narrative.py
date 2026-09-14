@@ -246,8 +246,13 @@ def adapt_accepted_event(
     semantic_payload: dict[str, Any],
     candidate_id: str | None = None,
     detector_observation_id: str | None = None,
+    source_ordinal: int | None = None,
 ) -> NarrativeEvent:
-    """Adapt one immutable accepted value without mutating the V4 envelope wire."""
+    """Adapt one immutable accepted value without mutating the V4 envelope wire.
+
+    ``source_ordinal`` overrides ``accepted.source_ordinal`` when a publication
+    must present a strictly increasing order (fanout batches are per-source).
+    """
 
     if not isinstance(accepted, FrozenAcceptedEvent):
         raise NarrativeAdmissionError("adapter requires a FrozenAcceptedEvent")
@@ -262,7 +267,8 @@ def adapt_accepted_event(
     source_envelope = NarrativeSourceEnvelope(
         envelope.session_id, envelope.event_id, envelope.sequence, envelope.event_type
     )
-    source_order = NarrativeSourceOrder(fanout_stream_sequence, accepted.source_ordinal)
+    ordinal = accepted.source_ordinal if source_ordinal is None else int(source_ordinal)
+    source_order = NarrativeSourceOrder(fanout_stream_sequence, ordinal)
     funnel = FunnelIdentity(
         source_class="detector" if detector_observation_id is not None else "direct",
         candidate_id=candidate_id,

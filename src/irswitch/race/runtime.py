@@ -7,7 +7,7 @@ import inspect
 import logging
 import time
 from collections.abc import Callable
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any, Literal
 
@@ -115,21 +115,93 @@ _SITUATION_SUPPRESS_TYPES = frozenset(
 )
 
 
+def _commentary_v2_values(config: object | None) -> dict[str, Any] | None:
+    """Return the valid v2 commentary snapshot map, or None (fail-closed)."""
+
+    if config is None:
+        return None
+    candidate = getattr(config, "commentary_v2", None)
+    if candidate is None or not bool(getattr(candidate, "valid", False)):
+        return None
+    snapshot = getattr(candidate, "snapshot", None)
+    if snapshot is None:
+        return None
+    values = getattr(snapshot, "values", None)
+    if not isinstance(values, dict):
+        return None
+    return values
+
+
 def commentary_tape_enabled(config: object | None) -> bool:
     """Live mediums gate: ``commentary.tape.enabled`` (fail-closed when absent)."""
 
-    if config is None:
-        return False
-    candidate = getattr(config, "commentary_v2", None)
-    if candidate is None or not bool(getattr(candidate, "valid", False)):
-        return False
-    snapshot = getattr(candidate, "snapshot", None)
-    if snapshot is None:
-        return False
-    values = getattr(snapshot, "values", None)
-    if not isinstance(values, dict):
+    values = _commentary_v2_values(config)
+    if values is None:
         return False
     return bool(values.get("commentary.tape.enabled", False))
+
+
+def commentary_llm_enabled(config: object | None) -> bool:
+    """Qwen/warmup gate: ``commentary.llm.enabled`` (fail-closed when absent)."""
+
+    values = _commentary_v2_values(config)
+    if values is None:
+        return False
+    return bool(values.get("commentary.llm.enabled", False))
+
+
+def commentary_live_enabled(config: object | None) -> bool:
+    """Kill-switch from the v2 candidate; overlay.commentary is stripped at parse."""
+
+    values = _commentary_v2_values(config)
+    if values is not None:
+        return bool(values.get("commentary.enabled", False))
+    overlay = getattr(config, "overlay", None) if config is not None else None
+    commentary = getattr(overlay, "commentary", None) if overlay is not None else None
+    return bool(getattr(commentary, "enabled", False))
+
+
+def _overlay_with_v2_commentary(overlay: OverlaySettings, config: object | None) -> OverlaySettings:
+    """Copy v2 TTS/identity onto overlay so the TTS sink matches the live candidate."""
+
+    values = _commentary_v2_values(config)
+    if values is None:
+        return overlay
+    current = overlay.commentary
+    tone = str(values.get("commentary.tone_source") or "none")
+    return replace(
+        overlay,
+        commentary=replace(
+            current,
+            enabled=bool(values.get("commentary.enabled", False)),
+            max_utterance_s=float(
+                values.get("commentary.max_utterance_s") or current.max_utterance_s
+            ),
+            use_hr_emotion=tone == "heart_rate",
+            tts_backend=str(values.get("commentary.tts.backend") or current.tts_backend),
+            tts_voice=str(values.get("commentary.tts.voice") or ""),
+            tts_rate=int(
+                current.tts_rate
+                if values.get("commentary.tts.rate") is None
+                else values.get("commentary.tts.rate")
+            ),
+            tts_steps=int(values.get("commentary.tts.steps") or current.tts_steps),
+            audio_device=str(values.get("commentary.tts.audio_device") or ""),
+            duck_input=str(values.get("commentary.tts.duck_input") or ""),
+            duck_ratio=float(
+                current.duck_ratio
+                if values.get("commentary.tts.duck_ratio") is None
+                else values.get("commentary.tts.duck_ratio")
+            ),
+            duck_fade_ms=int(values.get("commentary.tts.duck_fade_ms") or current.duck_fade_ms),
+            driver_name=str(values.get("commentary.driver_name") or ""),
+            driver_nickname=str(values.get("commentary.driver_nickname") or ""),
+            llm_polish=bool(values.get("commentary.llm.enabled", False)),
+            llm_base_url=str(values.get("commentary.llm.base_url") or current.llm_base_url),
+            llm_model=str(values.get("commentary.llm.model") or current.llm_model),
+            llm_timeout_s=float(values.get("commentary.llm.timeout_s") or current.llm_timeout_s),
+        ),
+    )
 
 
 class RaceRuntime:
@@ -256,9 +328,11 @@ class RaceRuntime:
         # drafts from shadow events. Idle-lane speech disabled (idle_speech_enabled=False).
         # #349 Slice 1: commentary.enabled is the live-path kill-switch.
         # Shadow/Qwen composition must not hard-enable when commentary is off.
-        commentary_enabled = bool(self._overlay_settings().commentary.enabled)
+        commentary_enabled = commentary_live_enabled(self._get_config())
         self._narrative_shadow_enabled = commentary_enabled
-        self._narrative_qwen_enabled = commentary_enabled
+        self._narrative_qwen_enabled = commentary_enabled and commentary_llm_enabled(
+            self._get_config()
+        )
         self._narrative_shadow_subscription = None
         self.narrative_shadow_consumer = None
         self._narrative_shadow_supervisor = None
@@ -910,7 +984,7 @@ class RaceRuntime:
         cfg = self._get_config()
         if cfg is None:
             return OverlaySettings()
-        return cfg.overlay
+        return _overlay_with_v2_commentary(cfg.overlay, cfg)
 
     def _idle_when_disconnected(self, state: RaceState, now: float | None = None) -> bool:
         """Blank live HUD when iRacing telemetry is gone. True → skip emitters."""

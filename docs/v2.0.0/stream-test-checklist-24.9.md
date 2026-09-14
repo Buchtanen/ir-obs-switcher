@@ -10,7 +10,7 @@
 
 - [ ] Checkout / build / restart from tip @ `a063143` (or newer tip with green CI)
 - [ ] Windows box with iRacing (iRSDK), OBS, Ollama/Qwen (if testing realization), TTS backend reachable
-- [ ] Operator config known: overlay `commentary.enabled`, v2 `commentary.tape.enabled`, Qwen/TTS endpoints (`CONFIG.md`)
+- [ ] Operator config known: v2 `commentary.enabled` (kill-switch), `commentary.llm.enabled` (Qwen/warmup; off = authored/templates only), `commentary.tape.enabled`, TTS endpoints (`CONFIG.md`)
 - [ ] Logs + HTTP status endpoints reachable (`/health`, commentary/narrative status as documented in `API.md`)
 - [ ] Know how to collect evidence: log excerpt, status JSON, optional tape dir when enabled
 

@@ -11,7 +11,11 @@ from pathlib import Path
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.events.narrative_ingress import project_runtime_status
 from irswitch.events.narrative_runtime import NarrativeRuntime
-from irswitch.race.runtime import commentary_tape_enabled
+from irswitch.race.runtime import (
+    commentary_live_enabled,
+    commentary_llm_enabled,
+    commentary_tape_enabled,
+)
 
 RACE_SOURCE = Path(__file__).resolve().parents[1] / "src" / "irswitch" / "race" / "runtime.py"
 
@@ -45,6 +49,25 @@ def test_commentary_tape_enabled_reads_snapshot_values() -> None:
     assert commentary_tape_enabled(_Cfg()) is True
     _Snap.values = {"commentary.tape.enabled": False}
     assert commentary_tape_enabled(_Cfg()) is False
+
+
+def test_commentary_live_and_llm_gates_read_v2_snapshot() -> None:
+    class _Snap:
+        values = {"commentary.enabled": True, "commentary.llm.enabled": False}
+
+    class _Cand:
+        valid = True
+        snapshot = _Snap()
+
+    class _Cfg:
+        commentary_v2 = _Cand()
+
+    assert commentary_live_enabled(_Cfg()) is True
+    assert commentary_llm_enabled(_Cfg()) is False
+    assert commentary_live_enabled(None) is False
+    assert commentary_llm_enabled(None) is False
+    _Snap.values = {"commentary.enabled": True, "commentary.llm.enabled": True}
+    assert commentary_llm_enabled(_Cfg()) is True
 
 
 def test_runtime_without_journal_path_does_not_create_journal_file(

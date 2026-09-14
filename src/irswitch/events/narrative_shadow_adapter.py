@@ -46,6 +46,11 @@ def adapt_batch_for_shadow(
     batches can clear a recovery barrier floor (Slice 2 / #349). Fixed
     synthetic revisions must not permanently lose to recovery.
 
+    Publication ``sourceOrdinal`` is the commentary-audience index in batch
+    order. ``RacePipeline`` assigns per-emitter ordinals, so two sources in
+    one fanout batch can both be ``0``; ingress requires a strictly increasing
+    order inside the publication (#362).
+
     Returns ``None`` when nothing can be admitted (no commentary events or all
     adaptations fail closed). Never raises into the consumer loop.
     """
@@ -55,6 +60,7 @@ def adapt_batch_for_shadow(
     revision = max(1, int(batch.stream_sequence))
     adapted_events = []
     facts: list[dict[str, Any]] = []
+    publication_ordinal = 0
     for index, accepted in enumerate(batch.events):
         if "commentary" not in accepted.audiences:
             continue
@@ -73,6 +79,7 @@ def adapt_batch_for_shadow(
                 material_revision=0,
                 correlation_key=("shadow", str(accepted.event_id)),
                 semantic_payload={},
+                source_ordinal=publication_ordinal,
             )
         except (NarrativeAdmissionError, ContractViolation, ValueError, TypeError) as exc:
             logger.debug(
@@ -83,6 +90,7 @@ def adapt_batch_for_shadow(
             continue
         adapted_events.append(event)
         facts.append(_shadow_fact(fact_id, observed_mono_ms=int(batch.accepted_monotonic_ms)))
+        publication_ordinal += 1
     if not adapted_events:
         return None
     return AdaptedPublication(

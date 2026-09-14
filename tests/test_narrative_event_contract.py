@@ -173,6 +173,22 @@ def test_adapter_preserves_v4_envelope_and_assigns_external_order() -> None:
         "session:42", "session:42:HUNTING:7", 7, "HUNTING"
     )
     assert event.tape_channel == "race.battle.closing"
+    overridden = adapt_accepted_event(
+        accepted,
+        fanout_stream_sequence=11,
+        broadcast_epoch=4,
+        stream_epoch=1,
+        session_ref=SessionRef("42", 2),
+        occurrence_id=OccurrenceId.parse("1:race:0"),
+        lineage_id=LineageId.parse("1:race:0"),
+        fact_ids=("fact:battle:1",),
+        fact_view_revision=9,
+        material_revision=0,
+        correlation_key=("car:12", "car:34"),
+        semantic_payload={"gapSeconds": 0.42, "targetCarId": "car:34"},
+        source_ordinal=0,
+    )
+    assert overridden.source_order == NarrativeSourceOrder(11, 0)
 
 
 def test_adapter_never_admits_visual_only_or_unproven_events() -> None:
