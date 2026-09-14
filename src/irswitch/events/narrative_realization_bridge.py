@@ -35,6 +35,7 @@ from irswitch.events.qwen_transport import (
     RealizationIntent,
     RealizerService,
     StdlibTransport,
+    chat_completions_url,
     load_transport_goldens,
 )
 
@@ -312,7 +313,7 @@ def realize_qwen_text(
         deadline_mono_ms=mono + 1_500,
         beat_id=str(beat_id),
         episode_revision=int(episode_revision),
-        model="qwen3:4b-instruct-2507-q4_K_M",
+        model=str(component.model or "qwen3:4b-instruct-2507-q4_K_M"),
         temperature=0.2,
         top_p=0.8,
         max_tokens=96,
@@ -339,7 +340,7 @@ def warmup_qwen_component(
     *,
     generation: int = 1,
     model: str = "qwen3:4b-instruct-2507-q4_K_M",
-    endpoint: str = "http://127.0.0.1:11434/v1/chat/completions",
+    endpoint: str | None = None,
     timeout_ms: int = 500,
 ) -> bool:
     """Run #269 preflight warmup against ``transport``; soft-fail closed.
@@ -354,9 +355,10 @@ def warmup_qwen_component(
     component.model = str(model)
     component.start_preflight(desired_generation=int(generation), warmup=True)
     body = canonical_json(warmup_request_body(model)).encode("utf-8")
+    target = chat_completions_url(endpoint)
     try:
         response = transport.post(
-            endpoint,
+            target,
             headers={"Content-Type": "application/json", "Accept": "application/json"},
             body=body,
             stream=False,

@@ -183,6 +183,16 @@ def test_transport_failure_does_not_authored_fallback() -> None:
     assert step.result.backend == "qwen_compiled"
 
 
+def test_realizer_posts_injected_endpoint() -> None:
+    transport = FakeTransport(chunks=_chunks("role_content_usage_done"))
+    service = RealizerService(
+        transport=transport,
+        endpoint="http://192.168.0.38:11434/v1",
+    )
+    service.try_start(_intent(), component=_ready_component())
+    assert transport.last_url == "http://192.168.0.38:11434/v1/chat/completions"
+
+
 def test_warmup_enabled_disabled_failure_and_stale_generation() -> None:
     body = warmup_request_body("qwen3:4b-instruct-2507-q4_K_M")
     expected = dict(_goldens()["warmup"]["body"])

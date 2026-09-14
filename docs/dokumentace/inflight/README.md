@@ -11,7 +11,8 @@
 | Publication `sourceOrdinal` = commentary-audience index in batch order | `events/narrative_shadow_adapter.py`, optional override on `adapt_accepted_event` |
 | Kill-switch from v2 `commentary.enabled` (overlay parse strips it) | `race.runtime.commentary_live_enabled` + `_overlay_with_v2_commentary` |
 | Qwen/warmup only when `commentary.llm.enabled` | `race.runtime.commentary_llm_enabled` → `_narrative_qwen_enabled` |
-| Next listen | operator INI: `commentary.tape.enabled=true`, `commentary.llm.enabled=false` (authored/templates) |
+| Next listen | operator INI: `commentary.tape.enabled=true`, `commentary.llm.enabled=true` |
+| Qwen URL | warmup + `RealizerService` use `commentary.llm.base_url` / model / `timeout_s` (not localhost) |
 
 `FAMILY_ROUTE` stays unchanged. Merge back to `codex/commentary-story-flow-spec` after verify. Issue [#362](https://github.com/Buchtanen/ir-obs-switcher/issues/362).
 

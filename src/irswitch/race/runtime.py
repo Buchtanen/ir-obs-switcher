@@ -150,6 +150,30 @@ def commentary_llm_enabled(config: object | None) -> bool:
     return bool(values.get("commentary.llm.enabled", False))
 
 
+def commentary_llm_model(config: object | None) -> str:
+    values = _commentary_v2_values(config)
+    if values is None:
+        return "qwen3:4b-instruct-2507-q4_K_M"
+    return str(values.get("commentary.llm.model") or "qwen3:4b-instruct-2507-q4_K_M")
+
+
+def commentary_llm_chat_url(config: object | None) -> str:
+    from irswitch.events.qwen_transport import chat_completions_url
+
+    values = _commentary_v2_values(config)
+    raw = "" if values is None else str(values.get("commentary.llm.base_url") or "")
+    return chat_completions_url(raw)
+
+
+def commentary_llm_timeout_ms(config: object | None) -> int:
+    values = _commentary_v2_values(config)
+    raw = 4.0 if values is None else values.get("commentary.llm.timeout_s", 4.0)
+    try:
+        return max(1, int(float(raw) * 1000))
+    except (TypeError, ValueError):
+        return 4000
+
+
 def commentary_live_enabled(config: object | None) -> bool:
     """Kill-switch from the v2 candidate; overlay.commentary is stripped at parse."""
 
@@ -364,16 +388,21 @@ class RaceRuntime:
             qwen_service = None
             llm_component = None
             if self._narrative_qwen_enabled:
-                # Live StdlibTransport + short soft-fail warmup; qwen_ready only
-                # when Ollama answers 200. Qwen miss is fail-closed (no silent template fallback); authored drafts may still speak.
+                # Live StdlibTransport + soft-fail warmup against INI base_url.
+                # Qwen miss is fail-closed (no silent template fallback); authored drafts may still speak.
+                cfg_qwen = self._get_config()
+                qwen_endpoint = commentary_llm_chat_url(cfg_qwen)
+                qwen_model = commentary_llm_model(cfg_qwen)
                 llm_component = LlmComponent()
                 transport = StdlibTransport()
-                qwen_service = RealizerService(transport=transport)
+                qwen_service = RealizerService(transport=transport, endpoint=qwen_endpoint)
                 warmup_qwen_component(
                     llm_component,
                     transport,
                     generation=1,
-                    timeout_ms=500,
+                    model=qwen_model,
+                    endpoint=qwen_endpoint,
+                    timeout_ms=commentary_llm_timeout_ms(cfg_qwen),
                 )
                 self._narrative_llm_component = llm_component
                 self._narrative_qwen_service = qwen_service

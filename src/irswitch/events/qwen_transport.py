@@ -221,6 +221,20 @@ class HttpResponse:
     chunks: list[bytes]
 
 
+DEFAULT_CHAT_COMPLETIONS = "http://127.0.0.1:11434/v1/chat/completions"
+
+
+def chat_completions_url(base_url: str | None) -> str:
+    """Join an OpenAI-compatible base (``…/v1``) to ``/chat/completions``."""
+
+    root = str(base_url or "").strip().rstrip("/")
+    if not root:
+        return DEFAULT_CHAT_COMPLETIONS
+    if root.endswith("/chat/completions"):
+        return root
+    return f"{root}/chat/completions"
+
+
 @dataclass
 class FakeTransport:
     chunks: list[bytes] = field(default_factory=list)
@@ -228,6 +242,7 @@ class FakeTransport:
     hold: bool = False
     status: int = 200
     content_type: str = "text/event-stream"
+    last_url: str | None = None
 
     def post(
         self,
@@ -238,6 +253,7 @@ class FakeTransport:
         stream: bool,
         timeout_ms: int,
     ) -> HttpResponse:
+        self.last_url = url
         if self.fail:
             raise TransportError("unreachable")
         if self.hold:
@@ -667,8 +683,14 @@ def _result(
 
 
 class RealizerService:
-    def __init__(self, transport: FakeTransport | StdlibTransport | None = None) -> None:
+    def __init__(
+        self,
+        transport: FakeTransport | StdlibTransport | None = None,
+        *,
+        endpoint: str | None = None,
+    ) -> None:
         self._transport = transport if transport is not None else FakeTransport()
+        self._endpoint = chat_completions_url(endpoint)
         self._active: RealizationIntent | None = None
         self._active_request: RealizationRequest | None = None
         self._active_component: LlmComponent | None = None
@@ -766,7 +788,7 @@ class RealizerService:
         self._active_component = None
         try:
             response = self._transport.post(
-                "http://127.0.0.1/v1/chat/completions",
+                self._endpoint,
                 headers={"Content-Type": "application/json", "Accept": "text/event-stream"},
                 body=canonical_json(request.backend_request).encode("utf-8"),
                 stream=True,
