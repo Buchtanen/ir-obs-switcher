@@ -220,6 +220,7 @@ class RaceRuntime:
             self._overlay_subscription,
             self.bus,
             record_event=self._record_overlay_event,
+            lease_s_provider=lambda: self._overlay_settings().battle_card_lease_s,
         )
         self._overlay_supervisor = WorkerSupervisor("overlay_consumer", self.overlay_consumer.run)
         self._commentary_supervisor = WorkerSupervisor(

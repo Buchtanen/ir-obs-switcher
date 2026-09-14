@@ -30,6 +30,23 @@ from irswitch.race.story import StoryContext
 
 logger = logging.getLogger(__name__)
 
+STALE_WARNING_MS = 600
+STALE_REBUILD_MS = 1000
+STALE_HARD_BATTLE_MS = 1200
+STALE_ERROR_MS = 1500
+_STALE_BATTLE_TYPES = frozenset(
+    {
+        "HUNTING",
+        "HUNTED",
+        "BATTLE_FOR_POSITION",
+        "OVERTAKE",
+        "POSITION_ATTACK",
+        "POSITION_LOST",
+        "POSITION_GAINED",
+        "TARGET_LOCKED",
+    }
+)
+
 
 class RacePipeline:
     """Single producer for accepted identities and immutable stream batches."""
@@ -222,16 +239,43 @@ class RacePipeline:
             context_payload=self._context_payload,
             events=tuple(accepted),
         )
-        if context_stale_at_accept(
+        age_ms = max(0, accepted_monotonic_ms - self._captured_monotonic_ms)
+        event_types = tuple(record.envelope.event_type for record in records)
+        level = context_stale_level(
             captured_ms=self._captured_monotonic_ms,
             accepted_ms=accepted_monotonic_ms,
-            poll_interval_ms=poll_interval_ms,
-        ):
+            event_types=event_types,
+        )
+        if level == "error":
+            logger.error(
+                "context_stale_error captured_ms=%s accepted_ms=%s age_ms=%s poll_interval_ms=%s",
+                self._captured_monotonic_ms,
+                accepted_monotonic_ms,
+                age_ms,
+                poll_interval_ms,
+            )
+        elif level == "hard":
+            logger.warning(
+                "context_stale_hard captured_ms=%s accepted_ms=%s age_ms=%s poll_interval_ms=%s",
+                self._captured_monotonic_ms,
+                accepted_monotonic_ms,
+                age_ms,
+                poll_interval_ms,
+            )
+        elif level == "rebuild":
+            logger.warning(
+                "context_stale_rebuild captured_ms=%s accepted_ms=%s age_ms=%s poll_interval_ms=%s",
+                self._captured_monotonic_ms,
+                accepted_monotonic_ms,
+                age_ms,
+                poll_interval_ms,
+            )
+        elif level == "warning":
             logger.warning(
                 "context_stale_at_accept captured_ms=%s accepted_ms=%s age_ms=%s poll_interval_ms=%s",
                 self._captured_monotonic_ms,
                 accepted_monotonic_ms,
-                accepted_monotonic_ms - self._captured_monotonic_ms,
+                age_ms,
                 poll_interval_ms,
             )
         self.fanout.publish(batch)
@@ -312,16 +356,36 @@ def build_context_payload(
     }
 
 
+def context_stale_level(
+    *,
+    captured_ms: int,
+    accepted_ms: int,
+    event_types: tuple[str, ...] = (),
+) -> str | None:
+    """Stale band for a publish that lagged context capture."""
+    age_ms = max(0, accepted_ms - captured_ms)
+    if age_ms > STALE_ERROR_MS:
+        return "error"
+    if age_ms > STALE_HARD_BATTLE_MS and any(
+        event_type in _STALE_BATTLE_TYPES for event_type in event_types
+    ):
+        return "hard"
+    if age_ms > STALE_REBUILD_MS:
+        return "rebuild"
+    if age_ms > STALE_WARNING_MS:
+        return "warning"
+    return None
+
+
 def context_stale_at_accept(
     *,
     captured_ms: int,
     accepted_ms: int,
     poll_interval_ms: int,
 ) -> bool:
-    """True when publish/accept lagged capture by more than one producer poll."""
-    if poll_interval_ms <= 0:
-        return False
-    return max(0, accepted_ms - captured_ms) > poll_interval_ms
+    """True when publish/accept lagged capture past the warning band."""
+    del poll_interval_ms
+    return context_stale_level(captured_ms=captured_ms, accepted_ms=accepted_ms) is not None
 
 
 def build_situation_payload(

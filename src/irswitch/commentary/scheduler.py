@@ -9,6 +9,18 @@ from irswitch.commentary.tts import CommentaryUtterance
 from irswitch.overlay.settings import CommentarySchedulerSettings
 
 _INCIDENT_TYPES = frozenset({"INCIDENT", "INVALID_LAP"})
+_DYNAMIC_TYPES = frozenset(
+    {
+        "HUNTING",
+        "HUNTED",
+        "BATTLE_FOR_POSITION",
+        "OVERTAKE",
+        "POSITION_ATTACK",
+        "POSITION_LOST",
+        "POSITION_GAINED",
+        "TARGET_LOCKED",
+    }
+)
 _HOLD_TYPES = frozenset({"INCIDENT", "TRACK_EXCURSION", "INVALID_LAP", "STREAM_END"})
 _ALWAYS_PARK = frozenset({"TRACK_EXCURSION", "STREAM_END"})
 
@@ -55,6 +67,8 @@ class SpeechScheduler:
     def ttl_for(self, event_type: str) -> float:
         if event_type in _INCIDENT_TYPES:
             return float(self.settings.incident_ttl_s)
+        if event_type in _DYNAMIC_TYPES:
+            return float(self.settings.dynamic_ttl_s)
         return float(self.settings.default_ttl_s)
 
     def should_park_while_busy(self, event_type: str) -> bool:

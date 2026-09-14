@@ -13,7 +13,9 @@ from irswitch.commentary.polish import (
     build_polish_request,
     fact_violation_codes,
     polish_skeleton,
+    skeleton_fallback_text,
 )
+from irswitch.commentary.speech_hero import normalize_hero_vocative, rewrite_schema_hero
 from irswitch.commentary.tts import ProcessTtsSink, build_tts_sink
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.settings import (
@@ -579,7 +581,7 @@ def test_polish_retries_when_model_addresses_the_driver() -> None:
     assert "address_driver" in (outcome.response or {}).get("validatorCodes", [])
 
 
-def test_polish_retries_when_model_uses_hero_vocative() -> None:
+def test_polish_rewrites_hero_vocative_without_second_llm_call() -> None:
     graph = load_sequence_graph()
     node = graph.nodes["hunting"]
     settings = CommentarySettings(llm_polish=True, llm_max_attempts=2)
@@ -598,10 +600,9 @@ def test_polish_retries_when_model_uses_hero_vocative() -> None:
         opener=opener,
         driver_names=("Richard",),
     )
-    assert outcome.outcome == "retry_exhausted"
-    assert outcome.text == ""
-    assert len(calls) == 2
-    assert "hero_vocative" in (outcome.response or {}).get("validatorCodes", [])
+    assert outcome.outcome == "ok"
+    assert outcome.text.startswith("The gap to Smith")
+    assert len(calls) == 1
 
 
 def test_polish_retries_fact_break_then_keeps_good_rewrite() -> None:
@@ -813,3 +814,76 @@ def test_strip_emoji_is_not_a_hard_reject() -> None:
         "beat": {"event": "SESSION_FLAG", "node": "session_flag_green"},
     }
     assert "emoji" not in fact_violation_codes(pack["anchor"], "Green flag.", fact_pack=pack)
+
+
+def test_overtake_pass_noun_keeps_required_relation() -> None:
+    pack = {
+        "version": "commentary-facts/3",
+        "required_facts": [
+            {
+                "id": "target:name",
+                "text": "He passes Wright and takes P16.",
+                "required_terms": ["Wright"],
+                "required_numbers": ["16"],
+                "relation": "hero_passed_target",
+            }
+        ],
+        "microplan": {"relation": "hero_passed_target", "actor_roles": []},
+        "beat": {"event": "OVERTAKE", "node": "overtake"},
+    }
+    assert (
+        fact_violation_codes(
+            "Richard passes Wright and takes P sixteen.",
+            "Richard just fired a blazing pass to Wright—now P16!",
+            driver_names=("Richard",),
+            fact_pack=pack,
+        )
+        == []
+    )
+
+
+def test_first_on_the_grid_is_invented_lead() -> None:
+    assert "invented_lead" in fact_violation_codes(
+        "Richard completes lap 1 in 1:37.774.",
+        "Richard blasts through lap 1 in 1:37.774—first on the grid, pure fire!",
+    )
+    assert "invented_lead" not in fact_violation_codes(
+        "The stream is live.",
+        "Richard rockets into the stream start—first to go, red lights flash.",
+    )
+
+
+def test_schema_hero_rewrite_and_vocative_position() -> None:
+    assert (
+        rewrite_schema_hero("Hero Richard is closing the gap on Page.", ("Richard", "Buchtanen"))
+        == "Buchtanen is closing the gap on Page."
+    )
+    assert (
+        rewrite_schema_hero("Richard's hero closing on Kearney.", ("Richard",))
+        == "Richard is closing on Kearney."
+    )
+    assert normalize_hero_vocative("Richard, P30. A solid finish.", ("Richard",)) == (
+        "Richard is P30. A solid finish."
+    )
+
+
+def test_skeleton_fallback_allowlist_requires_grounded_position() -> None:
+    settings = CommentarySettings()
+    assert (
+        skeleton_fallback_text(
+            "Richard passes Wright and takes P16.",
+            "OVERTAKE",
+            settings=settings,
+            driver_names=("Richard",),
+        )
+        == "Richard passes Wright and takes P16."
+    )
+    assert skeleton_fallback_text("bad skeleton", "OVERTAKE", settings=settings) is None
+    assert (
+        skeleton_fallback_text(
+            "Richard is moving on the track again after going off.",
+            "TRACK_EXCURSION",
+            settings=settings,
+        )
+        is None
+    )

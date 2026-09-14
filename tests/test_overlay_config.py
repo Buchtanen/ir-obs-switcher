@@ -163,6 +163,10 @@ def test_session_tape_defaults_on(tmp_path: Path) -> None:
     assert cfg.overlay.tape.directory == "recordings"
     assert cfg.overlay.tape.llm_rows is True
     assert cfg.overlay.tape.field is True
+    assert cfg.overlay.battle_card_lease_s == 4.0
+    assert cfg.overlay.commentary.llm_timeout_s == 4.0
+    assert cfg.overlay.commentary.scheduler.dynamic_ttl_s == 4.0
+    assert cfg.overlay.commentary.polish_skeleton_fallback is True
 
 
 def test_unknown_language_falls_back_to_en(tmp_path: Path) -> None:

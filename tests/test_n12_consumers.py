@@ -1167,3 +1167,72 @@ def test_filler_request_is_bounded_and_completed_by_typed_result() -> None:
     assert request is not None
     consumer.complete_filler(FillerResult(request.request_id, "no_fact"))
     assert consumer.status_snapshot()["fillerOutstanding"] is False
+
+
+@pytest.mark.asyncio
+async def test_battle_card_lease_expires_and_keeps_one_identity() -> None:
+    clock = {"t": 100.0}
+    bus = OverlayBus()
+    consumer = OverlayConsumer(
+        AsyncEventFanout().subscribe("overlay"),
+        bus,
+        battle_card_lease_s=4.0,
+        lease_clock=lambda: clock["t"],
+    )
+    page = {
+        "storyId": "story:hunt:page",
+        "storyRevision": 1,
+        "runEpoch": 0,
+        "heroOrderRevision": 0,
+        "correlationId": "battle:front:page",
+        "eventType": "HUNTING",
+        "state": "ready",
+    }
+    wright = {
+        **page,
+        "storyId": "story:hunt:wright",
+        "correlationId": "battle:front:wright",
+    }
+    page_wire = {
+        "type": "event",
+        "format": "v4",
+        "eventType": "HUNTING",
+        "phase": "ENTER",
+        "correlationId": "battle:front:page",
+        "metrics": {"gap": 0.78},
+    }
+    wright_wire = {
+        **page_wire,
+        "correlationId": "battle:front:wright",
+        "metrics": {"gap": 0.41},
+    }
+    await consumer.handle(_batch(overlay_wire=page_wire, story_payload=page, phase="ENTER"))
+    consumer.enqueue_story_transition({**page, "action": "speaking"})
+    await consumer.apply_story_transitions()
+    assert bus.active_stories_v4[0]["correlationId"] == "battle:front:page"
+
+    await consumer.handle(
+        _batch(
+            stream_sequence=2,
+            event_sequence=2,
+            overlay_wire=wright_wire,
+            story_payload=wright,
+            phase="ENTER",
+        )
+    )
+    consumer.enqueue_story_transition({**wright, "action": "speaking"})
+    await consumer.apply_story_transitions()
+    live = [story["correlationId"] for story in bus.active_stories_v4]
+    assert live == ["battle:front:wright"]
+
+    clock["t"] = 104.0
+    await consumer.apply_story_transitions()
+    assert bus.active_stories_v4 == []
+
+    consumer.enqueue_story_transition({**wright, "action": "speaking"})
+    await consumer.apply_story_transitions()
+    assert bus.active_stories_v4 == []
+
+    consumer.enqueue_story_transition({**wright, "storyRevision": 2, "action": "speaking"})
+    await consumer.apply_story_transitions()
+    assert bus.active_stories_v4[0]["miniStory"]["storyRevision"] == 2

@@ -108,6 +108,16 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         "Write per-tick field snapshots (official vs live place) onto the session tape.",
     ),
     FieldSpec(
+        "overlay.battle_card_lease_s",
+        "float",
+        4.0,
+        True,
+        "overlay",
+        "Seconds a HUNTING/HUNTED/BATTLE card stays on the HUD after the last storyRevision. 0 disables the TTL.",
+        0.0,
+        30.0,
+    ),
+    FieldSpec(
         "event_engine.v2_payload",
         "bool",
         False,
@@ -388,7 +398,7 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
     FieldSpec(
         "commentary.llm_timeout_s",
         "float",
-        12.0,
+        4.0,
         True,
         "commentary",
         "HTTP wall-clock budget for the whole polish including retries (seconds). "
@@ -465,6 +475,14 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         "Max generation calls per line (1–2); only a validation failure retries. Final fallback is canonical facts.",
         1.0,
         2.0,
+    ),
+    FieldSpec(
+        "commentary.polish_skeleton_fallback",
+        "bool",
+        True,
+        True,
+        "commentary",
+        "Speak the grounded authored skeleton after polish reject for overtake, position change, finish, and session flag. TRACK_EXCURSION stays mute-on-reject.",
     ),
     FieldSpec(
         "commentary.driver_name",
@@ -1246,6 +1264,7 @@ def overlay_values(settings: OverlaySettings) -> dict[str, Any]:
         "overlay.session_tape_dir": s.tape.directory,
         "overlay.session_tape_llm": s.tape.llm_rows,
         "overlay.session_tape_field": s.tape.field,
+        "overlay.battle_card_lease_s": s.battle_card_lease_s,
         "event_engine.v2_payload": s.event_engine.v2_payload,
         "event_engine.practice": s.event_engine.practice,
         "event_engine.quali_projection": s.event_engine.quali_projection,
@@ -1286,6 +1305,7 @@ def overlay_values(settings: OverlaySettings) -> dict[str, Any]:
         "commentary.llm_num_ctx": s.commentary.llm_num_ctx,
         "commentary.llm_max_tokens": s.commentary.llm_max_tokens,
         "commentary.llm_max_attempts": s.commentary.llm_max_attempts,
+        "commentary.polish_skeleton_fallback": s.commentary.polish_skeleton_fallback,
         "commentary.driver_name": s.commentary.driver_name,
         "commentary.driver_nickname": s.commentary.driver_nickname,
         "commentary.graph_runtime.mode": s.commentary.graph_runtime_mode,

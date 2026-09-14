@@ -2,11 +2,13 @@
 
 Director: accepted envelope → sequence graph → TTS. Peer consumer (N12), ne renderer HUD.
 
+Polish vocative/hero rewrite is in `speech_hero.py` / `polish.py`. `commentary.polish_skeleton_fallback` (default true) speaks a grounded skeleton after `retry_exhausted` for OVERTAKE / POSITION_* / FINISH / SESSION_FLAG — not TRACK_EXCURSION. Scheduler `dynamic_ttl_s` (default 4) is for HUNTING/HUNTED/BATTLE/OVERTAKE/POSITION_*; `llm_timeout_s` default is 4.0.
+
 ## Boundaries
 
 - `headlineToken` / overlay i18n sem nepatří.
 - Scene switcher sem nepatří.
-- Open work: [inflight/commentary-architecture.md](../inflight/commentary-architecture.md), [I3 publisher](../inflight/scenario-engine-publisher.md).
+- Open work: [inflight/commentary-architecture.md](../inflight/commentary-architecture.md). I3 publisher is shipped (`ScenarioEngine` → TRACK_EXCURSION).
 
 ## Key files
 

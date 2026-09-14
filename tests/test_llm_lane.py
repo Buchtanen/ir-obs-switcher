@@ -225,7 +225,11 @@ def test_polish_timeout_speaks_notice(monkeypatch: Any) -> None:
         lambda text, **_kwargs: spoken.append(text) or TtsResult("test", True),
     )
     sink = ProcessTtsSink(
-        CommentarySettings(llm_polish=True, tts_backend="null"),
+        CommentarySettings(
+            llm_polish=True,
+            tts_backend="null",
+            polish_skeleton_fallback=False,
+        ),
         on_story_debug=debug.append,
     )
     sink.enqueue(_utterance())
@@ -252,7 +256,13 @@ def test_polish_retry_exhausted_stays_silent(monkeypatch: Any) -> None:
         "irswitch.commentary.tts.speak_text",
         lambda text, **_kwargs: spoken.append(text) or TtsResult("test", True),
     )
-    sink = ProcessTtsSink(CommentarySettings(llm_polish=True, tts_backend="null"))
+    sink = ProcessTtsSink(
+        CommentarySettings(
+            llm_polish=True,
+            tts_backend="null",
+            polish_skeleton_fallback=False,
+        )
+    )
     sink.enqueue(_utterance())
     assert sink.wait_idle(timeout_s=2.0)
     assert spoken == []

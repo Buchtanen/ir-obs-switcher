@@ -333,6 +333,33 @@ def test_failed_llm_polish_is_silent_and_next_waiter_speaks(monkeypatch: Any) ->
     assert any(row.get("reason") == "llm_polish_rejected" for row in story_debug)
 
 
+def test_overtake_polish_reject_speaks_grounded_skeleton(monkeypatch: Any) -> None:
+    spoken: list[str] = []
+
+    def polish(text: str, *_args: Any, **_kwargs: Any) -> PolishOutcome:
+        return PolishOutcome(
+            text=text,
+            outcome="retry_exhausted",
+            latency_ms=1.0,
+            skeleton=text,
+            request={},
+            attempts=2,
+        )
+
+    def speak(text: str, **_kwargs: Any) -> TtsResult:
+        spoken.append(text)
+        return TtsResult("test", True)
+
+    monkeypatch.setattr("irswitch.commentary.tts.polish_skeleton", polish)
+    monkeypatch.setattr("irswitch.commentary.tts.speak_text", speak)
+    sink = ProcessTtsSink(CommentarySettings(llm_polish=True, tts_backend="null"))
+    sink.enqueue(_sample_utterance(text="Richard passes Wright and takes P16.", event_id="pass"))
+    assert sink.wait_idle(timeout_s=2.0)
+    assert spoken
+    assert "Wright" in spoken[0]
+    assert "16" in spoken[0] or "sixteen" in spoken[0].lower()
+
+
 def test_llm_rejection_releases_director_busy_state_on_next_tick() -> None:
     sink = ProcessTtsSink(CommentarySettings(llm_polish=True, tts_backend="null"))
     director = CommentaryDirector(
