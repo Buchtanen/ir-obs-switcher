@@ -51,6 +51,30 @@ def test_commentary_tape_enabled_reads_snapshot_values() -> None:
     assert commentary_tape_enabled(_Cfg()) is False
 
 
+def test_commentary_gates_accept_mappingproxy_values() -> None:
+    from types import MappingProxyType
+
+    class _Snap:
+        values = MappingProxyType(
+            {
+                "commentary.enabled": True,
+                "commentary.llm.enabled": False,
+                "commentary.tape.enabled": True,
+            }
+        )
+
+    class _Cand:
+        valid = True
+        snapshot = _Snap()
+
+    class _Cfg:
+        commentary_v2 = _Cand()
+
+    assert commentary_live_enabled(_Cfg()) is True
+    assert commentary_llm_enabled(_Cfg()) is False
+    assert commentary_tape_enabled(_Cfg()) is True
+
+
 def test_commentary_live_and_llm_gates_read_v2_snapshot() -> None:
     class _Snap:
         values = {"commentary.enabled": True, "commentary.llm.enabled": False}

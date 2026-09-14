@@ -6,7 +6,7 @@ import asyncio
 import inspect
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any, Literal
@@ -127,9 +127,9 @@ def _commentary_v2_values(config: object | None) -> dict[str, Any] | None:
     if snapshot is None:
         return None
     values = getattr(snapshot, "values", None)
-    if not isinstance(values, dict):
+    if not isinstance(values, Mapping):
         return None
-    return values
+    return dict(values)
 
 
 def commentary_tape_enabled(config: object | None) -> bool:
