@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from collections import OrderedDict
 from collections.abc import Callable
 from copy import deepcopy
@@ -52,16 +53,23 @@ class OverlayConsumer:
         bus: OverlayBus,
         *,
         record_event: RecordEvent | None = None,
+        battle_card_lease_s: float = 4.0,
+        lease_s_provider: Callable[[], float] | None = None,
+        lease_clock: Callable[[], float] | None = None,
     ) -> None:
         self.subscription = subscription
         self.bus = bus
         self._record_event = record_event
+        self._battle_card_lease_s = battle_card_lease_s
+        self._lease_s_provider = lease_s_provider
+        self._lease_clock = lease_clock
         self.worker = StreamWorker("overlay", subscription, self.handle)
         self.last_stream_sequence = 0
         self._last_context_version = 0
         self._source_stories: list[dict[str, Any]] = []
         self._story_wires: dict[str, dict[str, Any]] = {}
         self._story_leases: dict[str, dict[str, Any]] = {}
+        self._story_lease_at: dict[str, float] = {}
         self._story_lifecycle: OrderedDict[str, dict[str, Any]] = OrderedDict()
         self._closed_correlations: dict[str, str] = {}
         self._pending_story_transitions: OrderedDict[str, dict[str, Any]] = OrderedDict()
@@ -80,6 +88,7 @@ class OverlayConsumer:
             self._source_stories.clear()
             self._story_wires.clear()
             self._story_leases.clear()
+            self._story_lease_at.clear()
             self._story_lifecycle.clear()
             self._closed_correlations.clear()
             self._pending_story_transitions.clear()
@@ -97,8 +106,13 @@ class OverlayConsumer:
     async def apply_latest_presentation(self) -> None:
         payload = self.subscription.latest_context
         if payload is None:
+            if self._expire_battle_leases(self._now()):
+                self._sync_story_snapshot()
+                await self.bus.flush_state()
             return
         await self._apply_context(payload)
+        if self._expire_battle_leases(self._now()):
+            self._sync_story_snapshot()
         await self.bus.flush_state()
 
     async def _presentation_loop(self) -> None:
@@ -149,6 +163,12 @@ class OverlayConsumer:
             current = self._story_lifecycle.get(story_id)
             if current is not None and revision < int(current.get("storyRevision") or 0):
                 continue
+            if (
+                current is not None
+                and str(current.get("state") or "") == "expired"
+                and revision <= int(current.get("storyRevision") or 0)
+            ):
+                continue
             action = str(entry.get("action") or entry.get("state") or "").lower()
             lifecycle = deepcopy(entry)
             lifecycle["state"] = action
@@ -158,6 +178,7 @@ class OverlayConsumer:
                 if correlation_id:
                     self._closed_correlations[correlation_id] = story_id
                 self._story_leases.pop(story_id, None)
+                self._story_lease_at.pop(story_id, None)
                 self._story_wires.pop(story_id, None)
                 changed = True
                 continue
@@ -170,7 +191,9 @@ class OverlayConsumer:
             leased["miniStory"] = _story_meta(lifecycle, state=action)
             if action == "resolved":
                 leased["phase"] = "RESULT"
-            self._story_leases[story_id] = leased
+            self._put_story_lease(story_id, leased, revision=revision)
+            changed = True
+        if self._expire_battle_leases(self._now()):
             changed = True
         if changed:
             self._sync_story_snapshot()
@@ -259,7 +282,11 @@ class OverlayConsumer:
                         resolved["metrics"] = deepcopy(wire.get("metrics") or {})
                         resolved["miniStory"] = _story_meta(story, state="resolved")
                         self._story_wires[story_id] = deepcopy(resolved)
-                        self._story_leases[story_id] = resolved
+                        self._put_story_lease(
+                            story_id,
+                            resolved,
+                            revision=int(resolved["miniStory"].get("storyRevision") or 0),
+                        )
                         self._remember_story_lifecycle(story_id, deepcopy(resolved["miniStory"]))
                         self._sync_story_snapshot()
                         await self.bus.publish_event(resolved)
@@ -270,14 +297,14 @@ class OverlayConsumer:
                         current_revision = int(lifecycle.get("storyRevision") or 0)
                         source_revision = int(story.get("storyRevision") or 0)
                         if current_revision >= source_revision:
-                            if action in _TERMINAL_STORY_ACTIONS:
+                            if action in _TERMINAL_STORY_ACTIONS or action == "expired":
                                 continue
                             if action in _ACTIVE_STORY_ACTIONS:
                                 leased = deepcopy(wire)
                                 leased["miniStory"] = _story_meta(lifecycle, state=action)
                                 if story.get("state") == "resolved":
                                     leased["phase"] = "RESULT"
-                                self._story_leases[story_id] = leased
+                                self._put_story_lease(story_id, leased, revision=current_revision)
                                 self._sync_story_snapshot()
                                 if accepted.phase == "EXIT":
                                     await self.bus.publish_event(leased)
@@ -307,6 +334,7 @@ class OverlayConsumer:
                 self._closed_correlations.pop(correlation_id, None)
             self._story_wires.pop(story_id, None)
             self._story_leases.pop(story_id, None)
+            self._story_lease_at.pop(story_id, None)
         self._sync_story_snapshot()
 
     def _sync_story_snapshot(self) -> None:
@@ -333,6 +361,68 @@ class OverlayConsumer:
                 self._closed_correlations.pop(correlation_id, None)
             self._story_wires.pop(expired_id, None)
             self._story_leases.pop(expired_id, None)
+            self._story_lease_at.pop(expired_id, None)
+
+    def _now(self) -> float:
+        if self._lease_clock is not None:
+            return float(self._lease_clock())
+        return time.monotonic()
+
+    def _lease_s(self) -> float:
+        if self._lease_s_provider is not None:
+            return float(self._lease_s_provider())
+        return float(self._battle_card_lease_s)
+
+    def _put_story_lease(self, story_id: str, leased: dict[str, Any], *, revision: int) -> None:
+        event_type = str(leased.get("eventType") or "").upper()
+        correlation_id = str(leased.get("correlationId") or "")
+        if event_type in _LIVE_BATTLE_EVENT_TYPES:
+            for other_id, other in list(self._story_leases.items()):
+                if other_id == story_id:
+                    continue
+                if str(other.get("eventType") or "").upper() not in _LIVE_BATTLE_EVENT_TYPES:
+                    continue
+                if str(other.get("correlationId") or "") != correlation_id:
+                    self._forget_battle_lease(other_id, reason="replaced")
+        previous = self._story_leases.get(story_id)
+        previous_revision = int((previous or {}).get("miniStory", {}).get("storyRevision") or 0)
+        if story_id not in self._story_lease_at or revision > previous_revision:
+            self._story_lease_at[story_id] = self._now()
+        self._story_leases[story_id] = leased
+
+    def _forget_battle_lease(self, story_id: str, *, reason: str) -> None:
+        leased = self._story_leases.pop(story_id, None)
+        started = self._story_lease_at.pop(story_id, None)
+        lifecycle = self._story_lifecycle.get(story_id)
+        if lifecycle is not None:
+            lifecycle = deepcopy(lifecycle)
+            lifecycle["state"] = "expired"
+            lifecycle["reason"] = reason
+            self._remember_story_lifecycle(story_id, lifecycle)
+        if leased is not None:
+            logger.debug(
+                "battle card lease dropped story_id=%s reason=%s held_s=%s",
+                story_id,
+                reason,
+                None if started is None else round(self._now() - started, 3),
+            )
+
+    def _expire_battle_leases(self, now: float) -> bool:
+        lease_s = self._lease_s()
+        if lease_s <= 0:
+            return False
+        changed = False
+        for story_id, story in list(self._story_leases.items()):
+            if str(story.get("eventType") or "").upper() not in _LIVE_BATTLE_EVENT_TYPES:
+                continue
+            started = self._story_lease_at.get(story_id)
+            if started is None:
+                self._story_lease_at[story_id] = now
+                continue
+            if now - started >= lease_s:
+                self._forget_battle_lease(story_id, reason="ttl")
+                changed = True
+        return changed
 
     def status_snapshot(self) -> dict[str, Any]:
         return {

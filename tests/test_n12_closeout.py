@@ -31,6 +31,7 @@ from irswitch.race.pipeline import (
     RacePipeline,
     build_context_payload,
     context_stale_at_accept,
+    context_stale_level,
 )
 from irswitch.race.story import HeroSnapshot, QualiBag, StoryContext
 
@@ -232,11 +233,18 @@ def test_context_stale_at_accept_uses_publish_minus_capture() -> None:
         context_stale_at_accept(captured_ms=1_000, accepted_ms=1_000, poll_interval_ms=200) is False
     )
     assert (
-        context_stale_at_accept(captured_ms=1_000, accepted_ms=1_150, poll_interval_ms=200) is False
+        context_stale_at_accept(captured_ms=1_000, accepted_ms=1_250, poll_interval_ms=200) is False
     )
     assert (
-        context_stale_at_accept(captured_ms=1_000, accepted_ms=1_250, poll_interval_ms=200) is True
+        context_stale_at_accept(captured_ms=1_000, accepted_ms=1_650, poll_interval_ms=200) is True
     )
+    assert context_stale_level(captured_ms=1_000, accepted_ms=1_650) == "warning"
+    assert context_stale_level(captured_ms=1_000, accepted_ms=2_100) == "rebuild"
+    assert (
+        context_stale_level(captured_ms=1_000, accepted_ms=2_250, event_types=("OVERTAKE",))
+        == "hard"
+    )
+    assert context_stale_level(captured_ms=1_000, accepted_ms=2_600) == "error"
 
 
 def test_pipeline_logs_stale_accept_when_publish_clock_lags_capture(
@@ -267,7 +275,7 @@ def test_pipeline_logs_stale_accept_when_publish_clock_lags_capture(
         pipeline.publish_envelopes(
             [envelope],
             source="event_engine",
-            accepted_monotonic_ms=1_400,
+            accepted_monotonic_ms=1_700,
             poll_interval_ms=200,
         )
 

@@ -2,6 +2,8 @@
 
 HUD envelope, tape, overlay HTTP/WS. Peer consumer accepted eventů (N12 `overlay/consumer.py`). Nepřepíná scény. HUD copy žije v `overlay/i18n.py`, ne v commentary graphu.
 
+`overlay.battle_card_lease_s` (default 4.0) drops a HUNTING/HUNTED/BATTLE card after TTL from the last `storyRevision`. Same `correlationId` + newer revision renews; a second battle identity replaces the first. `0` disables the lease (FINISH/CHECKERED still clears). Display JS does not own this TTL.
+
 ## V4
 
 Default v `config.example.ini`: `v4_assets` / `v4_renderer` zapnuté. Kontrakt canvas: [overlay_v4_layout_sizing_motion_spec.md](../../../assets/overlay/themes/docs/overlay_v4_layout_sizing_motion_spec.md). Pit Wall: [PIT_WALL.md](../../../assets/overlay/themes/docs/PIT_WALL.md). Golden: [GOLDEN_V4.md](../../../src/irswitch/web/overlay/GOLDEN_V4.md).

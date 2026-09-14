@@ -9,6 +9,8 @@ import pytest
 
 from irswitch.obs.stream_status_refresh import (
     POST_STOP_STATUS_REFRESH_DELAY_S,
+    STREAM_EDGE_CONFIRM_POLLS,
+    StreamEdgeDebouncer,
     classify_streaming_edge,
     refresh_stream_status,
     schedule_post_stop_status_refresh,
@@ -30,6 +32,36 @@ def test_classify_streaming_edge(
     previous: bool | None, current: bool, expected: str | None
 ) -> None:
     assert classify_streaming_edge(previous, current) == expected
+
+
+def test_stream_edge_debouncer_ignores_unknown_and_two_second_flap() -> None:
+    debounce = StreamEdgeDebouncer()
+    assert debounce.observe(True, known=False, duration_ms=10_000, now=1.0) is None
+    assert debounce.observe(True, known=True, duration_ms=10_000, now=2.0) is None
+    assert debounce.observe(True, known=True, duration_ms=11_000, now=3.0) is None
+    assert debounce.observe(True, known=True, duration_ms=12_000, now=4.0) == "obs_stream_started"
+    assert debounce.observe(False, known=True, duration_ms=None, now=5.0) is None
+    assert debounce.observe(False, known=True, duration_ms=None, now=6.5) is None
+    assert debounce.observe(True, known=True, duration_ms=14_000, now=7.0) is None
+    assert debounce.last_confirmed is True
+
+
+def test_stream_edge_debouncer_confirms_stop_and_new_epoch_on_duration_drop() -> None:
+    debounce = StreamEdgeDebouncer()
+    now = 10.0
+    edge = None
+    for _ in range(STREAM_EDGE_CONFIRM_POLLS):
+        edge = debounce.observe(True, known=True, duration_ms=60_000, now=now)
+        now += 1.0
+    assert edge == "obs_stream_started"
+    stop = None
+    for _ in range(STREAM_EDGE_CONFIRM_POLLS):
+        stop = debounce.observe(False, known=True, duration_ms=None, now=now)
+        now += 1.0
+    assert stop == "obs_stream_stopped"
+    debounce.last_confirmed = True
+    debounce.last_duration_ms = 90_000
+    assert debounce.observe(True, known=True, duration_ms=1_200, now=now) == "obs_stream_started"
 
 
 @pytest.mark.asyncio

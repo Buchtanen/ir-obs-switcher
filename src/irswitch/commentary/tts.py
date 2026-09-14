@@ -21,7 +21,7 @@ from irswitch.commentary.duck import duck_for_speech
 from irswitch.commentary.graph import GraphNode
 from irswitch.commentary.graph_runtime import GraphCandidate
 from irswitch.commentary.llm_lane import LlmPriorityLane
-from irswitch.commentary.polish import PolishOutcome, polish_skeleton
+from irswitch.commentary.polish import PolishOutcome, polish_skeleton, skeleton_fallback_text
 from irswitch.commentary.semantic_vocabulary import validate_node_vocabulary
 from irswitch.commentary.speech_hero import mix_hero_name
 from irswitch.commentary.speech_numbers import numbers_to_words
@@ -516,10 +516,26 @@ class ProcessTtsSink:
                 return
             if outcome.outcome != "ok" or not (outcome.text or "").strip():
                 reason = outcome.outcome if outcome.outcome != "ok" else "empty_ok"
-                self._reject_polish(utterance, reason)
-                if not cancelled():
-                    self._maybe_speak_llm_timeout_notice(utterance, reason)
-                return
+                fallback = skeleton_fallback_text(
+                    utterance.text,
+                    utterance.event_type,
+                    settings=self.settings,
+                    driver_names=utterance.hero_names,
+                    fact_pack=utterance.fact_pack,
+                )
+                if fallback:
+                    spoken_text = numbers_to_words(fallback, utterance.locale)
+                    spoken_text = mix_hero_name(
+                        spoken_text,
+                        utterance.hero_names,
+                        utterance.locale,
+                        name=utterance.hero_name,
+                    )
+                else:
+                    self._reject_polish(utterance, reason)
+                    if not cancelled():
+                        self._maybe_speak_llm_timeout_notice(utterance, reason)
+                    return
             polished = (outcome.text or "").strip()
             if polished:
                 spoken_text = numbers_to_words(polished, utterance.locale)
@@ -579,11 +595,22 @@ class ProcessTtsSink:
                             if resolved_outcome.outcome != "ok"
                             else "empty_ok"
                         )
-                        self._reject_polish(utterance, reason)
-                        if not cancelled():
-                            self._maybe_speak_llm_timeout_notice(utterance, reason)
-                        return
-                    spoken_text = resolved_outcome.text
+                        fallback = skeleton_fallback_text(
+                            decision.canonical,
+                            utterance.event_type,
+                            settings=self.settings,
+                            driver_names=utterance.hero_names,
+                            fact_pack=decision.fact_pack,
+                        )
+                        if fallback:
+                            spoken_text = fallback
+                        else:
+                            self._reject_polish(utterance, reason)
+                            if not cancelled():
+                                self._maybe_speak_llm_timeout_notice(utterance, reason)
+                            return
+                    else:
+                        spoken_text = resolved_outcome.text
                 spoken_text = numbers_to_words(spoken_text, utterance.locale)
                 spoken_text = mix_hero_name(
                     spoken_text,

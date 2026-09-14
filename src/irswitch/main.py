@@ -29,7 +29,7 @@ from irswitch.models import DrivingMode, SwitchState
 from irswitch.oauth import OAuthManager, create_oauth_manager
 from irswitch.obs.client import ObsClient
 from irswitch.obs.stream_status_refresh import (
-    classify_streaming_edge,
+    StreamEdgeDebouncer,
     refresh_stream_status,
     schedule_post_stop_status_refresh,
 )
@@ -269,7 +269,7 @@ async def main_loop(
         3  # Need 3 consecutive same readings to confirm change
     )
     # OBS streaming edge → refresh YouTube liveBroadcast status (title/status/privacy)
-    last_obs_streaming: bool | None = None
+    stream_edge_debouncer = StreamEdgeDebouncer()
     loop_background_tasks = TaskRegistry()
 
     event_log = get_event_log()
@@ -933,7 +933,7 @@ async def main_loop(
                     last_stream_title = None
                     last_broadcast_id = None
                     last_stream_selected = False
-                    last_obs_streaming = None
+                    stream_edge_debouncer.reset()
                     loop_background_tasks.cancel("youtube_post_stop_status_refresh")
                     # Reconnect is owned solely by background_obs_connect task
             # When OBS is down, background_obs_connect owns reconnect (avoid dual connect races)
@@ -944,10 +944,15 @@ async def main_loop(
             # Check stream selection status (without periodic title fetching)
             if connected_obs and obs_client.is_connected():
                 try:
-                    is_streaming, _ = await obs_client.get_stream_status()
+                    is_streaming, stream_duration_ms = await obs_client.get_stream_status()
 
                     # Auto-refresh YouTube video/broadcast status on OBS start/stop
-                    stream_edge = classify_streaming_edge(last_obs_streaming, is_streaming)
+                    stream_edge = stream_edge_debouncer.observe(
+                        is_streaming,
+                        known=obs_client.stream_status_known,
+                        duration_ms=stream_duration_ms,
+                        now=time.monotonic(),
+                    )
                     if stream_edge == "obs_stream_started":
                         announce_diagnostic("stream_started")
                         loop_background_tasks.cancel("youtube_post_stop_status_refresh")
@@ -999,8 +1004,6 @@ async def main_loop(
                             ),
                             on_done=_rebroadcast,
                         )
-                    last_obs_streaming = is_streaming
-
                     is_selected, is_ready_selected = await obs_client.is_stream_selected()
 
                     # Update cache timestamp for auto-start logic

@@ -15,6 +15,8 @@ Track excursion: `observer.py` tiká `TrackExcursionDetector` (feature source) a
 
 `runtime.py`, `pipeline.py`, `observer.py`, `context.py`, `opponents.py`, `flags.py`, `aftermath.py`, `session_end.py`, `ministory.py`, `editorial_stage.py`, `prepared_facts.py`, `order.py`, `run.py`, `timing/`. Stream outro after iRacing QUIT lives in `runtime.py` (speak, then OBS stop).
 
+Freshness in `pipeline.py`: warn `context_stale_at_accept` at 600 ms, rebuild log at 1000 ms, hard battle/position at 1200 ms, ERROR at 1500 ms. One 200 ms poll is not stale.
+
 ## Tests
 
 `tests/test_race_*.py`, `tests/test_flags_observer.py`, `tests/test_incident_aftermath.py`, `tests/test_timing_hunt.py`, `tests/test_track_excursion_live.py`, `tests/test_track_excursion_engine.py`.

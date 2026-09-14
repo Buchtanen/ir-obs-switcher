@@ -19,9 +19,22 @@ from typing import Any, TypeGuard
 from urllib.parse import urlparse
 
 from irswitch.commentary.graph import GraphNode, TtsLimits
+from irswitch.commentary.speech_hero import normalize_hero_vocative, rewrite_schema_hero
 from irswitch.commentary.speech_numbers import numbers_to_words
 from irswitch.commentary.validator import strip_emoji, validate_utterance
 from irswitch.overlay.settings import CommentarySettings
+
+SKELETON_FALLBACK_EVENTS = frozenset(
+    {
+        "OVERTAKE",
+        "OVERTAKEN",
+        "POSITION_LOST",
+        "POSITION_GAINED",
+        "POSITION_ATTACK",
+        "FINISH",
+        "SESSION_FLAG",
+    }
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +49,7 @@ _MIN_ATTEMPT_S = 0.05
 
 _LEAD_CLAIM = re.compile(
     r"\b(unchallenged lead|narrow lead|the lead|leads?|leading|leader|"
+    r"first on the grid|first on pole|"
     r"victory|victories|winner|champ(?:ion)?|in first|in second|in third|"
     r"claims? (?:the )?(?:win|victory)|takes? (?:the )?win)\b",
     re.IGNORECASE,
@@ -49,7 +63,10 @@ _LEAD_OK = re.compile(
 _POLE = re.compile(r"\bpole\b", re.IGNORECASE)
 _RIVAL_AHEAD = re.compile(r"\bis ahead\b", re.IGNORECASE)
 _TRAIL = re.compile(r"\b(trails?|trailing|behind|closing on|hunting)\b", re.IGNORECASE)
-_PASS = re.compile(r"\b(inches past|overtakes?|overtook|passes?|passed|edges)\b", re.IGNORECASE)
+_PASS = re.compile(
+    r"\b(inches past|overtakes?|overtook|pass(?:es|ed|ing)?|edges)\b",
+    re.IGNORECASE,
+)
 _WESTWARD = re.compile(r"\b(westward|eastward|northward|southward)\b", re.IGNORECASE)
 _CM = re.compile(r"\b(centimet(?:er|re)s?|centimeters?)\b", re.IGNORECASE)
 _SECONDS = re.compile(r"\bseconds?\b", re.IGNORECASE)
@@ -101,7 +118,7 @@ _RELATION_PATTERNS = {
         re.IGNORECASE,
     ),
     "hero_passed_target": re.compile(
-        r"\b(passes?|passed|overtakes?|overtook|předjíždí|předjel)\b",
+        r"\b(pass(?:es|ed|ing)?|a pass|overtakes?|overtook|předjíždí|předjel|předjetí)\b",
         re.IGNORECASE,
     ),
     "hero_gained_position": re.compile(
@@ -686,7 +703,9 @@ def _role_violations(text: str, pack: dict[str, Any]) -> list[str]:
         ):
             codes.append("reversed_relation")
     if re.search(
-        r"target_closing_on_hero|hero_closing_on_target|hero_between_two_fronts",
+        r"target_closing_on_hero|hero_closing_on_target|hero_between_two_fronts|"
+        r"\bHero\s+[A-ZÁČĎÉĚÍŇÓŘŠŤÚŮÝŽ]|"
+        r"['’]s hero\b",
         text,
     ):
         codes.append("schema_leak")
@@ -749,6 +768,35 @@ def _hero_vocative(text: str, names: Sequence[str]) -> bool:
         if re.match(rf"^{re.escape(token)}\.\s+\S", raw, flags=re.IGNORECASE):
             return True
     return False
+
+
+def _has_position_token(text: str) -> bool:
+    return _P_TOKEN.search(text or "") is not None
+
+
+def skeleton_fallback_text(
+    text: str,
+    event_type: str,
+    *,
+    settings: CommentarySettings | None = None,
+    driver_names: Sequence[str] = (),
+    fact_pack: dict[str, Any] | None = None,
+) -> str | None:
+    """Return a speakable authored skeleton, or None to stay silent."""
+    if settings is not None and not getattr(settings, "polish_skeleton_fallback", True):
+        return None
+    event = str(event_type or "").strip().upper()
+    if event not in SKELETON_FALLBACK_EVENTS:
+        return None
+    raw = (text or "").strip()
+    if not raw:
+        return None
+    if fact_pack is None and not _has_position_token(raw):
+        return None
+    codes = fact_violation_codes(raw, raw, driver_names, fact_pack=fact_pack)
+    if codes:
+        return None
+    return raw
 
 
 def _reject_codes(
@@ -1721,6 +1769,8 @@ def polish_skeleton(
             last_response = {**compact, "validatorCodes": ["empty"]}
             entry.update(response=last_response, severity="HARD")
             continue
+        content = rewrite_schema_hero(content, driver_names)
+        content = normalize_hero_vocative(content, driver_names)
 
         warnings: list[str] = []
         if _is_microplan(fact_pack):

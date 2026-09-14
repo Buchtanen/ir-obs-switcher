@@ -361,6 +361,9 @@ def _load_commentary_scheduler(
         incident_ttl_s=max(
             1.0, _get_float(parser, section, "incident_ttl_s", defaults.incident_ttl_s)
         ),
+        dynamic_ttl_s=max(
+            1.0, _get_float(parser, section, "dynamic_ttl_s", defaults.dynamic_ttl_s)
+        ),
         max_silence_s=max(
             5.0, _get_float(parser, section, "max_silence_s", defaults.max_silence_s)
         ),
@@ -727,6 +730,12 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
                 ),
             ),
         ),
+        polish_skeleton_fallback=_get_bool(
+            parser,
+            "commentary",
+            "polish_skeleton_fallback",
+            commentary_defaults.polish_skeleton_fallback,
+        ),
         driver_name=_get_str(parser, "commentary", "driver_name", commentary_defaults.driver_name),
         driver_nickname=_get_str(
             parser, "commentary", "driver_nickname", commentary_defaults.driver_nickname
@@ -829,6 +838,10 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         language=language,
         v4=v4,
         tape=tape,
+        battle_card_lease_s=max(
+            0.0,
+            _get_float(parser, "overlay", "battle_card_lease_s", defaults.battle_card_lease_s),
+        ),
         event_engine=event_engine,
         commentary=commentary,
         race_observer=race_observer,

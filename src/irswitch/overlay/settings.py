@@ -157,6 +157,7 @@ class CommentarySchedulerSettings:
     max_deferred: int = 8
     default_ttl_s: float = 12.0
     incident_ttl_s: float = 45.0
+    dynamic_ttl_s: float = 4.0
     max_silence_s: float = 33.0
     llm_past_framing: bool = True
 
@@ -217,7 +218,7 @@ class CommentarySettings:
     llm_polish: bool = False
     llm_base_url: str = "http://127.0.0.1:11434/v1"
     llm_model: str = "qwen3:4b-instruct-2507-q4_K_M"
-    llm_timeout_s: float = 12.0
+    llm_timeout_s: float = 4.0
     llm_temperature: float = 0.4
     llm_top_p: float = 0.85
     llm_top_k: int = 30
@@ -225,6 +226,8 @@ class CommentarySettings:
     llm_num_ctx: int = 512
     llm_max_tokens: int = 360
     llm_max_attempts: int = 2
+    # After polish reject, speak the grounded skeleton for overtake/position/finish.
+    polish_skeleton_fallback: bool = True
     # Spoken hero identity. Empty = iRacing UserName first/last tokens.
     driver_name: str = ""
     driver_nickname: str = ""
@@ -259,6 +262,7 @@ class OverlaySettings:
     language: str = "en"
     v4: OverlayV4Settings = field(default_factory=OverlayV4Settings)
     tape: OverlayTapeSettings = field(default_factory=OverlayTapeSettings)
+    battle_card_lease_s: float = 4.0
     event_engine: EventEngineFeatureSettings = field(default_factory=EventEngineFeatureSettings)
     commentary: CommentarySettings = field(default_factory=CommentarySettings)
     race_observer: RaceObserverSettings = field(default_factory=RaceObserverSettings)

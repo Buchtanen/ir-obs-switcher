@@ -2,6 +2,8 @@
 
 Tenký obs-websocket v5 client: scény, stream start/stop, volume (duck).
 
+`get_stream_status` error/unknown and empty `datain` keep last known `output_active` (not a stop). Start/stop + diagnostic voice need 3 matching polls or ≥5 s; a 2 s flap does not reset the STREAM_START epoch. Duration drop or a confirmed stop does.
+
 ## Boundaries
 
 Žádná policy „která scéna“. Žádný commentary text. YouTube VOD patch je side-effect po konci streamu, ne scene switch.

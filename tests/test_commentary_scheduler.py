@@ -130,6 +130,18 @@ def test_park_keeps_incident_beside_hunting() -> None:
     assert remaining.utterance.event_type == "INCIDENT"
 
 
+def test_dynamic_ttl_applies_to_battle_not_incident() -> None:
+    sched = SpeechScheduler(
+        settings=CommentarySchedulerSettings(
+            default_ttl_s=12.0, incident_ttl_s=45.0, dynamic_ttl_s=4.0
+        )
+    )
+    assert sched.ttl_for("OVERTAKE") == 4.0
+    assert sched.ttl_for("HUNTING") == 4.0
+    assert sched.ttl_for("LAP_COMPLETE") == 12.0
+    assert sched.ttl_for("INCIDENT") == 45.0
+
+
 def test_park_disabled_noop() -> None:
     sched = SpeechScheduler(settings=CommentarySchedulerSettings(defer_enabled=False))
     assert sched.park(_utt(), priority=80, now=1.0) is False
