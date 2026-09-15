@@ -204,18 +204,18 @@ def _overlay_with_v2_commentary(overlay: OverlaySettings, config: object | None)
             use_hr_emotion=tone == "heart_rate",
             tts_backend=str(values.get("commentary.tts.backend") or current.tts_backend),
             tts_voice=str(values.get("commentary.tts.voice") or ""),
-            tts_rate=int(
+            tts_rate=(
                 current.tts_rate
                 if values.get("commentary.tts.rate") is None
-                else values.get("commentary.tts.rate")
+                else int(values.get("commentary.tts.rate") or current.tts_rate)
             ),
             tts_steps=int(values.get("commentary.tts.steps") or current.tts_steps),
             audio_device=str(values.get("commentary.tts.audio_device") or ""),
             duck_input=str(values.get("commentary.tts.duck_input") or ""),
-            duck_ratio=float(
+            duck_ratio=(
                 current.duck_ratio
                 if values.get("commentary.tts.duck_ratio") is None
-                else values.get("commentary.tts.duck_ratio")
+                else float(values.get("commentary.tts.duck_ratio") or current.duck_ratio)
             ),
             duck_fade_ms=int(values.get("commentary.tts.duck_fade_ms") or current.duck_fade_ms),
             driver_name=str(values.get("commentary.driver_name") or ""),
