@@ -54,13 +54,13 @@ Deferred (non-blocking for this smoke): shutdown wait for TTS idle; wire `commen
 
 **Evidence:** TTS log + status last-terminal / failure reason.
 
-## 4) Qwen / verifier fail-closed (#349 slice 4)
+## 4) Qwen / verifier (#349 slice 4, #362 slice 2)
 
-- [ ] With Qwen allowed: stop/break Ollama or return unframed output → **no** silent template live speech
-- [ ] Realization fails closed (`REALIZATION_FAILED` / verify reject path); no TTS for that attempt
-- [ ] Cached authored draft (if present) may still speak — that is allowed; live Qwen miss must not invent template copy
+- [ ] With Qwen allowed: transport miss or timeout → authored cache / template fallback with VerifyFrame when possible (not bare `REALIZATION_FAILED` when fallback succeeds)
+- [ ] Unframed Qwen output or missing #270 frame with live `SemanticVerifier` → verify reject; no TTS for that attempt
+- [ ] Realize deadline follows `commentary.llm.timeout_s`; first Qwen call uses at least `max(2×timeout, 8s)`
 
-**Evidence:** failure reason in status/logs (`realization_transport` / verify reject / missing frame).
+**Evidence:** status/logs (`realization_transport`, `semantic_reason:missing_verify_frame`, or successful authored/template path after Qwen miss).
 
 ## 5) HTTP + mediums (#349 slice 5)
 

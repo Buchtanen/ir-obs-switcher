@@ -389,7 +389,7 @@ class RaceRuntime:
             llm_component = None
             if self._narrative_qwen_enabled:
                 # Live StdlibTransport + soft-fail warmup against INI base_url.
-                # Qwen miss is fail-closed (no silent template fallback); authored drafts may still speak.
+                # Qwen miss falls back to authored/template (with verify frame).
                 cfg_qwen = self._get_config()
                 qwen_endpoint = commentary_llm_chat_url(cfg_qwen)
                 qwen_model = commentary_llm_model(cfg_qwen)
@@ -406,12 +406,14 @@ class RaceRuntime:
                 )
                 self._narrative_llm_component = llm_component
                 self._narrative_qwen_service = qwen_service
+            qwen_timeout_ms = commentary_llm_timeout_ms(self._get_config())
             realization_effect = build_realization_effect(
                 self._speech_draft_cache,
                 prefer_authored=True,
                 allow_qwen=self._narrative_qwen_enabled,
                 qwen_service=qwen_service,
                 llm_component=llm_component,
+                qwen_timeout_ms=qwen_timeout_ms,
             )
             cfg = self._get_config()
             journal_dir = Path(

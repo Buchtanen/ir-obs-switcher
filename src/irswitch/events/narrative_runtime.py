@@ -1600,6 +1600,8 @@ class NarrativeRuntime:
 
         self._planning_cycle_id += 1
         self._plans_in_cycle = 0
+        if self._story_director is not None and reason != "event_replacement":
+            self._story_director.begin_cycle()
         effects.append(f"planning_cycle_opened:{reason}")
         effects.append(f"planning_cycle_id:{self._planning_cycle_id}")
 

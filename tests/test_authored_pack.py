@@ -93,8 +93,8 @@ def test_pack_selects_all_authored_critical_and_lifecycle_beats() -> None:
     )
 
     assert pack.schema_version == SCHEMA_VERSION == "authored-pack/2"
-    assert pack.beat_count == 33
-    assert pack.line_count == 132
+    assert pack.beat_count == 39
+    assert pack.line_count == 156
     assert pack.beat_ids == authored_ids
     assert all(
         beat.id not in pack.beat_ids
@@ -225,11 +225,11 @@ def test_anti_repeat_uses_only_safe_card_variants() -> None:
 def test_unknown_qwen_beat_is_not_in_the_pack() -> None:
     pack = load_authored_pack()
     step = AuthoredRealizer(pack).realize(
-        _bundle(beat_id="battle.approach", pattern_id="battle.approach:tight:1"),
+        _bundle(beat_id="timing.pace.gain", pattern_id="timing.pace.gain:tight:1"),
         now_ms=10_000,
     )
 
-    assert "battle.approach" not in pack.beat_ids
+    assert "timing.pace.gain" not in pack.beat_ids
     assert step.reason == "unknown_authored_beat"
 
 

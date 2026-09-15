@@ -1,8 +1,7 @@
-"""#349 Slice 4 — Qwen/verifier fail-closed (no silent template live fallback).
+"""#362 — Qwen miss falls back to authored/template; Qwen hit stashes #270 frame.
 
-Sol tip audit: when ``allow_qwen`` is on, authored+Qwen miss still spoke a
-template draft; unframed Qwen success skipped #270 verification and still
-reached TTS.
+#349 Slice 4 fail-closed (no template on Qwen miss / unframed Qwen) muted the
+live session. Missing verify frame on the reducer still rejects TTS.
 """
 
 from __future__ import annotations
@@ -56,7 +55,7 @@ def _sse_chunks(name: str = "role_content_usage_done") -> list[bytes]:
 
 
 @pytest.mark.asyncio
-async def test_allow_qwen_miss_fails_closed_without_template() -> None:
+async def test_allow_qwen_miss_falls_back_to_template() -> None:
     cache = SpeechDraftCache()
     service = RealizerService(transport=FakeTransport(chunks=[]))
     effect = build_realization_effect(
@@ -71,15 +70,13 @@ async def test_allow_qwen_miss_fails_closed_without_template() -> None:
         "requestId": "request:qwen:miss",
         "requestOrdinal": 2,
         "dispatchGeneration": 7,
-        "beatId": "battle.approach",
+        "beatId": "timing.pace.gain",
     }
     command = await effect(token)
-    assert command.kind == "REALIZATION_FAILED"
-    assert command.payload["outcome"] == "failed"
-    assert command.payload["text"] is None
-    assert command.payload["backend"] == "qwen_compiled"
-    assert command.payload["failureReason"] == "realization_transport"
-    assert take_live_verify_frame(token) is None
+    assert command.kind == "REALIZATION_SUCCEEDED"
+    assert command.payload["text"] == "Template fallback."
+    assert command.payload["backend"] == "authored"
+    assert take_live_verify_frame(token) is not None
 
 
 @pytest.mark.asyncio
@@ -113,7 +110,7 @@ async def test_allow_qwen_still_speaks_cached_authored_draft() -> None:
         "requestId": "request:qwen:authored-cache",
         "requestOrdinal": 2,
         "dispatchGeneration": 7,
-        "beatId": "battle.approach",
+        "beatId": "timing.pace.gain",
     }
     command = await effect(token)
     assert command.kind == "REALIZATION_SUCCEEDED"
@@ -123,7 +120,7 @@ async def test_allow_qwen_still_speaks_cached_authored_draft() -> None:
 
 
 @pytest.mark.asyncio
-async def test_qwen_success_does_not_stash_verify_frame() -> None:
+async def test_qwen_success_stashes_verify_frame() -> None:
     cache = SpeechDraftCache()
     service = RealizerService(transport=FakeTransport(chunks=_sse_chunks()))
     effect = build_realization_effect(
@@ -134,15 +131,18 @@ async def test_qwen_success_does_not_stash_verify_frame() -> None:
         llm_component=_ready_component(),
     )
     token = {
-        "requestId": "request:qwen:unframed",
+        "requestId": "request:qwen:framed",
         "requestOrdinal": 2,
         "dispatchGeneration": 7,
-        "beatId": "battle.approach",
+        "beatId": "timing.pace.gain",
     }
     command = await effect(token)
     assert command.kind == "REALIZATION_SUCCEEDED"
     assert command.payload["backend"] == "qwen_compiled"
-    assert take_live_verify_frame(token) is None
+    frame = take_live_verify_frame(token)
+    assert frame is not None
+    assert frame.subject_surface == "Alex"
+    assert frame.required_claim_surface == "is closing on Morgan"
 
 
 def test_unframed_realization_rejects_when_verifier_attached() -> None:
@@ -187,7 +187,7 @@ def test_unframed_realization_rejects_when_verifier_attached() -> None:
     assert runtime.current_utterance_token() is None
 
 
-def test_race_comment_no_longer_promises_template_on_qwen_miss() -> None:
+def test_race_comment_promises_template_on_qwen_miss() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
-    assert "Authored/template remain on miss" not in race
+    assert "Qwen miss falls back to authored/template" in race
     assert "allow_qwen=" in race

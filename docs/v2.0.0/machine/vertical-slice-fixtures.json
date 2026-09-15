@@ -13,11 +13,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "timeline",
@@ -93,11 +93,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "timeline",
@@ -173,11 +173,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "timeline",
@@ -270,11 +270,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "timeline",
@@ -372,11 +372,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "director",
@@ -462,11 +462,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "director",
@@ -555,11 +555,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "director",
@@ -638,11 +638,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "speech",
@@ -733,11 +733,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "realization",
@@ -829,11 +829,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "silence",
@@ -907,11 +907,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "qwen",
@@ -983,11 +983,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "api",
@@ -1064,11 +1064,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "mailbox",
@@ -1157,11 +1157,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "speech",
@@ -1220,11 +1220,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "facts",
@@ -1308,11 +1308,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "config",
@@ -1424,11 +1424,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "silence",
@@ -1517,11 +1517,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "context",
@@ -1609,11 +1609,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "mailbox",
@@ -1717,11 +1717,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "api",
@@ -1820,11 +1820,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "fanout",
@@ -1914,11 +1914,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "timeline",
@@ -2020,11 +2020,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "scoring",
@@ -2131,11 +2131,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "validity",
@@ -2242,11 +2242,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "timeline",
@@ -2327,11 +2327,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "speech",
@@ -2435,11 +2435,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "tape",
@@ -2554,11 +2554,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "features",
@@ -2648,11 +2648,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "api",
@@ -2723,11 +2723,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "tts",
@@ -2818,11 +2818,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "session_plan",
@@ -2936,11 +2936,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "facts",
@@ -3076,11 +3076,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "prompt",
@@ -3204,11 +3204,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "detector",
@@ -3324,11 +3324,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "director",
@@ -3425,11 +3425,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "config",
@@ -3583,11 +3583,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "director",
@@ -3710,11 +3710,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "realization",
@@ -3833,11 +3833,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "tts",
@@ -3991,11 +3991,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "qwen",
@@ -4165,11 +4165,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "tts",
@@ -4301,11 +4301,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "silence",
@@ -4438,11 +4438,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "tape",
@@ -4607,11 +4607,11 @@
       "contractHashes": {
         "actor-transition-model.json": "sha256:8b1b4f8ebbae59e6e0b6e6363983a13f1a72e42c1b706cc9a450274739dec796",
         "api-contract.json": "sha256:2315ef7b63a9b220e6e73ed9e3db2cb56af30179a94ffa16277c5da758cb6383",
-        "beat-catalog.json": "sha256:7dafad15db5de649d857cbe7964a2c94abd3182c459bb06d5e415415b9e101a0",
+        "beat-catalog.json": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
         "config-contract.json": "sha256:726d5062a90e85dc6860a8f5ba899c60c27c6e907caf7a16eabb4a89e1b32541",
         "detector-catalog.json": "sha256:a26f87c29ca5a12fbbfd8431a6aba4b8ebc85b06246010e7f45a6cea1d8b2ecd",
         "realization-contract.json": "sha256:22d64dbbaae42fad7084a8c8414d60c78e206023b79d422acb5122f8bd45abef",
-        "successor-graph.json": "sha256:a21485429401d774676a99abe97cfd79b4e18972d14e2da20df4178a6b9aab7e"
+        "successor-graph.json": "sha256:a02f0ebd15adebc25ddda6dd8e08ad24225eec29a236b73a5d45efba8bf70080"
       },
       "domains": [
         "capture",

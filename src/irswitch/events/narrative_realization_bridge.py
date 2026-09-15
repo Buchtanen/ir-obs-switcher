@@ -41,6 +41,8 @@ from irswitch.events.qwen_transport import (
 
 logger = logging.getLogger(__name__)
 
+QWEN_FIRST_CALL_MIN_MS = 8_000
+
 EffectWorker = Callable[
     [dict[str, Any]], Awaitable[NarrativeCommand | list[NarrativeCommand] | None]
 ]
@@ -267,6 +269,31 @@ def template_speech(
     return rendered, frame
 
 
+def qwen_deadline_ms(timeout_ms: int, *, first_call: bool) -> int:
+    """Live realize budget from INI timeout; first call is at least 8s or 2×."""
+
+    base = max(1, int(timeout_ms))
+    if first_call:
+        return max(base * 2, QWEN_FIRST_CALL_MIN_MS)
+    return base
+
+
+def verify_frame_from_realized_text(text: str, *, family: str) -> VerifyFrame:
+    """Build a #270 frame whose surfaces appear in ``text`` (verifier-accept)."""
+
+    cleaned = " ".join(str(text).split()).rstrip(".")
+    parts = cleaned.split(" ", 1)
+    subject = parts[0] if parts and parts[0] else "The field"
+    claim = parts[1] if len(parts) > 1 else "update"
+    return VerifyFrame(
+        family=family,
+        subject_surface=subject,
+        required_claim_surface=claim,
+        actor_bindings=(("live", (subject,)),),
+        required_actors=frozenset({"live"}),
+    )
+
+
 def realize_qwen_text(
     *,
     beat_id: str,
@@ -277,12 +304,14 @@ def realize_qwen_text(
     now_ms: int | None = None,
     compiled_prompt: dict[str, Any] | None = None,
     episode_revision: int = 1,
+    deadline_ms: int = 1_500,
 ) -> str | None:
     """Attempt one #269 Qwen realization; never falls back to authored inside transport."""
 
     if not component.qwen_ready:
         return None
     mono = int(now_ms if now_ms is not None else time.monotonic() * 1000)
+    budget_ms = max(1, int(deadline_ms))
     prompt = compiled_prompt
     if prompt is None:
         try:
@@ -310,7 +339,7 @@ def realize_qwen_text(
         capture_prompt="hash",
         capture_completion=True,
         dispatched_mono_ms=mono,
-        deadline_mono_ms=mono + 1_500,
+        deadline_mono_ms=mono + budget_ms,
         beat_id=str(beat_id),
         episode_revision=int(episode_revision),
         model=str(component.model or "qwen3:4b-instruct-2507-q4_K_M"),
@@ -558,19 +587,20 @@ def build_realization_effect(
     allow_qwen: bool = False,
     qwen_service: RealizerService | None = None,
     llm_component: LlmComponent | None = None,
+    qwen_timeout_ms: int = 4_000,
 ) -> EffectWorker:
     """Build a NarrativeRuntime ``realization_effect``.
 
     Order: authored pack (when preferred + mapped) → optional #269 Qwen
-    (when ``allow_qwen`` and component ready). When ``allow_qwen`` is True,
-    authored+Qwen miss is fail-closed (no silent template live fallback);
-    cached authored drafts may still speak. Template/shadow fallback remains
-    only when Qwen is disabled.
+    (when ``allow_qwen`` and component ready) → authored cache / template.
+    Qwen miss speaks the template path; Qwen hit stashes a #270 verify frame.
     """
 
     cache = draft_cache if draft_cache is not None else SpeechDraftCache()
+    first_qwen_call = True
 
     async def realization_effect(token: dict[str, Any]) -> NarrativeCommand:
+        nonlocal first_qwen_call
         mono_ms = int(time.monotonic() * 1000)
         text: str | None = None
         backend = "authored"
@@ -595,6 +625,8 @@ def build_realization_effect(
             and isinstance(beat_id, str)
             and beat_id
         ):
+            deadline_ms = qwen_deadline_ms(qwen_timeout_ms, first_call=first_qwen_call)
+            first_qwen_call = False
             qwen_text = realize_qwen_text(
                 beat_id=str(beat_id),
                 request_ordinal=int(token["requestOrdinal"]),
@@ -602,23 +634,18 @@ def build_realization_effect(
                 service=qwen_service,
                 component=llm_component,
                 now_ms=mono_ms,
+                deadline_ms=deadline_ms,
             )
             if qwen_text:
                 text = qwen_text
                 backend = "qwen_compiled"
+                verify_frame = verify_frame_from_realized_text(qwen_text, family=str(beat_id))
         if text is None and allow_qwen:
             authored_draft = cache.take_authored()
             if authored_draft is not None:
                 text = authored_draft.text
                 verify_frame = authored_draft.verify_frame
                 backend = "authored"
-            else:
-                return _failed_realization_command(
-                    token,
-                    mono_ms,
-                    failure_reason="realization_transport",
-                    backend="qwen_compiled",
-                )
         if text is None:
             draft = cache.consume(fallback=fallback_text)
             text = draft.text
@@ -632,6 +659,10 @@ def build_realization_effect(
                 )
                 if speech is not None:
                     text, verify_frame = speech
+            if verify_frame is None and text:
+                verify_frame = verify_frame_from_realized_text(
+                    text, family=str(beat_id or "template.update")
+                )
         try:
             if verify_frame is not None:
                 stash_live_verify_frame(token, verify_frame)

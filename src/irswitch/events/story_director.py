@@ -476,6 +476,15 @@ class StoryDirector:
         if self._failures >= 2:
             self._exhausted = True
 
+    def begin_cycle(self) -> None:
+        """Open a new planning impulse; two prior fails do not mute the session."""
+
+        self._cycle_id += 1
+        self._attempt = 0
+        self._failures = 0
+        self._exhausted = False
+        self._attempted.clear()
+
     def evaluate(
         self,
         world: DirectorWorld,
@@ -560,6 +569,8 @@ class StoryDirector:
             self._attempt = 1
         elif self._failures > 0:
             self._attempt = 2
+        else:
+            self._attempt = 1
         return self._decision(reason, selected, records)
 
     def _decision(

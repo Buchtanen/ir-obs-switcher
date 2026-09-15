@@ -49,7 +49,7 @@ def test_resolve_authored_beat_id_normalizes_kind() -> None:
     pack = load_authored_pack()
     assert resolve_authored_beat_id("timing.lap_completed", pack=pack) == "timing.lap.completed"
     assert resolve_authored_beat_id("timing.lap.completed", pack=pack) == "timing.lap.completed"
-    assert resolve_authored_beat_id("battle.pursuit", pack=pack) is None
+    assert resolve_authored_beat_id("battle.pursuit", pack=pack) == "battle.pursuit"
 
 
 def test_realize_authored_text_for_pack_beat() -> None:

@@ -376,6 +376,45 @@ def test_planning_cycle_replace_and_attempt_two() -> None:
     assert replacement.cycle_attempt_ordinal == 1
 
 
+def test_begin_cycle_clears_exhaustion_for_next_impulse() -> None:
+    director = StoryDirector()
+    first = _cand(source="event_opportunity", opportunity_id="opp:1", from_accepted_event=True)
+    second = _cand(
+        beat_id="battle.side_by_side",
+        source="event_opportunity",
+        opportunity_id="opp:2",
+        urgency="critical",
+        policy_id="critical",
+        base_priority=90.0,
+        from_accepted_event=True,
+        is_critical=True,
+        candidate_order=CandidateOrder(41, 0),
+    )
+    opened = director.evaluate(_world(), (first, second))
+    assert opened.selected is not None
+    director.note_failure(opened.selected.beat_id, opened.selected.episode_revision)
+    retry = director.evaluate(_world(), (first, second))
+    assert retry.selected is not None
+    director.note_failure(retry.selected.beat_id, retry.selected.episode_revision)
+    exhausted = director.evaluate(_world(), (first, second))
+    assert exhausted.reason == "planning_cycle_exhausted"
+    director.begin_cycle()
+    again = director.evaluate(_world(), (first, second))
+    assert again.selected is not None
+    assert again.reason != "planning_cycle_exhausted"
+    assert again.speech == "speak"
+    assert again.cycle_attempt_ordinal == 1
+    assert again.planning_cycle_id != exhausted.planning_cycle_id
+
+
+def test_runtime_resets_director_on_new_planning_impulse() -> None:
+    runtime_src = (
+        Path(__file__).resolve().parents[1] / "src" / "irswitch" / "events" / "narrative_runtime.py"
+    ).read_text(encoding="utf-8")
+    assert "begin_cycle()" in runtime_src
+    assert 'reason != "event_replacement"' in runtime_src
+
+
 def test_v4_wire_priority_never_enters_score() -> None:
     plain = _cand(wire_priority=None)
     wired = _cand(wire_priority=99)

@@ -311,7 +311,7 @@ Full #273 schema: master cutover only (human kick). Loop liveness landed feat `c
 
 Fact-only wait / coalesce / callback branches landed feat `dd64047` (`contracts/coalesce_policy.py`; pure FactView `fact_only_wait`; narrative/manual playback+terminal callback branches; silence pause/rearm).
 
-Live #270 verify-frame attachment on authored/template realization paths landed feat `a1ba998` (`events/narrative_verify_frame.py` side-stash; `realize_authored_speech` / `template_speech`; `SpeechDraft.verify_frame`; effect `verify_frame_attached_live`; skip-no-frame mainly for Qwen/unframed; `tests/test_narrative_realization_bridge.py` **5**).
+Live #270 verify-frame attachment on authored/template realization paths landed feat `a1ba998` (`events/narrative_verify_frame.py` side-stash; `realize_authored_speech` / `template_speech`; `SpeechDraft.verify_frame`; effect `verify_frame_attached_live`). #362 also stashes a frame on Qwen success (`verify_frame_from_realized_text`) and falls back to authored/template on Qwen miss; reducer still rejects TTS when the verifier is live and no frame is present (`semantic_reason:missing_verify_frame`).
 
 Overflow linearization / deadline-skip / quarantine model-tests landed test `f465bfd` (`tests/test_actor_transition_goldens.py` — `test_narrative_runtime_manual_full_partition_linearization`, `test_narrative_runtime_deadline_admission_skipped_under_overflow`, `test_narrative_runtime_quarantined_cannot_admit_under_overflow`; goldens **32**).
 

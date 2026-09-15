@@ -110,7 +110,7 @@ def test_stories_expose_open_update_close_and_hard_context_axes() -> None:
     assert completed.policy.base_priority == 78
     assert completed.realization.backend == "authored"
     hunt = catalog.beat("battle.pursuit")
-    assert hunt.realization.backend == "qwen_compiled"
+    assert hunt.realization.backend == "authored"
     assert hunt.realization.same_beat_authored_fallback is False
 
 
@@ -169,7 +169,7 @@ def test_style_variant_and_sequence_graph_fallback_fail_closed() -> None:
 
 def test_qwen_failure_has_no_same_beat_authored_fallback_field() -> None:
     beats = json.loads(packaged_schema_bytes("beat-catalog.json"))
-    hunt = next(row for row in beats["beats"] if row["id"] == "battle.pursuit")
+    hunt = next(row for row in beats["beats"] if row["id"] == "timing.pace.gain")
     hunt["realization"]["fallback"] = "authored"
     result = load_narrative_catalog(beats=beats)
     assert result.outcome == "commentary_disabled"

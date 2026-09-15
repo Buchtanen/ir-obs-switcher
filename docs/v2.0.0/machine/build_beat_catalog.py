@@ -413,8 +413,24 @@ def _event_triggers() -> dict[str, list[dict[str, str]]]:
     return triggers
 
 
+BATTLE_AUTHORED_BEATS = frozenset(
+    {
+        "battle.pursuit",
+        "battle.approach",
+        "battle.attack_range",
+        "battle.pressure_behind",
+        "battle.rival_threat",
+        "battle.two_front",
+    }
+)
+
+
 def _backend(beat_id: str, policy_id: str) -> str:
-    if policy_id in {"critical", "result"} or beat_id in LIFECYCLE_BEATS:
+    if (
+        policy_id in {"critical", "result"}
+        or beat_id in LIFECYCLE_BEATS
+        or beat_id in BATTLE_AUTHORED_BEATS
+    ):
         return "authored"
     return "qwen_compiled"
 
