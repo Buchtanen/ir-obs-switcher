@@ -174,6 +174,12 @@ def commentary_llm_timeout_ms(config: object | None) -> int:
         return 4000
 
 
+def commentary_llm_warmup_timeout_ms(config: object | None) -> int:
+    """Cold Ollama load needs ~40s; live ``timeout_s`` stays the per-call cap."""
+
+    return max(commentary_llm_timeout_ms(config), 45_000)
+
+
 def commentary_live_enabled(config: object | None) -> bool:
     """Kill-switch from the v2 candidate; overlay.commentary is stripped at parse."""
 
@@ -402,7 +408,7 @@ class RaceRuntime:
                     generation=1,
                     model=qwen_model,
                     endpoint=qwen_endpoint,
-                    timeout_ms=commentary_llm_timeout_ms(cfg_qwen),
+                    timeout_ms=commentary_llm_warmup_timeout_ms(cfg_qwen),
                 )
                 self._narrative_llm_component = llm_component
                 self._narrative_qwen_service = qwen_service

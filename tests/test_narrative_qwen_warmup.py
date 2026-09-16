@@ -11,6 +11,7 @@ from irswitch.race.runtime import (
     commentary_llm_chat_url,
     commentary_llm_model,
     commentary_llm_timeout_ms,
+    commentary_llm_warmup_timeout_ms,
 )
 
 SOURCE = (
@@ -77,6 +78,8 @@ def test_commentary_llm_helpers_read_v2_snapshot() -> None:
     assert commentary_llm_chat_url(_Cfg()) == "http://192.168.0.38:11434/v1/chat/completions"
     assert commentary_llm_model(_Cfg()) == "qwen3:4b-instruct-2507-q4_K_M"
     assert commentary_llm_timeout_ms(_Cfg()) == 4000
+    assert commentary_llm_warmup_timeout_ms(_Cfg()) == 45_000
+    assert commentary_llm_warmup_timeout_ms(None) == 45_000
 
 
 def test_warmup_posts_resolved_endpoint() -> None:
@@ -102,3 +105,4 @@ def test_race_enables_qwen_and_calls_warmup() -> None:
     assert "endpoint=qwen_endpoint" in race
     # Soft-fail path must remain so missing Ollama does not crash startup.
     assert "warmup_qwen_component(" in race
+    assert "commentary_llm_warmup_timeout_ms" in race

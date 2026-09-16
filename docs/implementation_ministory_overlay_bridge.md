@@ -13,7 +13,7 @@ Commentary already made its final freshness decision after Qwen returned, but V4
 - `OverlayConsumer` owns a bounded/coalesced lifecycle inbox and merges leased cards with the producer's source snapshot. Older revisions are ignored.
 - Source `EXIT` changes a leased card to `RESULT`; `completed`, `interrupted`, `invalidated`, session reset and run reset remove it. A terminal correlation tombstone prevents a stale source snapshot from reviving the card.
 - The V4 renderer reconciles authoritative snapshots instead of clearing every card. Narrative leases disable client hold timers; events without a lease keep existing behavior.
-- Overlay asset cache identity is `1.2.18` so OBS CEF cannot retain the previous renderer.
+- Overlay asset cache identity is `1.2.19` so OBS CEF cannot retain the previous renderer.
 
 ## Evidence
 

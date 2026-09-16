@@ -11,8 +11,7 @@ html, body {
   color: var(--text-primary, #e8fbff);
 }
 
-/* Live OBS: hide SYSINFO + widgets when iRacing telemetry is down (link drop / quit). */
-html.overlay-idle #sysinfo-widget,
+/* Live OBS: hide event widgets when iRacing telemetry is down. SYSINFO stays up. */
 html.overlay-idle #event-layer,
 html.overlay-idle #battle-stack,
 html.overlay-idle #session-layer,

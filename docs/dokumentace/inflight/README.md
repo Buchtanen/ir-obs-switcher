@@ -14,6 +14,7 @@
 | Next listen | operator INI: `commentary.tape.enabled=true`, `commentary.llm.enabled=true` |
 | Qwen URL | warmup + `RealizerService` use `commentary.llm.base_url` / model / `timeout_s` (not localhost) |
 | Slice 2 (2026-09-15) | Realize deadline from `commentary.llm.timeout_s` via `qwen_timeout_ms`; first Qwen call `max(2×timeout, 8s)`. `StoryDirector.begin_cycle()` on new planning impulse. Qwen miss → authored/template + VerifyFrame (not bare `REALIZATION_FAILED`). Six battle beats → `authored` (39-pack / 156 lines). Detail: [§ #362 lookup](#362-live-qwen-timeout--director-reset--battle-authored-lookup) |
+| Slice 3 (2026-09-16) | Cold Ollama load ~39s; live `timeout_s` stays the per-call cap. Warmup uses `max(timeout_s, 45s)` (`commentary_llm_warmup_timeout_ms`). Do not raise INI `timeout_s` (contract max 10s) — that would stall TTS on a dead LLM. Live prompt length is not the bottleneck (warm full FACT_LOCK ~0.5s). Overlay: `overlay-idle` no longer hides SYSINFO (`?v=1.2.19`). |
 
 `FAMILY_ROUTE` stays unchanged. Merge back to `codex/commentary-story-flow-spec` after verify. Issue [#362](https://github.com/Buchtanen/ir-obs-switcher/issues/362).
 
