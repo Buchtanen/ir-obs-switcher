@@ -327,7 +327,6 @@ class BattleEmitter:
             and closing is not None
             and closing > cfg.min_closing_rate
         )
-        stay_floor = cfg.min_closing_rate if battle_state == "hunted" else 0.0
         stay_ok = (
             connected
             and car_idx is not None
@@ -336,7 +335,7 @@ class BattleEmitter:
             and gap is not None
             and gap <= cfg.exit_gap
             and closing is not None
-            and closing >= stay_floor
+            and closing >= 0.0
         )
         if battle_state == "hunted":
             hero_cp = state.class_position if state.class_position is not None else state.position

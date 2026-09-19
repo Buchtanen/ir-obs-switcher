@@ -1,0 +1,1500 @@
+# v2 narrative runtime — implementation handover
+
+**Updated:** 2026-09-15 (#362 slice 2 on `fix/narrative-live-silence`: INI Qwen realize deadline + first-call 2×/8s floor; `StoryDirector.begin_cycle()` on new planning impulse; Qwen miss → authored/template + VerifyFrame; six battle beats `authored`; **no master PR**)
+**Phase:** #271 eval corpus closed; #284 NarrativeRuntime **library StoryDirector composition + shadow NarrativeIngress + enabled shadow fanout cutover (live batch adapter) + actor-owned `NarrativeRuntime.run()` + commentary-runtime HTTP status mount + true CommentaryConsumer EventSubscription cutover + NarrativeRuntime-owned `tts_effect` + live `realization_effect` / StoryDirector composition + live StoryDirector world/candidate seed + authored-pack live realization + CommentaryConsumer idle-lane speech cutover + optional Qwen realization path + Qwen enable+warmup + library reducer-trace replay harness + command journal file→command reconstruction + optional #270 SemanticVerifier live-wiring via NarrativeRuntime (feat `447382c2aa4a667891539407049521c5a30d03c8`) + owned tape flush effect via `tape_effect` / `build_tape_flush_effect` (feat `fed99d1d2095301c7771250a8e1097cade784439`; race wired feat `fc6e394`) + thin #273 golden-health identity slice (`RuntimeStatus` timeline identity, `GET /health` `commentary`, runtime timeline projector) + thin #273 speech/language/components status slice (fixní `language=en`, full `speech` projection incl. retained `lastTerminal`, bounded `components.{llm,tts,tape}`) + thin #273 golden-health decisions slice (bounded decision ring `DECISION_CAPACITY=128` on each `_consult_director`, `NarrativeRuntime.decisions(limit)`, additive `GET /api/commentary/runtime/decisions`) + thin #273 golden-health validate/speak slice (`project_validate_response`, `NarrativeRuntime.try_manual_speak` + `ManualSpeakOutcome`, additive `POST /api/commentary/runtime/validate|speak`; legacy validate/speak unchanged) + thin #273 `ManualAdmissionLatch` slice (`events/narrative_manual_latch.py`; latch rendezvous in `try_manual_speak` + `_on_manual`; HTTP 503 `admission_timeout`; final legacy cutover deferred; **#273 remainder still open**) + thin #273 status_ready slice (stub feat `03c34b2`; live catalog/config/episodes/byTapeChannel status projection feat `bdb9633`; golden `status_ready_library.json` for disabled/unloaded subset) + thin #273 components llm/tts schema stub slice (`_llm_component_projection` / `_tts_component_projection`; golden `status_components_llm_tts.json`; feat `3670502`; **not** live transport/residency) + thin #273 timeline session identity slice (null stubs feat `f58c992` + live wiring from APPLY_CONTEXT feat `ccd0697`; goldens `status_timeline_session_null.json`, `status_identity_after_context.json`) + replay-closure slice (journal replay reproduces `director_selected` + recorded realization via optional `runtime_factory`; feat `b86a336`) + actor-transition model-tests slice (`tests/test_actor_transition_goldens.py` **29** against frozen `actor-transition-goldens.json`; test `fe70f2a`) + health/API reason-code schema slice (freeze-registry actor/recovery codes on `reason_codes` / `/health` `commentary.reason` / runtime `diagnostics.reasonCodes`; `HealthCommentarySummary.reason` closed enum; `API.md` + `CONFIG.md`; feat `cffaab1`) + fact-only wait / coalesce / callback-branches slice (`contracts/coalesce_policy.py`; pure FactView `fact_only_wait`; narrative/manual playback+terminal callback branches; silence pause/rearm; feat `dd64047`) + live #270 verify-frame attachment slice (`events/narrative_verify_frame.py`; `realize_authored_speech` / `template_speech`; side-stash + `verify_frame_attached_live`; feat `a1ba998`) + overflow linearization / deadline-skip / quarantine model-tests slice (`tests/test_actor_transition_goldens.py` **32** — three `NarrativeRuntime` overflow evidence rows; test `f465bfd`) + cancel-on-disable / transition / config-boundary slice (`tests/test_narrative_runtime.py` **149** — three cancel/disable/transition rows + `tests/test_narrative_tape_bridge.py` **4** incl. disable flush; test `d9089a1`; AC **36/41**) + ordering+races verification slice (`tests/test_narrative_runtime.py` **155** — six ordering/completion race rows; test `5f4eb61`; AC **38/41**) + AC5 actor command + transition matrices embed (`docs/v2.0.0/actor-transition-contract.md` — complete **17**-command inventory + **85** lane×command disposition rows mirrored from frozen machine; docs `9b0c860`; AC **39/41**) + upstream snapshot immutability slice (`tests/test_narrative_runtime.py` **157** — two immutability rows; test `78a1aeb`) + process TDD AC (**41/41** — human-accepted TDD-exception) slices landed; **#284 CLOSED** (AC **41/41**; human close gate)**. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **no master merge**. Next work: #273 **OPEN** remainder on integration — ~~**Expose fixed EN, catalog hash, desired/effective config hashes, apply sequence and pending boundaries**~~ **DONE** @ `b751d70`; then master cutover only when cutover issue says so. Tape drop/size/`purposeCounts` counters landed (feat `aed3d1b`, import fix `606ac8f`). byTapeChannel funnel bounds + cohort rates landed (feat `466c2f3`, docs `25c7204`, style `b01f7a6`; PR [#291](https://github.com/Buchtanen/ir-obs-switcher/pull/291) **MERGED**). decisions/queue-age landed (feat `75e128d`; PR [#292](https://github.com/Buchtanen/ir-obs-switcher/pull/292) **MERGED**). #272/#284 closed+merged to integration. Process-only land of #285+#287 is on this branch; **no master PR**.
+**Authoritative issues:** [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234), completed [#235](https://github.com/Buchtanen/ir-obs-switcher/issues/235)–[#271](https://github.com/Buchtanen/ir-obs-switcher/issues/271) as previously recorded, completed [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283), completed [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262), completed [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) (library FreshnessGate + OpportunityQueue + EpisodeRegistry + StoryDirector composition + shadow NarrativeIngress fanout→mailbox adapter + enabled `NarrativeShadowConsumer` in `race.runtime` with `_adapt_batch_for_shadow_with_drafts` + actor-owned `NarrativeRuntime.run()` via `WorkerSupervisor("narrative_runtime", _run_narrative_runtime_actor)` with `reduce_after_admit=False` + process-level `set_narrative_runtime` HTTP attach + `GET /api/commentary/runtime` HTTP mount + `_narrative_subscription_cutover=True` with `_commentary_subscription=None` + `NarrativeRuntime(..., realization_effect=build_realization_effect(SpeechDraftCache), tts_effect=build_tts_effect(director.sink, locale=...), story_director=StoryDirector(), opportunity_queue=..., episode_registry=..., freshness_gate=...)` via `events/narrative_realization_bridge.py` / `events/narrative_tts_bridge.py` + EventSubscription full replace (`44dab2f`: `legacy_stream_handler=None`; sole ingress shadow admit → mailbox; `CommentaryConsumer` TTS sink/status/filler only) + prior deadline-timer ownership on branch; live StoryDirector world/candidate seed via `events/narrative_director_bridge.py` + `_refresh_director_from_live` landed (feat `79a7966`; `_consult_director` runs `evaluate`, effect `director_live_seeded`); authored-pack live realization via `prefer_authored=True` landed (feat `44b37f6`); CommentaryConsumer idle-lane speech cutover via `idle_speech_enabled=False` landed (feat `1a5e651`); optional Qwen realization hook landed (feat `edd0ad6`; `_narrative_qwen_enabled=False` default-off hook superseded); Qwen enable+warmup landed via `_narrative_qwen_enabled=True` + `warmup_qwen_component(..., generation=1, timeout_ms=500)` + `allow_qwen=self._narrative_qwen_enabled` (feat `ddc3b80`; related **186** = prior **182** + `tests/test_narrative_qwen_warmup.py` **4**); library reducer-trace replay harness landed via `events/narrative_reducer_replay.py` (`capture_reducer_trace`, `replay_reducer_trace`, `traces_equivalent`, `ReducerTrace.to_tape_rows`; not exported; race not wired) (feat `1f509b8`; related **190** = prior **186** + `tests/test_narrative_reducer_replay.py` **4**); command journal file→command reconstruction landed via `COMMAND_JOURNAL_SCHEMA`, `command_from_dict`, `write_command_journal`, `read_commands_from_journal`, `replay_command_journal` (feat `2a555df`; related **195** = prior **190** + `tests/test_narrative_command_journal.py` **5**; not exported; race not wired)). Open: [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) (v2 health/observability/operator config — slices `11f5b59`/`b4f9b47`/`a2792ff`/`61b71af`/`ac44ddd`/`aed3d1b`/`606ac8f`/`466c2f3`/`25c7204`/`b01f7a6`/`75e128d` landed on integration tip `75e128d`; remainder open). Process (not Wave B): [#285](https://github.com/Buchtanen/ir-obs-switcher/issues/285), [#287](https://github.com/Buchtanen/ir-obs-switcher/issues/287).
+
+This is the branch-local recovery record. GitHub issue comments remain authoritative for accepted work and immutable pushed SHAs. Update this file before a meaningful push, ownership transfer, long pause or agent replacement. This planning file is removed by the final-PR exclusion gate.
+
+**#362 slice 2 checkpoint (2026-09-15):** worktree `C:\Users\richa\Projekty\obs-switcher\richa-v2-silence` on `fix/narrative-live-silence`; last pushed SHA `09be6cb`; dirty (this agent owns the uncommitted slice); TDD GREEN; verifier 411 passed. Next: commit/push on ask, then merge onto `codex/commentary-story-flow-spec` (`richa-v2`) + restart for live test. No master PR.
+
+## Resume identity
+
+- Repository: `Buchtanen/ir-obs-switcher`
+- Worktree: `/workspace` for this cloud-agent continuation; the original linked worktree remains `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec`
+- Branch: `codex/commentary-story-flow-spec` (integration, tip `75e128d` — feat `75e128d`; PR [#292](https://github.com/Buchtanen/ir-obs-switcher/pull/292) merged; PR [#291](https://github.com/Buchtanen/ir-obs-switcher/pull/291) merged @ `b01f7a6`; PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) merged @ `1c993c0`; PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) merged @ `77452a9`); historical #272 feature branch: `cursor/legacy-v2-shadow-272-cad3` (docs tip `5bad145`; feat `6cfce0c`); historical #284 feature branch: `cursor/narrative-runtime-284-matrix-cad3` (close tip `e8c4a2e`); **#274 slice 1 open** on `cursor/race-outcome-map-274-cad3` — inventory-only `contracts/race_outcome_family_map.py` (all `legacy`; no `FAMILY_ROUTE` flip); [race-outcome-migration.md](race-outcome-migration.md) · [inflight § #274](../dokumentace/inflight/README.md#274-race-outcome-family-map-slice-1-lookup); **Docs: `CONFIG.md` / `API.md` unchanged**
+- Upstream: `origin/codex/commentary-story-flow-spec` (integration — **only** active work branch; no master PR until cutover)
+- #284 library effect-executor + diagnostics SHA: `5075c98` (`feat: wire NarrativeRuntime effect tasks and status diagnostics (#284)`); **101** passed at that checkpoint
+- #284 library silence/validity deadline-timer SHA: `56555f2` (`feat: own NarrativeRuntime silence/validity deadline timers (#284)`); **104** passed at that checkpoint
+- #284 library recovery-diagnostics SHA: `3b83503` (`feat: project mailbox recovery diagnostics on RuntimeStatus (#284)`); **107** passed at that checkpoint
+- #284 library realization/speech deadline-timer SHA: `8d4e11d` (`feat: own NarrativeRuntime realization/speech deadline timers (#284)`); **111** passed at that checkpoint
+- #284 library FreshnessGate composition SHA: `08472ed` (`feat: compose optional FreshnessGate into NarrativeRuntime commit path (#284)`); `tests/test_narrative_runtime.py` **114** passed at that checkpoint
+- #284 library OpportunityQueue composition SHA: `b306deb` (`feat: compose optional OpportunityQueue into NarrativeRuntime (#284)`); `tests/test_narrative_runtime.py` **117** passed at that checkpoint
+- #284 library EpisodeRegistry composition SHA: `5d59554` (`feat: compose optional EpisodeRegistry into NarrativeRuntime (#284)`); `tests/test_narrative_runtime.py` **120** passed at that checkpoint
+- #284 library StoryDirector composition SHA: `5fb8041` (`feat: compose optional StoryDirector into NarrativeRuntime (#284)`); `tests/test_narrative_runtime.py` **124** passed at that checkpoint
+- #284 shadow NarrativeIngress adapter SHA: `13b744a` (`feat: add shadow NarrativeIngress fanout-to-mailbox adapter (#284)`); `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_runtime.py` **124** = **129** related passed locally at that checkpoint
+- #284 shadow NarrativeShadowConsumer SHA: `eaa58c9` (`feat: add optional NarrativeShadowConsumer beside commentary (#284)`); `tests/test_narrative_runtime.py` **124** + `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_shadow_consumer.py` **6** = **135** related passed locally at that checkpoint; black/ruff/mypy clean on touched files
+- #284 commentary-runtime HTTP status mount SHA: `f4d1725` (`feat: mount commentary-runtime/2 status at /api/commentary/runtime (#284)`); `tests/test_narrative_runtime.py` **124** + `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_shadow_consumer.py` **6** + `tests/test_narrative_runtime_http.py` **5** = **140** related passed locally at that checkpoint; `API.md` updated in same feat commit
+- #284 shadow fanout cutover reduce+status attach SHA: `975d3e1` (`feat: shadow fanout cutover reduce + runtime status attach (#284)`); `tests/test_narrative_runtime.py` **124** + `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_shadow_consumer.py` **6** + `tests/test_narrative_runtime_http.py` **5** + `tests/test_narrative_fanout_cutover.py` **5** = **145** related passed locally at that checkpoint; fixes empty-mailbox falsy identity (`mailbox if mailbox is not None else NarrativeMailbox()`); `NarrativeShadowConsumer` optional `runtime=` + `reduce_after_admit` → `reduce_next()` (`shadow_reduced`, no `run()`); `set_narrative_runtime` / `get_narrative_runtime` process attach feeds `GET /api/commentary/runtime`
+- #284 enabled shadow fanout cutover + live batch adapter SHA: `16c0e66` (`feat: enable shadow fanout cutover with live batch adapter (#284)`); `tests/test_narrative_runtime.py` **124** + `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_shadow_consumer.py` **6** + `tests/test_narrative_runtime_http.py` **5** + `tests/test_narrative_fanout_cutover.py` **5** + `tests/test_narrative_shadow_adapter.py` **4** = **149** related passed locally; `_narrative_shadow_enabled=True` in `race.runtime` (human kick); new `events/narrative_shadow_adapter.py` + `adapt_batch_for_shadow` (observation-only, not exported); parallel path fanout → adapter → ingress → mailbox → `reduce_next()`; does **not** call `NarrativeRuntime.run()`; does **not** replace `CommentaryConsumer` EventSubscription/TTS
+- #284 actor-run activation SHA: `dfd5a8e` (`feat: activate NarrativeRuntime.run() with actor-owned drain (#284)`); `tests/test_narrative_runtime.py` **124** + `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_shadow_consumer.py` **6** + `tests/test_narrative_runtime_http.py` **5** + `tests/test_narrative_fanout_cutover.py` **6** + `tests/test_narrative_shadow_adapter.py` **4** = **150** related passed locally; `NarrativeShadowConsumer(..., reduce_after_admit=False, publication_adapter=adapt_batch_for_shadow, runtime=...)`; new `WorkerSupervisor("narrative_runtime", _run_narrative_runtime_actor)` spawned in live + N12 replay loops; actor re-enables if stopped/disabled/stopping then `await runtime.run()`; `_drain_consumer_queues` also waits for `narrative_runtime.status().mailbox_depth == 0`; does **not** replace `CommentaryConsumer` EventSubscription/TTS
+- #284 EventSubscription cutover + legacy mirror SHA: `95e6def` (`feat: cut over commentary EventSubscription to shadow mirror (#284)`); `tests/test_narrative_runtime.py` **124** + `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_shadow_consumer.py` **6** + `tests/test_narrative_runtime_http.py` **5** + `tests/test_narrative_fanout_cutover.py` **7** + `tests/test_narrative_shadow_adapter.py` **4** = **151** related passed locally at that checkpoint; `_narrative_subscription_cutover=True` → `_commentary_subscription=None` (no fanout subscribe for commentary); `NarrativeShadowConsumer(..., legacy_stream_handler=self.commentary_consumer.handle, reduce_after_admit=False, publication_adapter=adapt_batch_for_shadow, runtime=...)` mirrors stream items before admit (effect `shadow_legacy_mirrored`; `mirrored` counter); `_drain_consumer_queues` tolerates None commentary subscription; `CommentaryConsumer` object + idle supervisor still spawned; `subscription` may be None with idle-only run loop and `_mirrored_latest_context` for observe/idle/filler; superseded by tts_effect feat `c0f324c` for speech ownership
+- #284 NarrativeRuntime-owned tts_effect SHA: `c0f324c` (`feat: own TTS via NarrativeRuntime tts_effect (#284)`); `tests/test_narrative_runtime.py` **124** + `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_shadow_consumer.py` **6** + `tests/test_narrative_runtime_http.py` **5** + `tests/test_narrative_fanout_cutover.py` **7** + `tests/test_narrative_shadow_adapter.py` **4** + `tests/test_narrative_tts_bridge.py` **3** = **154** related passed locally at that checkpoint; new `events/narrative_tts_bridge.py` (`build_tts_effect` → `EffectWorker`; enqueues `CommentaryUtterance` / `speak_text`; returns `PLAYBACK_ACCEPTED` + `SPEECH_COMPLETED`; `sapi` backend; not exported from `events/__init__.py`); `NarrativeRuntime` attaches `text` on utterance token for manual speak + realization success; `race/runtime.py` wires `NarrativeRuntime(..., tts_effect=build_tts_effect(director.sink, locale=...))`; `legacy_stream_handler=self._mirror_lifecycle_without_speech` (SessionReset/ConfigUpdate via `CommentaryConsumer.handle`; batches only `CommentaryConsumer.cache_mirrored_context` — no speech observe); CommentaryConsumer idle lane remains; superseded by realization_effect composition feat `bc26d4c` for live plan→realization path
+- #284 live realization_effect + StoryDirector composition SHA: `bc26d4c` (`feat: compose realization_effect and StoryDirector for live speech (#284)`); `tests/test_narrative_runtime.py` **124** + `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_shadow_consumer.py` **6** + `tests/test_narrative_runtime_http.py` **5** + `tests/test_narrative_fanout_cutover.py` **7** + `tests/test_narrative_shadow_adapter.py` **4** + `tests/test_narrative_tts_bridge.py` **3** + `tests/test_narrative_realization_bridge.py` **3** = **157** related passed locally at that checkpoint; new `events/narrative_realization_bridge.py` (`SpeechDraftCache`, `build_realization_effect` → `EffectWorker`; observes shadow `AdaptedPublication` → speakable drafts; returns `REALIZATION_SUCCEEDED` with text/hashes; event-kind humanized templates; not exported from `events/__init__.py`); `race/runtime.py` wires `SpeechDraftCache` + `_adapt_batch_for_shadow_with_drafts`, `NarrativeRuntime(..., realization_effect=build_realization_effect(cache), tts_effect=build_tts_effect(...), story_director=StoryDirector(), opportunity_queue=OpportunityQueue(), episode_registry=EpisodeRegistry(), freshness_gate=FreshnessGate(opportunity_queue))`; live path shadow adapt → draft cache → context admit → plan → `realization_effect` → `tts_effect`; CommentaryConsumer idle lane remains; superseded by director seed feat `79a7966` for live `_consult_director`
+- #284 live StoryDirector world/candidate seed SHA: `79a7966` (`feat: seed StoryDirector world from live context facts (#284)`); `tests/test_narrative_runtime.py` **124** + `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_shadow_consumer.py` **6** + `tests/test_narrative_runtime_http.py` **5** + `tests/test_narrative_fanout_cutover.py` **7** + `tests/test_narrative_shadow_adapter.py` **4** + `tests/test_narrative_tts_bridge.py` **3** + `tests/test_narrative_realization_bridge.py` **3** + `tests/test_narrative_director_bridge.py` **8** = **165** related passed locally at that checkpoint; new `events/narrative_director_bridge.py` (`DirectorSnapshot`, `build_director_snapshot`, `candidate_from_event`, `planning_impulse_for_lane`; not exported from `events/__init__.py`); `NarrativeRuntime._refresh_director_from_live` on planning `APPLY_CONTEXT_BATCH` seeds world+candidates from batch events/timeline/fact_view (effect `director_live_seeded`); idle lane impulse=`event`, building lane impulse=`accepted_event`; `seed_director_for_test` sets `_director_manual_seed` and is not overwritten; `_consult_director` runs `StoryDirector.evaluate`; superseded by authored-pack live realization feat `44b37f6`
+- #284 CommentaryConsumer idle-lane speech cutover SHA: `1a5e651` (`feat: disable CommentaryConsumer idle-lane speech under cutover (#284)`); `tests/test_narrative_runtime.py` **124** + `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_shadow_consumer.py` **6** + `tests/test_narrative_runtime_http.py` **5** + `tests/test_narrative_fanout_cutover.py` **7** + `tests/test_narrative_shadow_adapter.py` **4** + `tests/test_narrative_tts_bridge.py` **3** + `tests/test_narrative_realization_bridge.py` **3** + `tests/test_narrative_director_bridge.py` **8** + `tests/test_narrative_authored_realization.py` **7** + `tests/test_commentary_idle_speech_cutover.py` **4** = **176** related passed locally; `commentary/consumer.py` adds `idle_speech_enabled` (default True); when False, `run()` skips `_idle_tick` and `_idle_tick` returns before `director.tick`/filler; lifecycle mirror + `cache_mirrored_context` unchanged; `race/runtime.py` constructs `CommentaryConsumer(..., idle_speech_enabled=False)` under narrative cutover; fanout cutover asserts `idle_speech_enabled=False`; superseded by optional Qwen path feat `edd0ad6`
+- #284 optional Qwen realization path SHA: `edd0ad6` (`feat: optional Qwen path on narrative realization_effect (#284)`); prior **176** + `tests/test_narrative_qwen_realization.py` **6** = **182** related passed locally; `events/narrative_realization_bridge.py` adds `realize_qwen_text` + `build_realization_effect(..., allow_qwen=, qwen_service=, llm_component=)` with order authored → optional #269 Qwen → draft/template; transport failure does not invent authored fallback inside Qwen; bridge may still template after miss; not exported from `events/__init__.py`; `race/runtime.py` sets `_narrative_qwen_enabled=False` (default-off); when True constructs `RealizerService(StdlibTransport())` + `LlmComponent` (not ready until warmup); passes `allow_qwen=self._narrative_qwen_enabled`; tests use `FakeTransport`; superseded by enable+warmup feat `ddc3b80`
+- #284 Qwen enable+warmup SHA: `ddc3b80` (`feat: enable Qwen realization with soft-fail warmup (#284)`); prior **182** + `tests/test_narrative_qwen_warmup.py` **4** = **186** related passed locally; `events/narrative_realization_bridge.py` adds `warmup_qwen_component(component, transport, *, generation=1, model=..., endpoint=..., timeout_ms=500) -> bool` (soft-fail closed #269 preflight; not exported from `events/__init__.py`); `race/runtime.py` sets `_narrative_qwen_enabled=True`; constructs `RealizerService(StdlibTransport())` + `LlmComponent`; calls `warmup_qwen_component(..., generation=1, timeout_ms=500)` so missing Ollama fails closed; `allow_qwen=self._narrative_qwen_enabled`; authored/template still work when not ready; no INI key; unit tests use `FakeTransport`; race uses live `StdlibTransport` soft-fail; **#284 OPEN**; **no master PR**
+- #284 library reducer-trace replay harness SHA: `1f509b8` (`feat: add library reducer-trace replay harness (#284)`); prior **186** + `tests/test_narrative_reducer_replay.py` **4** = **190** related passed locally; `events/narrative_reducer_replay.py` adds `capture_reducer_trace`, `replay_reducer_trace`, `traces_equivalent`, `ReducerTrace.to_tape_rows` (not exported from `events/__init__.py`; race not wired); **#284 OPEN**; **no master PR**
+- #284 command journal file→command reconstruction SHA: `2a555df` (`feat: reconstruct NarrativeCommands from command journal files (#284)`); prior **190** + `tests/test_narrative_command_journal.py` **5** = **195** related passed locally; `events/narrative_reducer_replay.py` adds `COMMAND_JOURNAL_SCHEMA`, `command_from_dict`, `write_command_journal`, `read_commands_from_journal`, `replay_command_journal` (not exported from `events/__init__.py`; race not wired); **#284 OPEN**; **no master PR**
+- #284 / #273 golden-health identity slice SHA: `9362084` (`feat: project narrative runtime identity on status and /health (#284)`); prior **195** + `tests/test_narrative_ingress.py` **3** identity/health rows = **198** related passed locally; `RuntimeStatus`/`NarrativeRuntime` track `broadcast_epoch`, `stream_epoch`, `narrative_run_active`, `stream_active`, `stream_state` (defaults `0`/`0`/`false`/`null`/`unknown`; updated from `APPLY_CONTEXT_BATCH` timeline; `SHUTDOWN` clears `narrative_run_active`, retains `stream_epoch`); `project_runtime_status` emits timeline identity + `historyComplete`; new `project_commentary_health_component` in `events/narrative_ingress.py`; `GET /health` top-level `commentary: {status, reason}` via `get_narrative_runtime()` (never fails overall health alone); goldens `tests/fixtures/commentary_runtime/status_identity_*.json`; `API.md` updated for `/health` + `/api/commentary/runtime` timeline identity; **#284 OPEN**; **no master PR**
+- #284 / #273 speech/language/components status slice SHA: `93f9fb8` (`feat: project #273 speech shape, language, and bounded components (#284)`); prior **198** + `tests/test_narrative_ingress.py` **3** speech projection rows = **201** related passed locally; `RuntimeStatus`/`NarrativeRuntime` track speech projection fields + `speech_last_terminal` (`_begin_speech_projection` on manual/narrative utterance; `PLAYBACK_ACCEPTED` sets `acceptedAtMonoMs`; `SPEECH_*` terminals + speech-deadline timeout retain `lastTerminal` across idle return); `project_runtime_status` emits `language=en`, full `speech` shape, bounded `components.{llm,tts,tape}` (tape defaults `disabled`); golden `tests/fixtures/commentary_runtime/status_speech_idle.json`; `API.md` updated for `/api/commentary/runtime` example; **#284 OPEN**; **no master PR**
+- #284 / #273 golden-health decisions slice SHA: `51dc1d1` (`feat: record bounded StoryDirector decision ring (#284)`); prior **201** + `tests/test_narrative_ingress.py` **3** decision projection rows + `tests/test_narrative_runtime_http.py` **3** decisions HTTP rows = **207** related passed locally; new `events/narrative_decision_projection.py` (`build_runtime_decision_entry`, `project_runtime_decisions`; not exported from `events/__init__.py`); `NarrativeRuntime` bounded ring `DECISION_CAPACITY=128` on every `_consult_director` (`selected`/`silence`/`replaced`); `decisions(limit)` newest-first; additive `GET /api/commentary/runtime/decisions?limit=` in `events/narrative_runtime_http.py` (legacy `GET /api/commentary/decisions` unchanged); golden `tests/fixtures/commentary_runtime/decisions_selected.json`; `schemaVersion`: `commentary-runtime/2`; `API.md` table row + dedicated section; **#284 OPEN**; **no master PR**
+- #284 / #273 golden-health validate/speak slice SHA: `65651bc` (`feat: add #273 validate/speak goldens on NarrativeRuntime HTTP (#284)`); prior **207** + `tests/test_narrative_ingress.py` **3** validate projection rows + `tests/test_narrative_runtime_http.py` **5** validate/speak HTTP rows = **215** related passed locally; new `events/narrative_validate_projection.py` (`project_validate_response`; not exported from `events/__init__.py`); `NarrativeRuntime.try_manual_speak` + `ManualSpeakOutcome` (initial sync admit+reduce path); additive `POST /api/commentary/runtime/validate` (offline; 200 even when `valid=false`; 400 malformed) + `POST /api/commentary/runtime/speak` (202/409/422/503) in `events/narrative_runtime_http.py`; legacy `POST /api/commentary/validate|speak` unchanged; goldens `tests/fixtures/commentary_runtime/validate_*`, `speak_*`; `API.md` table rows + dedicated sections; **#284 OPEN**; **#273 remainder still open**; **no master PR**
+- #284 / #273 ManualAdmissionLatch thin slice SHA: `ca0f2f6` (`feat: add ManualAdmissionLatch for runtime speak (#284/#273)`); prior **215** + `tests/test_narrative_runtime.py` **3** latch rows + `tests/test_narrative_runtime_http.py` **1** admission-timeout HTTP map row = **219** related passed locally; new `events/narrative_manual_latch.py` (`ManualAdmissionLatch`; states `pending|actor_claimed|caller_abandoned`; `ADMISSION_TIMEOUT_S=1.0`; not exported from `events/__init__.py`); `NarrativeRuntime.try_manual_speak` allocates latch, awaits resolution (default 1s; `timeout_s` / `reduce_inline`); sync inline reduce when actor loop idle; on timeout abandons latch → `admission_timeout`; abandoned latch stays registered (`manual_abandoned` / `ignored_stale_or_inapplicable`); `_on_manual` claims latch before lane mutate; HTTP maps `admission_timeout` → 503; golden `tests/fixtures/commentary_runtime/error_admission_timeout.json`; `API.md` + branch docs updated; **#284 OPEN**; **#273 remainder still open**; **no master PR**
+- #284 / #273 status_ready thin slice SHA: `03c34b2` (`feat: project #273 status catalog/config/episodes/byTapeChannel (#284)`); prior **219** + `tests/test_narrative_ingress.py` **1** status_ready golden row = **220** related passed locally; `events/narrative_ingress.py` `project_runtime_status` emits schema-shaped defaults for `catalog` (`narrative-catalog/2`, packaged `hash` via `load_narrative_catalog().require_catalog().catalog_hash` with lru_cache fail-soft, `eventIdentifierCount: 60`, `beatCount: 64`), `config` (unloaded zeros), `episodes` (empty counts + `ACTIVE_CAP`/`RESOLVED_CAP`), `byTapeChannel: {}`, `queues.opportunities` (depth 0, `OPPORTUNITY_CAPACITY=128`), `components.detectors` / `components.facts` ready stubs (`facts.historyComplete` from `RuntimeStatus`); **not** live product wiring; golden `tests/fixtures/commentary_runtime/status_ready_library.json`; `API.md` + branch docs updated; **#284 OPEN**; **#273 remainder still open** (live catalog/config/episodes/tape-channel/detectors/facts wiring; final legacy validate/speak cutover); **no master PR**
+- #284 / #273 components llm/tts schema stub slice SHA: `3670502` (`feat: project #273 schema-complete llm/tts status stubs (#284)`); prior **220** + `tests/test_narrative_ingress.py` **1** llm/tts golden row = **221** related passed locally; `events/narrative_ingress.py` `_llm_component_projection` / `_tts_component_projection` emit schema-complete defaults (llm: `generation=0`, `configGeneration=0`, `model="unconfigured"`, `residencyEvidence="not_requested"`, `lastAttempt=null`; tts: `backend=null` or speech backend in `{sapi,espeak,supertonic}`, `backendGeneration` from speech lane or `0`, `configGeneration=0`, `quarantinedGeneration=null`, `voice=null`); **not** live transport/residency wiring; goldens `tests/fixtures/commentary_runtime/status_components_llm_tts.json`; `status_speech_idle.json` llm/tts shapes updated; ingress+http **33** passed (= prior **32** + **1**); `API.md` + branch docs updated; **#284 OPEN**; **#273 remainder still open** (live llm/tts transport; timeline session fields; live catalog/config/episodes wiring; legacy cutover); **no master PR**
+- #284 / #273 timeline session identity null stub slice SHA: `f58c992` (`feat: project #273 null timeline session identity stubs (#284)`); prior **221** + `tests/test_narrative_ingress.py` **1** timeline session golden row = **222** related passed locally; `events/narrative_ingress.py` `project_runtime_status` emits `sessionPlan`/`sessionRef`/`occurrenceId`/`lineageId`/`stage` as all-or-none nulls on `timeline` (satisfies `session_identity_all_or_none` without live session-plan wiring); goldens `tests/fixtures/commentary_runtime/status_timeline_session_null.json`; `status_identity_*.json` timeline shapes updated; ingress+http **34** passed (= prior **33** + **1**); `API.md` + branch docs updated; **#284 OPEN**; **#273 remainder still open** (live session-plan wiring; live llm/tts transport; live catalog/config/episodes wiring; legacy cutover); **no master PR**
+- #284 / #273 live timeline session identity slice SHA: `ccd0697` (`feat: project live timeline session identity from APPLY_CONTEXT`); prior **222** + `tests/test_narrative_ingress.py` **3** timeline session identity rows = **225** related passed locally; `events/narrative_runtime.py` `_session_identity_from_timeline` + `RuntimeStatus` fields `session_plan`/`session_ref`/`occurrence_id`/`lineage_id`/`stage` updated on planning `APPLY_CONTEXT_BATCH` (all-or-none; incomplete clears live values); `events/narrative_ingress.py` `_timeline_session_identity` projects null-or-live on `timeline`; golden `tests/fixtures/commentary_runtime/status_identity_after_context.json` populated; ingress+http **37** passed (= prior **34** + **3**); `API.md` + branch docs updated; PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **#284 OPEN**; **#273 remainder still open** (live llm/tts transport; live catalog/config/episodes wiring; legacy cutover); **no master PR**
+- #284 / #273 live catalog/config/episodes/byTapeChannel status projection SHA: `bdb9633` (`feat: project live catalog/config/episodes status blocks`); prior **225** + `tests/test_narrative_ingress.py` **3** live wiring rows = **228** related passed locally; `events/narrative_runtime.py` `RuntimeStatus.config_ledger` / `episode_counts` / `by_tape_channel` from cached CONFIG_UPDATE ledger, `EpisodeRegistry.status_counts()`, `OpportunityQueue.tape_channel_status_counts()` when injected; `events/narrative_ingress.py` `_config_projection` / `_episodes_projection` / `_by_tape_channel_projection` (invalid/cleared → unloaded/empty fallbacks); `episode_registry.py` `status_counts()`; `opportunity_queue.py` `tape_channel_status_counts()`; stub golden `tests/fixtures/commentary_runtime/status_ready_library.json` unchanged (disabled/unloaded subset); ingress+http **40** passed (= prior **37** + **3**); `API.md` + branch docs updated; PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **#284 OPEN**; **#273 remainder still open** (live llm/tts transport/residency; live detectors/facts beyond stubs; legacy cutover); **no master PR**
+
+- #284 / #273 legacy validate/speak cutover SHA: `f2c1f1b` (`feat: cut over public validate/speak to NarrativeRuntime (#284/#273)`); related **237** passed locally; `commentary/http.py` routes public `POST /api/commentary/validate|speak` to NarrativeRuntime handlers; `/api/commentary/runtime/validate|speak` remain aliases; commentary test page uses `commentary-runtime/2` speak body; `API.md` updated; **#284 OPEN**; **#273 remainder still open** (live llm/tts transport/residency; live detectors/facts; integrated loop liveness); **no master PR**
+- #284 loop liveness thin slice SHA: `c2e02d4` (`feat: project NarrativeRuntime loop.active liveness (#284)`); related **239**; `RuntimeStatus.loop_active` + status `loop.active`; **#284 OPEN**; **no master PR**
+- #284 loop supervisor heartbeats thin slice SHA: `952cc1d` (`feat: deepen NarrativeRuntime loop heartbeats with supervisors (#284)`); prior **249** + `tests/test_narrative_ingress.py` **3** loop heartbeat/supervisor/race-source rows + `tests/test_narrative_runtime_http.py` disabled-subset loop asserts = **252** related passed locally; `RuntimeStatus.loop_last_reduce_mono_ms` / `loop_reduce_count` / `loop_supervisors`; `project_runtime_status` emits `loop.{active,lastReduceMonoMs,reduceCount,supervisors}`; `NarrativeRuntime.attach_supervisor_heartbeat(name, provider)`; race wires `narrativeRuntime` + `narrativeShadow` from `WorkerSupervisor.status_snapshot` (`running`/`restarts`/`lastError`); library without attach → `supervisors: {}`; **#284 OPEN** (master cutover only — human kick); **no master PR**
+- #284 / #273 live llm/tts residency projection SHA: `60565ae` (`feat: project live llm/tts residency from LlmComponent (#284/#273)`); prior **237** + `tests/test_narrative_ingress.py` **4** live llm/tts rows = **241** related passed locally; `NarrativeRuntime(llm_component=...)` optional; race passes warmed `LlmComponent`; `RuntimeStatus` adds `llm_attached`, `llm_generation`, `llm_model`, `llm_residency_evidence`, `llm_reason`; `status()` syncs `component_health["llm"]` from component; `_llm_component_projection` / `_tts_component_projection` project live generation/model/residency when attached (failed warmup → `unavailable`/`component_unavailable`, `residencyEvidence=not_requested`); `configGeneration` from CONFIG_UPDATE ledger for both; golden `status_components_llm_tts.json` unchanged (no attached component); `API.md` + branch docs updated; **#284 OPEN**; **#273 remainder still open** (live detectors/facts); **no master PR**
+- #284 / #273 live llm lastAttempt projection SHA: `19887aa` (`feat: project llm lastAttempt after admitted Qwen requests (#284/#273)`); prior **241** + `tests/test_narrative_ingress.py` **3** lastAttempt rows = **244** related passed locally; `LlmComponent.last_attempt` recorded by `RealizerService.try_start`/`finish` via `record_qwen_last_attempt`/`build_last_attempt` in `qwen_transport.py` (warmup/authored ignored); `RuntimeStatus.llm_last_attempt` + `project_runtime_status` surfaces `{requestId, outcome, ttfbMs, ttftMs, totalMs, reducerLagMs, terminalReason}` when llm attached (`realization_timeout` → outcome `timed_out`); golden `status_components_llm_tts.json` unchanged (no attached component); `API.md` + branch docs updated; **#284 OPEN**; **#273 remainder still open** (live detectors/facts; master cutover); **no master PR**
+- #284 / #273 live detectors/facts status projection SHA: `d13d6bd` (`feat: project live detectors/facts status from context and DetectorBank (#284/#273)`); prior **246** + `tests/test_narrative_ingress.py` **3** detectors/facts rows = **249** related passed locally; `RuntimeStatus` adds `fact_view_revision`, `fact_active_count`, `fact_historical_summary_count`, `detector_disabled`; planning `APPLY_CONTEXT_BATCH` ingests FactView via `_ingest_fact_view_counts`; optional `NarrativeRuntime(detector_bank=...)` snapshots `DetectorBank.disabled_for_status()` sorted `{id, reason}` rows (from `disable_for_run`); `project_runtime_status` projects live `components.facts` (`viewRevision`, `active`, `historicalSummaries`, `historyComplete`) and `components.detectors.disabled`; without bank → `disabled: []`; golden `status_ready_library.json` unchanged (disabled-library zeros); `API.md` + branch docs updated; **#284 OPEN**; **#273 remainder still open** (master cutover); **no master PR**
+- #284 / #273 live TTS voice + quarantine projection SHA: `17a84eb` (`feat: project live TTS voice and quarantine on stop-timeout (#284/#273)`); prior **252** + `tests/test_narrative_ingress.py` **3** voice/quarantine rows + `tests/test_narrative_runtime.py` **1** quarantine-clear row = **256** related passed locally; `events/narrative_ingress.py` `_tts_voice_from_ledger` reads CONFIG_UPDATE ledger `effectiveValues`/`desiredValues` (`voice`, `commentary.tts.voice`); `_tts_component_projection` emits live `voice` + `quarantinedGeneration` from `RuntimeStatus.speech_quarantined_generation`; `events/narrative_runtime.py` sets quarantine on speech stop-deadline timeout (`tts_backend_quarantined`); `_on_component_health` clears only when `COMPONENT_HEALTH_CHANGED` `tts` `ready` with `generation > quarantinedGeneration`; `API.md` + branch docs updated; PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **#284 OPEN**; **#273 remainder still open**; **no master PR**
+- #284 optional #270 SemanticVerifier live-wiring SHA: `447382c2aa4a667891539407049521c5a30d03c8` (`feat: compose optional SemanticVerifier into NarrativeRuntime REALIZATION_SUCCEEDED path (#284/#270)`); prior **259** + `tests/test_narrative_runtime.py` **3** semantic verifier rows = **262** related passed locally; `NarrativeRuntime(..., semantic_verifier=SemanticVerifier | None)` on `REALIZATION_SUCCEEDED` after FreshnessGate, before TTS — accept → `semantic_verdict:accepted` + TTS; reject → idle, no TTS (`realization_verify_rejected`, `semantic_verdict:rejected`); no verify frame → skip (`semantic_verdict:skipped_no_frame`, TTS still dispatched); test seam `seed_semantic_frame_for_test(...)`; `race/runtime.py` wires `semantic_verifier=SemanticVerifier()` alongside FreshnessGate + command journal; not exported from `events/__init__.py`; `API.md` unchanged (effects internal, no status projection); branch docs updated; **#284 OPEN**; **#270 stays closed**; **no master PR**
+- #284 owned tape flush effect SHA: `fed99d1d2095301c7771250a8e1097cade784439` (`feat: own tape flush as cancellable NarrativeRuntime effect (#284)`); prior **262** + `tests/test_narrative_runtime.py` **3** tape-flush rows = **265** related passed locally; `NarrativeRuntime(..., tape_effect=, shutdown_flush_timeout_s=2.0)`; `SHUTDOWN` emits `effect:flush_tape` when `tape_effect` present (plus existing cancel/deadline effects); `apply_effects`: `effect:flush_tape` starts owned `_tape_task` via `_run_tape_flush`; `effect:cancel_tape` cancels it; flush timeout fail-soft — tries `NarrativeCommand.tape_health(... status=degraded)`; if admit rejected (ingress closed by SHUTDOWN) sets local `_tape_status = "degraded"`; `wait_effects_idle` includes tape task; `tape_task_active()` helper; new `events/narrative_tape_bridge.py` `build_tape_flush_effect(NarrativeTapeWriter)` wraps `aclose` (not exported from `events/__init__.py`); race wires tape writer feat `fc6e394`; `API.md` unchanged (existing `components.tape.status` projection); branch docs updated; **#284 OPEN**; **no master PR**
+- #284 planningCycleId + streamEpoch library slice SHA: `d80a319` (`feat: advance planningCycleId and allocate streamEpoch on disable/re-enable (#284)`); docs `5d45c82`; black fix `40fe854`; docs polish `bdf5f7f`; prior **265** + `tests/test_narrative_runtime.py` **3** planningCycle/streamEpoch rows = **268** related passed locally; `_begin_planning_cycle` / `_dispatch_plan(..., open_cycle_reason=)` with `MAX_PLANS_PER_CYCLE=2`; cycle reasons `event_impulse` / `event_replacement` / `event_after_exhausted` / `silence_impulse` / `silence_after_exhausted`; effects `planning_cycle_opened:{reason}`, `planning_cycle_id:{n}`, `planning_cycle_exhausted`; manual speak never opens a cycle; `_apply_context_projection` emits `narrative_run_closed` / `narrative_run_opened` / `stream_epoch_allocated:{n}`; disable cancels building (`building_cancelled_on_disable`) and may `effect:flush_tape` when `tape_effect` set; issue AC → **25/41** (**16** remain); verifier **137** in `tests/test_narrative_runtime.py`; ruff/black/mypy clean; `API.md` unchanged (internal reducer effects); branch docs updated (`inflight/`, `domeny/events.md`, this handover); **#284 OPEN**; **no master PR**; stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`
+- **Current HEAD (#273 on integration):** tip `75e128d` (`feat(#273): expose successor decisions and opportunity queue expiry`); prior #273 slices `466c2f3`/`25c7204`/`b01f7a6`, `606ac8f`/`aed3d1b`, `ac44ddd`, `61b71af`, `a2792ff`, `b4f9b47`, `11f5b59`; PR [#292](https://github.com/Buchtanen/ir-obs-switcher/pull/292) **MERGED**; PR [#291](https://github.com/Buchtanen/ir-obs-switcher/pull/291) **MERGED** @ `b01f7a6`; #272 merged via PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) @ `1c993c0`; #284 merged via PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) @ `77452a9`. **#284 CLOSED** AC **41/41**; **#272 CLOSED** AC **4/4**; **#273 OPEN**
+- #273 byTapeChannel funnel bounds + cohort rates slice SHA: `466c2f3` (`feat(#273): bound byTapeChannel counters with cohort funnel rates`); docs `25c7204`; style `b01f7a6`; prior **71** + `tests/test_narrative_ingress.py` **3** byTapeChannel rows = **73** verifier passed locally at tip `b01f7a6`; `events/opportunity_queue.py` — `project_by_tape_channel_status` (omit all-zero channels, sort by id, cap **128**), `cohort_funnel_rates` (N/A stages → `null`); `tape_channel_status_counts()` applies shared projector; `events/narrative_ingress.py` `_by_tape_channel_projection` delegates to same helper; golden `tests/fixtures/commentary_runtime/status_by_tape_channel.json`; `tests/test_commentary_runtime_goldens.py` `REQUIRED_FIXTURES` extended; PR [#291](https://github.com/Buchtanen/ir-obs-switcher/pull/291) **MERGED** into `codex/commentary-story-flow-spec`; **no master PR**
+- #273 decisions/queue-age slice SHA: `75e128d` (`feat(#273): expose successor decisions and opportunity queue expiry`); prior **73** + `tests/test_narrative_ingress.py` **3** decisions/queue rows = **76** verifier passed locally at tip `75e128d`; `events/narrative_decision_projection.py` — `build_terminal_decision_entry`, `source`/`terminalReason` on decision rows; `events/narrative_runtime.py` — `story_successor` decision source, expired TTL terminal decisions on opportunity expiry; `events/opportunity_queue.py` — live queue depth/expired/evicted counters; `events/narrative_ingress.py` — live `queues.opportunities` projection; goldens `decisions_story_successor.json`, `decisions_expired_ttl.json`, `status_opportunities_queue.json`; `API.md` updated; PR [#292](https://github.com/Buchtanen/ir-obs-switcher/pull/292) **MERGED** into `codex/commentary-story-flow-spec`; **#273 remainder still open** (~~**Expose fixed EN, catalog hash, desired/effective config hashes, apply sequence and pending boundaries**~~ **DONE** @ `b751d70`; master cutover only — human kick); **no master PR**
+- #273 fact-health continuation slice — **landed on feature branch** `cursor/fact-health-273-cad3` (base `codex/commentary-story-flow-spec`; feat SHA `05efef3`); prior **249** + `tests/test_narrative_ingress.py` **3** fact-capacity health rows = **252** related passed locally; `events/narrative_runtime.py` — `RuntimeStatus.fact_capacity_evicted`/`fact_capacity_exhausted`, `_ingest_fact_view_counts` eviction latch on `historyComplete=false`, `note_fact_capacity(*diagnostics)` for FactLedger exhaustion wiring, latch clear on `narrative_run_opened`; `events/narrative_ingress.py` — `components.facts` projects `status`/`reason` (`ready`/`null` | `degraded`/`fact_capacity_evicted` | `unavailable`/`fact_capacity_exhausted`) and forces `historyComplete=false` while eviction latched; recovery: publishable view clears exhaustion (`unavailable`→`degraded`); `ready` only on new lossless run; `API.md` + branch docs updated; **FF into** integration tip `ebd78db`; **#273 remainder still open** (integration merge + master cutover — human kick); **no master PR**
+- #273 manual speak body freeze slice — **FF-merged** via `cursor/manual-speak-body-273-cad3` (base `codex/commentary-story-flow-spec`; feat SHA `23d4546`); prior **16** + `tests/test_narrative_runtime_http.py` **2** manual-speak body rows = **18** http passed locally; `events/narrative_runtime_http.py` — `_parse_manual_speak_body` / `_SPEAK_BODY_KEYS` freeze `POST /api/commentary/runtime/speak` and public `POST /api/commentary/speak` to exact keys `schemaVersion`/`text`/`language` only (unknown fields → **400** `invalid_request`; normalized `text` 1–400 no controls → else **422** `validation_failed`); **202** `{schemaVersion, accepted, requestId, admittedState}` with `admittedState` exactly **`committed`** after atomic dispatch; `API.md` speak section updated on branch; branch docs updated (`inflight/`, `domeny/events.md`, `domeny/server.md`, this handover); **FF into** integration tip `7f2f376`; **#273 remainder still open** (AC/Verification/Docs/Design-freeze + master cutover — human kick); **no master PR**
+- #273 validate AtomicFact/registry reuse slice — **in flight** on `cursor/validate-atomicfact-registry-273-cad3` (base `codex/commentary-story-flow-spec`; feat SHA `abcbebc`; docs `55875c7`); prior **3** + `tests/test_narrative_ingress.py` **4** AtomicFact/registry validate rows = **7** ingress validate rows passed locally; `events/narrative_validate_projection.py` — `_parse_fact_bindings` → `AtomicFact.from_dict` + FactRegistry; `project_validate_response` freezes exact ValidateRequest keys (`schemaVersion`/`text`/`beatId`/`evaluationAtMonoMs`/`actorBindings`/`factBindings`); incomplete/unknown/unregistered facts + unknown/missing request keys → `ContractViolation`/HTTP **400**; public `POST /api/commentary/validate` + `/api/commentary/runtime/validate` share handler; `API.md` + branch docs updated; **not** on integration tip yet; **#273 remainder still open** (FF merge + master cutover — human kick); **no master PR**
+- #272 legacy↔v2 shadow harness complete SHA: `6cfce0c` (`feat(#272): complete legacy↔v2 shadow harness across remaining ACs`); prior first-slice feat `f72eb8c`; partial docs `9a0eee0`; `tests/test_legacy_v2_shadow_compare.py` **16** passed; `events/legacy_v2_shadow_compare.py` (private `FAMILY_ROUTE`, `adapt_race_state_to_v2`, `adapt_event_envelope_to_v2`, `compare_event_decisions`, `compare_episode_decisions`, `compare_director_decisions`, `observe_family_safely`, `REMOVAL_MANIFEST_ENTRIES`; **not** exported); observation-only — no speech effects, no mailbox/TTS; fail-soft timeout/cancel/stale paths; unmigrated families stay `legacy` inside branch; removal list in `final-pr-exclusion-manifest.md`; race **not** wired; issue AC **4/4**; atomic tasks **6/6**; **#272 CLOSED**; stack PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) → base `codex/commentary-story-flow-spec`; **no master PR**. **Docs impact: `CONFIG.md` none (no keys); `API.md` none (not public); temporary harness listed in `final-pr-exclusion-manifest.md`**
+- #273 assignments route unregister SHA: `11f5b59` (`feat(#273): unregister GET /api/commentary/assignments`); public assignments route removed; `tests/test_commentary_http.py` covers 404; `API.md` + branch docs updated; **#273 OPEN**; **no master PR**
+- #273 dashboard versioned contracts SHA: `b4f9b47` (`feat(#273): cut commentary dashboard to versioned contracts`); commentary test page / HTTP cut to `commentary-runtime/2` contracts; `tests/test_commentary_http.py` updated; `API.md` + branch docs updated; **#273 OPEN**; **no master PR**
+- #273 error/request golden freeze SHA: `a2792ff` (`test(#273): freeze commentary-runtime error goldens`); `tests/test_commentary_runtime_goldens.py` + fixtures `error_*.json` (component_unavailable / forbidden / invalid_json / invalid_request / mailbox_overloaded / not_found / speech_busy / validation_failed); local `pytest tests/test_commentary_runtime_goldens.py tests/test_commentary_http.py -q` → **15** passed; `API.md` + branch docs updated; **#273 OPEN**; **no master PR**
+- #273 bounded `/health` commentary freeze SHA: `61b71af` (`test(#273): freeze bounded /health commentary summary`); goldens `tests/fixtures/commentary_runtime/health_commentary_{disabled,ready,ready_history_incomplete,degraded}.json`; `tests/test_commentary_runtime_goldens.py` + `tests/test_api.py` HTTP isolation (commentary degraded/disabled never flips overall `/health` alone); local `pytest tests/test_commentary_runtime_goldens.py tests/test_api.py -q` → **37** passed; `API.md` + branch docs updated; **#273 OPEN**; **no master PR**
+- #273 component health projections SHA: `ac44ddd` (`feat(#273): freeze recorder/model/timeline/detector health projections`); tape `capture_unavailable` when recorder unavailable; `detectors.disabled` sorted by id; library goldens `status_component_tape_capture_unavailable.json`, `status_component_detectors_disabled.json`, `status_health_projections_library.json` (timeline/llm/tape/detectors); `tests/test_narrative_ingress.py` **+3** rows; local `pytest tests/test_commentary_runtime_goldens.py tests/test_narrative_ingress.py -q` → **57** passed; `API.md` + branch docs updated; **#273 OPEN**; **no master PR**
+- #273 tape drop/size/purpose-channel counters SHA: `aed3d1b` (`feat(#273): wire tape drop/size/purpose-channel counters on components.tape`); import fix `606ac8f` (`fix(#273): correct tape-counter live-writer test import`); `NarrativeTapeWriter.runtime_status_snapshot()` → cumulative drops/`dropsByPriority`, open-file `size`, sorted `purposeCounts`; `NarrativeRuntime(..., tape_writer=)` → `RuntimeStatus` → `_tape_component_projection` on `components.tape`; schema/`API.md` + golden `status_component_tape_counters.json`; race wires live writer; local `pytest tests/test_commentary_runtime_goldens.py tests/test_narrative_ingress.py tests/test_narrative_tape_queue.py -q` → **71** passed at tip `606ac8f`; **#273 OPEN**; **no master PR**
+- **TDD phase:** GREEN (#273 decisions/queue-age); prior #284 process TDD AC closed via human-accepted TDD-exception; **#284 CLOSED**; **#272 CLOSED**; **#273 OPEN**
+- **Last verifier evidence:** #273 slice `pytest tests/test_commentary_runtime_goldens.py tests/test_narrative_ingress.py tests/test_narrative_tape_queue.py -q` → **76** passed at tip `75e128d`; prior #284 core `pytest tests/test_narrative_runtime.py tests/test_coalesce_policy.py tests/test_narrative_ingress.py tests/test_actor_transition_goldens.py -q` → **240** passed; related **336** baseline retained
+- #284 ExposureStore sole-writer SHA: `c6ffbe3` (`feat: NarrativeRuntime sole-writes ExposureStore on playback (#284)`); prior **268** + `tests/test_narrative_runtime.py` **3** exposure rows = **271** related passed locally; `NarrativeRuntime(..., exposure_store=)`; `_arm_pending_exposure` at realization commit; `_record_exposure` on `PLAYBACK_ACCEPTED` (`phase=speaking`, `source_kind=narrative`); manual speak never records; race shadow composes `ExposureStore()`; issue AC → **28/41** (**13** remain); `API.md` / `CONFIG.md` unchanged; branch docs updated; **#284 OPEN**; **no master PR**
+- #284 replay-closure SHA: `b86a336` (`feat: close reducer journal replay for director+Qwen (#284)`); prior **271** related + `tests/test_narrative_reducer_replay.py` **1** new row + `tests/test_narrative_command_journal.py` **1** new row = **273** related passed locally; `events/narrative_reducer_replay.py` extends `command_from_dict` for `REALIZATION_SUCCEEDED`/`FAILED`; optional `runtime_factory` on `capture_reducer_trace` / `replay_reducer_trace` / `replay_command_journal` for seeded `StoryDirector`; journal replay reproduces `director_selected` + committed lane when recorded realization supplied; race still append-only (`command_journal_path=`); not exported from `events/__init__.py`; issue AC → **30/41** (**11** remain); `API.md` / `CONFIG.md` unchanged; branch docs updated; PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **#284 OPEN**; **no master PR**
+- #284 actor-transition model-tests SHA: `fe70f2a` (`test: model-test actor raceTraces and overflowScenarios (#284)`); `tests/test_actor_transition_goldens.py` **29** passed (frozen `docs/v2.0.0/machine/actor-transition-goldens.json` — **13** `raceTraces`, **10** `overflowScenarios`, **2** `orderingScenarios`, `pairCoverage`↔`transitionMatrix` sync **85**, on-disk↔builder sync, plus **2** `NarrativeRuntime` race rows); with `tests/test_narrative_runtime.py` **140** → **169** passed; related **303** passed; issue AC → **31/41** (**10** remain); `API.md` / `CONFIG.md` unchanged (tests-only); branch docs updated; PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **#284 OPEN**; **no master PR**
+- #284 health/API reason-code schema SHA: `cffaab1` (`feat: complete actor/recovery reason codes on health/API (#284)`); `tests/test_narrative_runtime.py` **141** (+ **1** deadline-skip row; overflow coalesce asserts `reason_codes`) + `tests/test_narrative_ingress.py` **45** (+ **1** `/health` reason vs schema enum row) + `tests/test_actor_transition_goldens.py` **29** → **215** passed; related **305** passed; `NarrativeRuntime._reason_codes()` adds `mailbox_overloaded`, `mailbox_evicted_update`, `deadline_admission_skipped`, `admission_timeout`; `HealthCommentarySummary.reason` closed enum widened in `api-contracts.schema.json`; `API.md` + `CONFIG.md` updated in feat commit; issue AC → **33/41** (**8** remain); branch docs updated (this handover + inflight + `domeny/`); PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **#284 OPEN**; **no master PR**
+- #284 fact-only wait / coalesce / callback-branches SHA: `dd64047` (`feat: fact-only wait, shared coalesce lists, narrative/manual callbacks (#284)`); new `contracts/coalesce_policy.py` (`COALESCE_FIELD_PATHS`, `coalesce_key_for` — shared with `NarrativeCommand.coalesce_key` + `build_actor_transition_model.py`); `NarrativeRuntime` pure FactView `fact_only_wait` (cancel building, no replan); narrative vs manual playback+terminal callback branches; silence pause on accept / rearm on terminal; `_terminal_director_policy` `replan_if_enabled|never`; `tests/test_coalesce_policy.py` **3** + `tests/test_narrative_runtime.py` **144** (+ **3** fact-only/callback rows) → core subset **221** passed; related **311** passed; issue AC → **34/41** (**7** remain); `API.md` / `CONFIG.md` / `README.md` unchanged; branch docs updated (this handover + inflight + `domeny/events.md`); PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **#284 OPEN**; **no master PR**
+- #284 live #270 verify-frame attachment SHA: `a1ba998` (`feat: attach live #270 verify frames on authored/template realization (#284)`); new `events/narrative_verify_frame.py` (`VerifyFrame`, `stash_live_verify_frame`, `take_live_verify_frame`; keyed by requestId/requestOrdinal/dispatchGeneration; separate module avoids import cycle); `narrative_realization_bridge.py` adds `realize_authored_speech` → `(text, VerifyFrame)`, `template_speech`, `SpeechDraft.verify_frame`, stashes before `REALIZATION_SUCCEEDED`; `narrative_runtime.py` merges token + live stash + payload via `_verify_frame_fields`; effect `verify_frame_attached_live` when stash-sourced; `_live_verify_frame_attached=False` in `__init__`; skip-no-frame mainly for Qwen/unframed (`semantic_verdict:skipped_no_frame`); `tests/test_narrative_runtime.py` **146** (+ **2** live rows) + `tests/test_narrative_realization_bridge.py` **5** (+ **2** bridge rows) → core subset **223** passed; related **315** passed; issue AC → **34/41** (**7** remain); `API.md` / `CONFIG.md` / `README.md` unchanged (internal effects); branch docs updated; **#284 OPEN**; **#270 stays closed**; **no master PR**
+- #284 overflow linearization / deadline-skip / quarantine model-tests SHA: `f465bfd` (`test(narrative-runtime): overflow manual linearization, deadline skip, quarantine (#284)`); `tests/test_actor_transition_goldens.py` **32** (+ **3** `NarrativeRuntime` overflow evidence rows: `test_narrative_runtime_manual_full_partition_linearization`, `test_narrative_runtime_deadline_admission_skipped_under_overflow`, `test_narrative_runtime_quarantined_cannot_admit_under_overflow`; helper `_fill_ordinary_partition`; no `machine/` hash rewrite) → core subset **226** passed; related **318** passed; issue AC → **35/41** (**6** remain); `API.md` / `CONFIG.md` / `README.md` unchanged (tests-only); branch docs updated; diary [issuecomment-5626067291](https://github.com/Buchtanen/ir-obs-switcher/issues/284#issuecomment-5626067291); **#284 OPEN**; **no master PR**
+- #284 cancel-on-disable / transition / config-boundary SHA: `d9089a1` (`test: cover #284 cancel-on-disable, timeline transition, config boundary`); `tests/test_narrative_runtime.py` **149** (+ **3** rows: `test_timeline_transition_cancels_building_and_stale_deadline_generations`, `test_disable_with_tape_effect_flushes_tape`, `test_config_then_timeline_transition_cancels_building`) + `tests/test_narrative_tape_bridge.py` **4** (+ **1** row: `test_open_writer_flush_effect_closes_on_disable`); effects `building_cancelled`, `building_cancelled_on_disable`, `narrative_run_closed`, `stale_silence_generation`, `stale_validity_generation`, `effect:cancel_realization`, `effect:cancel_*_deadline`, `effect:arm_*_deadline`, `effect:flush_tape`; → core subset **229** passed; related **325** passed; issue AC → **36/41** (**5** remain); `API.md` / `CONFIG.md` / `README.md` unchanged (tests-only); branch docs updated; **#284 OPEN**; **no master PR**
+- #284 ordering+races verification SHA: `5f4eb61` (`test(#284): library evidence for ordering and completion races`); `tests/test_narrative_runtime.py` **155** (+ **6** rows: `test_narrative_runtime_same_time_external_before_callback_order`, `test_narrative_runtime_same_time_callback_before_reset_order`, `test_narrative_runtime_deadline_before_result_race`, `test_narrative_runtime_reset_before_result_race`, `test_narrative_runtime_config_generation_then_completion_race`, `test_narrative_runtime_validity_expiry_before_completion_race`); maps frozen `orderingScenarios` (`same_time_external_before_callback`, `same_time_callback_before_reset`) + frozen `raceTraces` (`deadline_before_result`, `reset_before_result`); `config_generation_then_completion` and `validity_expiry_before_completion` are **library-only** evidence (not frozen raceTrace IDs); transition matrix row coverage unchanged (`test_actor_transition_matrix_row`); → core subset **235** passed; related **331** passed; issue AC → **38/41** (**3** remain); `API.md` / `CONFIG.md` / `README.md` unchanged (tests-only); branch docs updated; PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **#284 OPEN**; **no master PR**
+- #284 AC5 actor command + transition matrices embed SHA: `9b0c860` (`docs(#284): embed complete actor command and transition matrices`); `docs/v2.0.0/actor-transition-contract.md` now mirrors frozen **17**-command inventory + all **85** lane×command disposition rows from `docs/v2.0.0/machine/actor-transition-model.json`; clarifies `config_generation_then_completion` / `validity_expiry_before_completion` are **library-only** race evidence (not frozen `raceTrace` IDs); pytest matrix coverage unchanged (`test_actor_transition_matrix_row`); → core subset **235** passed; related **331** passed; issue AC → **39/41** (**2** remain at that checkpoint); branch docs updated (`inflight/`, `domeny/events.md`, this handover); PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **#284 OPEN**; **no master PR**; **API.md / CONFIG.md / README.md unchanged** (docs-only)
+- #284 upstream snapshot immutability SHA: `78a1aeb` (`test(#284): assert upstream timeline/feature/detector snapshots stay immutable`); `tests/test_narrative_runtime.py` **157** (+ **2** rows: `test_runtime_does_not_back_mutate_upstream_timeline_or_fact_snapshots`, `test_runtime_reads_detector_bank_status_without_stepping_or_owning_engines`); proves `partition_context_batches` / `APPLY_CONTEXT_BATCH` preserve frozen `StreamTimeline`/`FactView` without back-mutation; property accessors return fresh dicts; optional `detector_bank=` reads `disabled_for_status()` without calling `DetectorBank.step`; `NarrativeRuntime` does not own `StreamTimeline`/`FeatureEngine`; → core subset **237** passed; related **333** passed; issue AC → **40/41** at that checkpoint; branch docs updated (`inflight/`, `domeny/events.md`, this handover); PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **#284 OPEN**; **no master PR**; **API.md / CONFIG.md / README.md unchanged** (tests-only)
+- #284 process TDD AC human-accepted TDD-exception (docs-only): docs tip `777843d`; issue AC → **41/41** (process TDD AC flipped via human-accepted TDD-exception — **TDD-exception:** Add focused pytest/pytest-asyncio tests before behavior code. **Reason:** behavior already landed in prior slices; cannot honestly claim tests-first retrospectively. **Alternative verification:** existing `NarrativeRuntime` + actor-transition matrix/ordering/races/immutability pytest evidence. **Risk:** process dilution — scoped to this historical checkbox only.); at that checkpoint **#284 stayed OPEN** pending human close gate; **no master PR**; **API.md / CONFIG.md / README.md unchanged** (docs-only)
+- #284 issue CLOSED (docs-only): docs tip `e8c4a2e` (`docs(#284): record issue CLOSED (AC 41/41)`); human close gate satisfied; stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **no master merge**; next work v2 integration remainder only; **API.md / CONFIG.md / README.md unchanged** (docs-only)
+- #284 EventSubscription full-replace SHA: `44dab2f` (`feat: drop commentary stream mirror for EventSubscription replace (#284)`); related subset (fanout + tts + adapter + idle + shadow_consumer + runtime) **165** passed locally; `NarrativeShadowConsumer(..., legacy_stream_handler=None)` — removed `_mirror_lifecycle_without_speech`; SessionReset/ConfigUpdate/batches no longer mirror into `CommentaryConsumer`; sole ingress is shadow admit → `NarrativeMailbox`; `CommentaryConsumer` remains for TTS sink/status/filler with `idle_speech_enabled=False` and `_commentary_subscription=None`; new `test_shadow_without_legacy_handler_skips_session_reset_and_config`; issue AC → **29/41** (**12** remain at that checkpoint); `API.md` / `CONFIG.md` unchanged; branch docs updated; **#284 OPEN**; **no master PR**
+- #284 command journal race append + replay fingerprint SHA: `b0f7646` (`feat: fix command-journal replay fingerprint and wire race path (#284)`); prior **256** + `tests/test_narrative_command_journal.py` **3** new rows = **259** related passed locally; `events/narrative_reducer_replay.py` `_STATUS_FINGERPRINT_VOLATILE` excludes `loop_last_reduce_mono_ms`, `speech_dispatched_at_mono_ms`, `speech_accepted_at_mono_ms` from `traces_equivalent` fingerprints; adds `append_command_journal_row(path, reducer_sequence=, command=)`; `NarrativeRuntime(command_journal_path=)` + `_append_command_journal` on each `reduce_next` (fail-soft); `race/runtime.py` passes `journal_dir / "narrative-command-journal.ndjson"` (`tape.directory` or `recordings_dir` or `recordings`); not exported from `events/__init__.py`; `API.md` unchanged (no new HTTP); branch docs updated; PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec`; **#284 OPEN**; **no master PR**
+- #284 authored-pack live realization SHA: `44b37f6` (`feat: prefer AuthoredPack in live realization_effect (#284)`); `tests/test_narrative_runtime.py` **124** + `tests/test_narrative_ingress.py` **5** + `tests/test_narrative_shadow_consumer.py` **6** + `tests/test_narrative_runtime_http.py` **5** + `tests/test_narrative_fanout_cutover.py` **7** + `tests/test_narrative_shadow_adapter.py` **4** + `tests/test_narrative_tts_bridge.py` **3** + `tests/test_narrative_realization_bridge.py` **3** + `tests/test_narrative_director_bridge.py` **8** + `tests/test_narrative_authored_realization.py` **7** = **172** related passed locally; `events/narrative_realization_bridge.py` prefers #267 `AuthoredPack` via `realize_authored_text` / `resolve_authored_beat_id` / `draft_from_event` / `SpeechDraft` (`source` `authored|template|fallback`); humanized event-kind templates remain fallback for unmapped beats; `build_realization_effect(..., prefer_authored=True)`; `NarrativeRuntime._dispatch_plan` attaches `beatId` on realization token; `race/runtime.py` wires `prefer_authored=True`; not exported from `events/__init__.py`; Qwen live transport still **not** wired; superseded by idle-lane speech cutover feat `1a5e651`
+- #240 closing SHA: `a22beee84b4ed14d3912958f07fffbd39eabde9c` (`docs: close narrative tape writer checkpoint (#240)`)
+- #241 closing SHA: `36cc36bd65f1efede58a5d255a6aa13f80dc3072` (`docs: close capture plan checkpoint (#241)`); [CI run 34175529488](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175529488) is green.
+- #242 closing SHA: `c396246cbde8cadff60f3f9a655c9ea9a26c6258` (`docs: close narrative tape replay checkpoint (#242)`)
+- #243 closing SHA: `493662a9c2783163a9e91a2c7e9f773b4d402faa` (`docs: close StreamTimeline checkpoint (#243)`)
+- Process land (#285+#287) cherry-picked onto this branch (not merged from `master`, so v2 runtime/config stay intact). Tips after cherry-pick: `0a39a7f` (#285), `ef3c0f8` (#287). Master PRs #286/#288 are closed without merge. #246 dependency is unchanged (#245 only).
+- #245 closing SHA: `d74211af0f0e10806ff2fb1ae93c140d413b2cce` (`docs: close AtomicFact ledger checkpoint (#245)`); [CI run 34190917321](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190917321) is green across 14/14 checks.
+- #245 close-CI pin SHA: `d930899684d0d1c7856e5914cf986eb4fc31cc67` (`docs: record AtomicFact ledger close CI (#245)`); [CI run 34191201064](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34191201064) is green across 14/14 checks.
+- #255 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/255#issuecomment-5597967428 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/255#issuecomment-5597970380
+- #255 pin SHA: `ed8a2816b60b112353f5b6a88ccb283701f89fda` (`docs: pin composite two-front close SHA (#255)`)
+- #256 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/256#issuecomment-5598208764 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/256#issuecomment-5598212322
+- First #256 coverage-matrix SHA: `b061ba2499a73d0a215ed2277ea6dd66a161211d` (`feat: add event-family coverage matrix audit (#256)`). Local pytest: `tests/test_coverage_matrix.py` **15** passed. Related regression: `tests/test_coverage_matrix.py` + `tests/test_session_plan_contract.py` + `tests/test_contract_primitives.py` **89** passed. Feat CI [34325459086](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34325459086) is green.
+- #256 docs checkpoint SHA: `09a0ffbb6f69887999a93d1c06e7b2df6fe20d9e` (`docs: close #256 coverage matrix lookup and resume drift`)
+- #256 closing SHA: `cbc727d586bdb91ac8c458076338d078c98ba9d7` (`docs: close event-family coverage matrix checkpoint (#256)`)
+- #256 pin SHA: `e01f6480f5ae537641044c162b99de3c245d5ce8` (`docs: pin event-family coverage matrix close SHA (#256)`)
+- #256 verifier: GREEN — coverage matrix + session-plan + contract primitives **89** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary/events imports; no pyproject/machine JSON edits.
+- #257 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/257#issuecomment-5598439278 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/257#issuecomment-5598447522
+- First #257 catalog-loader SHA: `3fd54d21363d2bf971e6d60fdd1e841f5a1dc7eb` (`feat: add StoryDefinition schema and catalog loader (#257)`). Local pytest: `tests/test_catalog_loader.py` **29** passed. Related regression: `tests/test_catalog_loader.py` + `tests/test_coverage_matrix.py` + `tests/test_session_plan_contract.py` + `tests/test_contract_primitives.py` + `tests/test_predicate_ast.py` **132** passed. Feat CI [34326896884](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34326896884) is green.
+- #257 docs checkpoint SHA: `2fe0c67b54ff8fe95933d3b291d79deb20f459a8` (`docs: record catalog loader implementation checkpoint (#257)`)
+- #257 closing SHA: `44743d41d3e577b266b7bda59578014af511f1f7` (`docs: close StoryDefinition catalog loader checkpoint (#257)`)
+- #257 pin SHA: `ffacb755cc5bb440b2fe4e03e39d636a1f5caf66` (`docs: pin StoryDefinition catalog loader close SHA (#257)`)
+- #257 verifier: GREEN — catalog loader + coverage matrix + session-plan + contract primitives + predicate **132** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary/events imports; no pyproject/machine JSON edits.
+- #258 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/258#issuecomment-5598884878 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/258#issuecomment-5598902924
+- First #258 EpisodeRegistry SHA: `dc4ef4079d9cbcd2cb417ba7fb2cb4747d9e69f4` (`feat: add lineage-aware EpisodeRegistry (#258)`). Local pytest: `tests/test_episode_registry.py` **13** passed. Related regression: `tests/test_episode_registry.py` + `tests/test_catalog_loader.py` + `tests/test_session_occurrence.py` + `tests/test_fact_ledger.py` **76** passed. Feat CI [34329404821](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34329404821) is green.
+- #258 docs checkpoint SHA: `3f899c328e7992a8a698942ef2b0801250eb1406` (`docs: record EpisodeRegistry implementation checkpoint (#258)`)
+- #258 closing SHA: `0fc31c1a7b58983dec87cc8845f0b5fb9e6c74c2` (`docs: close lineage-aware EpisodeRegistry checkpoint (#258)`)
+- #258 pin SHA: `f60b81a2ac613d487c70a7e8bd604d78743f1642` (`docs: pin lineage-aware EpisodeRegistry close SHA (#258)`)
+- #258 verifier: GREEN — episode registry + catalog loader + session occurrence + fact ledger **76** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits.
+- #259 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/259#issuecomment-5599109155 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/259#issuecomment-5599117103
+- First #259 EpisodeRetention SHA: `af72b73ddc36281be3e8b7088189738409ede659` (`feat: add resolved-episode retention without speech queue (#259)`). Local pytest: `tests/test_episode_retention.py` **9** passed. Related regression: episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger **85** passed. Feat CI [34330972616](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34330972616) is green.
+- #259 docs checkpoint SHA: `b54a51e01bd6946e2e624589d7e731ba757d2c8c` (`docs: record EpisodeRetention implementation checkpoint (#259)`)
+- #259 closing SHA: `30366013b27ed058b0ac7be7a29c9277b3fc3dd4` (`docs: close resolved-episode retention checkpoint (#259)`)
+- #259 pin SHA: `182181dd9732193cb38c00a05575fe005671eda6` (`docs: pin resolved-episode retention close SHA (#259)`)
+- #259 verifier: GREEN — episode retention + episode registry + catalog loader + session occurrence + fact ledger **85** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; no BeatPlan/TtsUtterance storage.
+- First #260 SilenceClock SHA: `754f21e7a4ec54d3cc61726f4bf8f70854a6de50` (`feat: add long-silence clock and filler opportunities (#260)`). Local pytest: `tests/test_silence_clock.py` **14** passed. Related regression: silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger **99** passed.
+- #260 docs checkpoint SHA: `272df5be57a49a6f8ca0caec1ffedcf59d1579db` (`docs: record SilenceClock implementation checkpoint (#260)`)
+- #260 closing SHA: `e7c32262ad21474ca3c4e037762882fbe75b32b3` (`docs: close long-silence lifecycle checkpoint (#260)`)
+- #260 pin SHA: `50f0b3fcf2fb7f370574455ff74d4ce17db396d5` (`docs: pin long-silence lifecycle close SHA (#260)`)
+- #260 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/260#issuecomment-5599318930 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/260#issuecomment-5599323162
+- Feat CI [34332349552](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34332349552) is green.
+- #260 verifier: GREEN — `tests/test_silence_clock.py` **14** passed; related **99** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; no BeatPlan/EventOpportunity queue.
+- First #261 BeatPlan SHA: `fef616aeb34fb35631c327438a99ad6b41c7170a` (`feat: add immutable BeatPlan and just-in-time planner (#261)`). Local pytest: `tests/test_beat_plan.py` **14** passed. Related regression: beat_plan + silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger + contract_primitives **175** passed. Feat CI [34334066033](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34334066033) is green.
+- #261 docs checkpoint SHA: `fc46a68665f2c649bb5d29e327c80e00884f5432` (`docs: record BeatPlan implementation checkpoint (#261)`)
+- #261 closing SHA: `ade1ae039a1f389a6736362cb3698571f5e16878` (`docs: close immutable BeatPlan checkpoint (#261)`)
+- #261 pin SHA: `c035571aa34f07f60c7eb5b9e8559c4e2f217450` (`docs: pin immutable BeatPlan close SHA (#261)`)
+- #261 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/261#issuecomment-5599651860 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/261#issuecomment-5599657583
+- #261 verifier: GREEN — `tests/test_beat_plan.py` **14** passed; related **175** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; no opportunity consume / utterance emit.
+- First #263 ExposureStore SHA: `8b610e1848f7b8ac17e6844664bb72d47b8d8c4c` (`feat: add ExposureStore and base-2 fatigue (#263)`). Local pytest: `tests/test_exposure_store.py` **13** passed. Related regression: exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger + contract_primitives **188** passed.
+- #263 docs checkpoint SHA: `bdf5e25a60ea2e4aabff3501046d609f140997f2` (`docs: record ExposureStore implementation checkpoint (#263)`)
+- #263 closing SHA: `2cc4bd526eccf81174b1d07d37a713ef1cff5961` (`docs: close ExposureStore checkpoint (#263)`)
+- #263 pin SHA: `3a8909539fa44341057ac8a5ed7fbc8541490d16` (`docs: pin ExposureStore close SHA (#263)`)
+- #263 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/263#issuecomment-5600006018 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/263#issuecomment-5600010389
+- Feat CI [34337246314](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34337246314) is green.
+- #263 verifier: GREEN — `tests/test_exposure_store.py` **13** passed; related **188** passed; ruff/black/mypy clean; no eval/exec/compile/math.exp; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; embeddings never a gate.
+- First #283 OpportunityQueue SHA: `3d29a82691023d4e57d8a27982accc02e9d634ac` (`feat: add expiring EventOpportunity queue and post-beat arbitration (#283)`). Local pytest: `tests/test_opportunity_queue.py` **15** passed. Related regression: opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger + contract_primitives **203** passed.
+- #283 docs checkpoint SHA: `df9f9096e2a1483bebb2418921747f19c53a515c` (`docs: record EventOpportunity queue implementation checkpoint (#283)`)
+- #283 closing SHA: `6e2dcc4145c4dc98833ce79eae3d88759c34b499` (`docs: close EventOpportunity queue checkpoint (#283)`)
+- #283 pin SHA: `cae48941356dd88e0a087b79a9d811042539a288` (`docs: pin EventOpportunity queue close SHA (#283)`)
+- #283 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/283#issuecomment-5600212027 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/283#issuecomment-5600214613
+- Feat CI [34338784263](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34338784263) is green.
+- #283 verifier: GREEN — `tests/test_opportunity_queue.py` **15** passed; related **203** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; one-way ExposureStore pressure read.
+- First #262 StoryDirector SHA: `0aca193e4ebef2aa3defdb79c638129549a00699` (`feat: add StoryDirector eligibility and deterministic scoring (#262)`). Local pytest: `tests/test_story_director.py` **11** passed. Related regression: story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger + contract_primitives **214** passed.
+- #262 docs checkpoint SHA: `fdd75df9e58cbb78e0685fe07f9c7ff3b844b59c` (`docs: record StoryDirector implementation checkpoint (#262)`)
+- #262 closing SHA: `0b4d09895605dbbfe07262d11d0aafab4b73d1e2` (`docs: close StoryDirector eligibility checkpoint (#262)`)
+- #262 pin SHA: `2476c964a24a54d9d1e8a478ac52b5b5e58dd154` (`docs: pin StoryDirector close SHA (#262)`)
+- #262 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/262#issuecomment-5600513773 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/262#issuecomment-5600516541
+- Feat CI [34340873454](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34340873454) is green.
+- #262 verifier: GREEN — `tests/test_story_director.py` **11** passed; related **214** passed; ruff/black/mypy clean; no eval/exec/compile/math.exp; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits.
+- First #264 SpeechLane SHA: `330fd45188b17aad7cd4e30856ac1b309ee509f1` (`feat: add single in-flight speech lane without a waiter (#264)`). Local pytest: `tests/test_speech_lane.py` **14** passed. Related regression: speech_lane + story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger + contract_primitives **228** passed. Feat CI [34342772096](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34342772096) is green.
+- #264 docs checkpoint SHA: `2a90b816cfff62145d0c3a85513f9e301b95feca` (`docs: record SpeechLane implementation checkpoint (#264)`)
+- #264 closing SHA: `9d40800755f3da1bf3a35297059b4f56b3b96691` (`docs: close SpeechLane checkpoint (#264)`)
+- #264 pin SHA: `3b66f0f8210b027345c6e0aecb8660b7476aedef` (`docs: pin SpeechLane close SHA (#264)`)
+- #264 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/264#issuecomment-5600762067 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/264#issuecomment-5600765961
+- #264 handover audit SHA: `30824ae03c4146e81236984053f710a90e401097` (`docs: close #264 SpeechLane lookup and handover drift`)
+- #264 verifier: GREEN — `tests/test_speech_lane.py` **14** passed; related **228** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no live SAPI/eSpeak/SuperTonic imports; no pyproject/machine JSON edits; `pending_count=0` (no prepared waiter).
+- First #265 FreshnessGate SHA: `63674e33638b59d7fb2db897b8be09b59a1cd794` (`feat: add freshness commit gate without a waiter (#265)`). Local pytest: `tests/test_freshness_commit.py` **14** passed. Related regression: freshness_commit + speech_lane + story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + catalog_loader + session_occurrence + fact_ledger + contract_primitives **242** passed. Feat CI [34344295746](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34344295746) is green.
+- #265 docs checkpoint SHA: `7bb4fce306fd98a35bc43769426a420da5d589d8` (`docs: record FreshnessGate implementation checkpoint (#265)`)
+- #265 closing SHA: `0029a5b2252da8e456eb07290198745ae981acf1` (`docs: close FreshnessGate checkpoint (#265)`)
+- #265 pin SHA: `3ba61ea8fd11a60af336f73e18e06020be2c7315` (`docs: pin FreshnessGate close SHA (#265)`)
+- #265 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/265#issuecomment-5600959873 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/265#issuecomment-5600963934
+- #265 verifier: GREEN — `tests/test_freshness_commit.py` **14** passed; related **242** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; `rebuilt_surfaces=False`; same revision cannot retry.
+- First #266 RealizationCatalog SHA: `10e5b70cff8f8a2d738c30b0d40ebd79798d9b97` (`feat: add EN-only RealizationCatalog and migration classifier (#266)`). Local pytest: `tests/test_realization_catalog.py` **13** passed. Related regression: realization_catalog + coverage_matrix + catalog_loader + freshness_commit + speech_lane + story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + session_occurrence + fact_ledger + contract_primitives **270** passed. Feat CI [34346027549](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34346027549) is green.
+- #266 docs checkpoint SHA: `8df6da447e3678ac80b03ca94397ad44c318a612` (`docs: record RealizationCatalog implementation checkpoint (#266)`)
+- #266 v2 index follow-up SHA: `6892ac633d0e8b315050ed930fd5fa759296d34f` (`docs: mark #266 implemented in the v2 index`)
+- #266 docs-keeper audit SHA: `a493f826ccce3ae285d3981af2e441fe249f0244` (`docs: apply RealizationCatalog docs-keeper audit (#266)`)
+- #266 closing SHA: `371f1ed8aad0b2a96035e984bcb8762a38534a5d` (`docs: close RealizationCatalog checkpoint (#266)`)
+- #266 pin SHA: `fd8a04bb9bf137020581641d62b7be3113a92006` (`docs: pin RealizationCatalog close SHA (#266)`)
+- #266 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/266#issuecomment-5601192589 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/266#issuecomment-5601197102
+- #266 verifier: GREEN — `tests/test_realization_catalog.py` **13** passed; related **270** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine JSON edits; CS cannot enter v2 routing; pattern_count and beat_count stay separate.
+- First #267 authored-pack SHA: `6886d83b7a4093156a3d80604f035f297d57faed` (`feat: add authored critical and lifecycle realization pack (#267)`). Local pytest: `tests/test_authored_pack.py` **11** passed. Related regression: authored_pack + realization_catalog + coverage_matrix + catalog_loader + freshness_commit + speech_lane + story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + session_occurrence + fact_ledger + contract_primitives **281** passed. Feat CI [34347147521](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34347147521) is green.
+- #267 docs checkpoint SHA: `815ef46a336b8d0dc29c339b40c15cb44ea1c5e0` (`docs: record authored pack implementation checkpoint (#267)`)
+- #267 docs-keeper audit SHA: `a31840f56e6647c3a5308db76aa00b1b2c75e386` (`docs: apply authored pack docs-keeper audit (#267)`)
+- #267 closing SHA: `f326cb0f6526072e7ab77ffd749fed397b6a4edb` (`docs: close authored pack checkpoint (#267)`)
+- #267 pin SHA: `ef51557bf2154763db9a8f377bdf5956e6b35356` (`docs: pin authored pack close SHA (#267)`)
+- #267 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/267#issuecomment-5601364901 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/267#issuecomment-5601369270
+- #267 verifier: GREEN — `tests/test_authored_pack.py` **11** passed; related **281** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/events imports; no pyproject/machine JSON edits; authored mode never a Qwen fallback.
+- First #268 PromptCompiler SHA: `a3bab698e2f2732afb6d96e69e1637f2d733bd04` (`feat: add compiled PromptOptions and prompt profiles (#268)`). Local pytest: `tests/test_prompt_compiler.py` **12** passed. Related regression: prompt_compiler + authored_pack + realization_catalog + coverage_matrix + catalog_loader + freshness_commit + speech_lane + story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + session_occurrence + fact_ledger + contract_primitives **293** passed. Feat CI [34349254777](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34349254777) is green.
+- #268 docs checkpoint SHA: `f4a3cf2248d13326f6631665d3863a5e97f61025` (`docs: record PromptCompiler implementation checkpoint (#268)`)
+- #268 docs-keeper audit SHA: `ccaadbcd93dae02a5f6269329a65ab59821c06a8` (`docs: apply PromptCompiler docs-keeper audit (#268)`)
+- #268 closing SHA: `633c74536e74c8c07d044993535fc22ff845261b` (`docs: close PromptCompiler checkpoint (#268)`)
+- #268 pin SHA: `60ad695c9c6c907b835b9663d46a94779a40daaf` (`docs: pin PromptCompiler close SHA (#268)`)
+- #268 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/268#issuecomment-5601698435 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/268#issuecomment-5601703038
+- #268 verifier: GREEN — `tests/test_prompt_compiler.py` **12** passed; related **293** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`; no NarrativeRuntime/overlay/commentary/FactView imports; no pyproject/machine JSON edits; tight is the only realized prompt contract.
+- First #269 Qwen transport SHA: `89f89beee8a73a3ee1cc857b83c57fa5121c2ba6` (`feat: add bounded Qwen transport and warm-up (#269)`). Local pytest: `tests/test_qwen_transport.py` **13** passed. Related regression: qwen_transport + prompt_compiler + authored_pack + realization_catalog + coverage_matrix + catalog_loader + freshness_commit + speech_lane + story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + session_occurrence + fact_ledger + contract_primitives **306** passed. Feat CI [34351003627](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34351003627) is green.
+- #269 docs checkpoint SHA: `e2f2edac4f3d439854db5d88f7e07b5eae5e1d5d` (`docs: record Qwen transport implementation checkpoint (#269)`)
+- #269 docs-keeper audit SHA: `4c84ec421f002b4a15b18ad1a7f162a5f9345bb7` (`docs: apply Qwen transport docs-keeper audit (#269)`)
+- #269 closing SHA: `7eb5e3fc3cb263c01f85f27accbb5ab272e7d007` (`docs: close Qwen transport checkpoint (#269)`)
+- #269 pin SHA: `1ad9a6a764de3e94a258bf21a7eff9f761f10861` (`docs: pin Qwen transport close SHA (#269)`)
+- #269 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/269#issuecomment-5601906508 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/269#issuecomment-5601910885
+- #269 verifier: GREEN — `tests/test_qwen_transport.py` **13** passed; related **306** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`; no NarrativeRuntime/overlay/commentary/FactView imports; no pyproject/machine JSON edits; transport failure never authored fallback.
+- First #270 SemanticVerifier SHA: `72d12f3ae1f4a4adbacae26497c0944ffbefe4eb` (`feat: add family-specific SemanticVerifier (#270)`). Local pytest: `tests/test_semantic_verifier.py` **12** passed. Related regression: semantic_verifier + qwen_transport + prompt_compiler + authored_pack + realization_catalog + coverage_matrix + catalog_loader + freshness_commit + speech_lane + story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + session_occurrence + fact_ledger + contract_primitives **318** passed. Feat CI [34352429399](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34352429399) is green.
+- #270 docs checkpoint SHA: `acb832f68c8dab8ccdbb2e76392871a4c060b909` (`docs: record SemanticVerifier implementation checkpoint (#270)`)
+- #270 docs-keeper audit SHA: `b08b9b7b79d53885007ade7bb3f7668b1d78f056` (`docs: apply SemanticVerifier docs-keeper audit (#270)`)
+- #270 closing SHA: `a85e6ba47449368254bbabfc1c08fb06c0d73c37` (`docs: close SemanticVerifier checkpoint (#270)`)
+- #270 pin SHA: `c8d4db09aec22dc9025d85ea912d3b7695b209a2` (`docs: pin SemanticVerifier close SHA (#270)`)
+- #270 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/270#issuecomment-5602933368 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/270#issuecomment-5603036196
+- #270 verifier: GREEN — `tests/test_semantic_verifier.py` **12** passed; related **318** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`; no overlay/commentary/FactView imports; no pyproject/machine JSON edits; A/B vs B/A cannot both accept; ambiguity discards without repair.
+- First #271 eval corpus SHA: `4d62fedaf8e319903345fcfbdfbdd92c06733ebe` (`feat: add LLM evaluation corpus and latency report (#271)`). Local pytest: `tests/test_eval_corpus.py` **12** passed. Related regression: eval_corpus + semantic_verifier + qwen_transport + prompt_compiler + authored_pack + realization_catalog + coverage_matrix + catalog_loader + freshness_commit + speech_lane + story_director + opportunity_queue + exposure_store + beat_plan + silence_clock + episode_retention + episode_registry + session_occurrence + fact_ledger + contract_primitives **330** passed. Feat CI [34363936037](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34363936037) is green.
+- #271 docs checkpoint SHA: `822878d2dad4a08c4f0396afd402a6d826f501ec` (`docs: record eval corpus implementation checkpoint (#271)`)
+- #271 docs-keeper audit SHA: `32bec5042bceaa63731d0b0b346b6cdce26a9367` (`docs: apply eval corpus docs-keeper audit (#271)`)
+- #271 closing SHA: `8a58d2bca934795c63ffaded6a6594e826f1f5cc` (`docs: close eval corpus checkpoint (#271)`)
+- #271 pin SHA: `921c94dfc93aa466c6fda731e9fec2733403ffe8` (`docs: pin eval corpus close SHA (#271)`)
+- #271 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/271#issuecomment-5604113449 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/271#issuecomment-5604109818
+- #271 verifier: GREEN — `tests/test_eval_corpus.py` **12** passed; related **330** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`; no overlay/commentary/FactView imports; no pyproject/machine JSON edits; tight zero material false accepts; balanced/loose stay disabled.
+- First #255 composite two-front SHA: `ad9d092778e07982e3377fcc911a60de55b48990` (`feat: add composite two-front battle detector (#255)`). Local pytest: `tests/test_two_front.py` **18** passed. Related regression: `tests/test_two_front.py` + `tests/test_closing.py` + `tests/test_pressure.py` + `tests/test_detector_bank.py` **70** passed. Feat CI [34323708535](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34323708535) is green.
+- #255 closing SHA: `fb42dc1763925ffc969ff37d708aa5f2c7df1e99` (`docs: close composite two-front checkpoint (#255)`)
+- #255 docs checkpoint SHA: `5bb48f30f43e0d05ac257b7ee810f70bd6dbd5d3` (`docs: record two-front implementation checkpoint (#255)`)
+- #255 verifier: GREEN — two_front + closing + pressure + DetectorBank + gap + FeatureEngine + predicate **107** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine edits.
+- #254 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/254#issuecomment-5597268853 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/254#issuecomment-5597273744
+- #254 pin SHA: `1dcbe9ffc0ca6bcc13dbe1b86822ac1927ef92bc` (`docs: pin UNDER_PRESSURE temporal detector close SHA (#254)`)
+- #254 closing SHA: `fd9320c9a2ff5abcab8deb70389d01120d4d5084` (`docs: close UNDER_PRESSURE temporal detector checkpoint (#254)`)
+- #254 docs checkpoint SHA: `9f69d9110afdccdd39ae97863f9729c79009b0ad` (`docs: record UNDER_PRESSURE implementation checkpoint (#254)`)
+- First #254 UNDER_PRESSURE SHA: `13e01ef94481420e06be0859c76b7d0f427ae212` (`feat: add UNDER_PRESSURE temporal detector (#254)`). Local pytest: `tests/test_pressure.py` **14** passed. Related regression: `tests/test_pressure.py` + `tests/test_closing.py` + `tests/test_detector_bank.py` **52** passed. Feat CI [34319843753](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34319843753) is green.
+- #254 verifier: GREEN — pressure + closing + DetectorBank + gap + FeatureEngine + predicate **89** passed; ruff/black/mypy clean; no eval/exec/compile; not exported from `events/__init__.py`; no NarrativeRuntime/overlay/commentary imports; no pyproject/machine edits.
+- #253 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/253#issuecomment-5596937942 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/253#issuecomment-5596944728
+- #253 pin SHA: `20ecd6129cf2ae3a2952c82808370b931cb127db` (`docs: pin CLOSING temporal detector close SHA (#253)`)
+- #253 closing SHA: `216d8947a6c1e922f6b6f7efead8ea7b2458bbef` (`docs: close CLOSING temporal detector checkpoint (#253)`)
+- #253 docs checkpoint SHA: `630bd19aa4400e38d10ef75b2b1b5f1228641854` (`docs: record CLOSING temporal detector implementation checkpoint (#253)`)
+- First #253 CLOSING SHA: `5362c3375ca40b80b75b9fc1ad13df1f3b80ca06` (`feat: add CLOSING temporal detector (#253)`). Local pytest: `tests/test_closing.py` **19** passed (eight `bandBoundaries` goldens). Feat CI [34318504569](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34318504569) is green.
+- #253 verifier: GREEN — closing + DetectorBank + gap + FeatureEngine + predicate **75** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
+- #252 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/252#issuecomment-5596708564 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/252#issuecomment-5596714308
+- #252 pin SHA: `41fc12ccc75e4a87c750f386392ea6ce6c84a6fa` (`docs: pin LifecycleTriggerBank close SHA (#252)`)
+- #252 closing SHA: `fe0549bef3c287aaec471ba855ab4575fa87790f` (`docs: close LifecycleTriggerBank checkpoint (#252)`)
+- #252 docs checkpoint SHA: `d3c1934c90e7f920059672c12e2eeb9a3c5193f6` (`docs: record LifecycleTriggerBank implementation checkpoint (#252)`)
+- First #252 LifecycleTriggerBank SHA: `c4688a40a43e40d47e2698114bcb06a245b97914` (`feat: add stream and session lifecycle triggers (#252)`). Local pytest: `tests/test_lifecycle_edges.py` **13** passed. Feat CI [34317474064](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34317474064) is green.
+- #252 verifier: GREEN — lifecycle + direct edges + DetectorBank + timeline/occurrence + predicate + session_end + narrative context **146** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
+- #251 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/251#issuecomment-5596547148 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/251#issuecomment-5596554576
+- #251 pin SHA: `d30ffa82eafa9a481730b060a9d36d6fe2b45a4e` (`docs: pin DirectEdgeBank close SHA (#251)`)
+- #251 closing SHA: `fcf12e6fd378cee40957a7add29b2efc45e903e2` (`docs: close DirectEdgeBank checkpoint (#251)`)
+- #251 docs checkpoint SHA: `f8eb07f534db48974e1d74c28e91c9c3b44451ad` (`docs: record DirectEdgeBank implementation checkpoint (#251)`)
+- First #251 DirectEdgeBank SHA: `5a61be3aae3b8c8b3bac91c1361f6f7c53e10278` (`feat: add direct lap and sector edge triggers (#251)`). Local pytest: `tests/test_direct_edges.py` **13** passed. Feat CI [34316670141](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34316670141) is green.
+- #251 verifier: GREEN — direct edges + DetectorBank + lap/sector emitters + timeline/occurrence + predicate **92** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
+- #250 close-gate comments: steward https://github.com/Buchtanen/ir-obs-switcher/issues/250#issuecomment-5596439899 ; docs-keeper https://github.com/Buchtanen/ir-obs-switcher/issues/250#issuecomment-5596444674
+- #250 pin SHA: `ec0db67052157d955f1e65925c7b44a81955f9ef` (`docs: pin DetectorBank close SHA (#250)`)
+- #250 closing SHA: `f22bee421102847a42cb5b5b6218b0a7f42e2de1` (`docs: close DetectorBank checkpoint (#250)`)
+- #250 docs checkpoint SHA: `0a44978d2468f30bb343100c8b8731bd9850fb9b` (`docs: record DetectorBank implementation checkpoint (#250)`)
+- First #250 DetectorBank SHA: `e41ffb42f5e83236a4db58194dd4c5903fbc0899` (`feat: add generic correlated detector lifecycle FSM (#250)`). Local pytest: `tests/test_detector_bank.py` **19** passed. Feat CI [34315819964](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34315819964) is green.
+- #250 verifier: GREEN — DetectorBank + predicate + FeatureEngine + gap + ledger/inheritance + capture-safety **83** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
+- #249 closing SHA: `4bdb0dd874d83d851b48ba77b1702789d9b75dc0` (`docs: close predicate AST checkpoint (#249)`)
+- #249 docs checkpoint SHA: `83a12eb3a0cc1e3f74c75d87d48a1fde9c22c924` (`docs: record predicate AST implementation checkpoint (#249)`)
+- First #249 predicate-AST SHA: `b24e3da0297b027a1d6b3399b2f8584fb70bbe4c` (`feat: add safe typed predicate AST (#249)`). Local pytest: `tests/test_predicate_ast.py` **14** passed. Feat CI [34300365024](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34300365024) is green.
+- #249 verifier: GREEN — predicate + FeatureEngine + gap + ledger/inheritance **60** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
+- #248 closing SHA: `a5f446ba9403e189edbf4930c0cfd6728270985b` (`docs: close gap estimator checkpoint (#248)`)
+- First #248 gap-estimator SHA: `4aa2e680ef76b6aa37ce993cbc37bef32e93db46` (`feat: add versioned gap estimators and coverage (#248)`). Local pytest: `tests/test_gap_estimators.py` **13** + `tests/test_feature_engine.py` **10** = **23** passed.
+- #248 docs checkpoint SHA: `72067e31e66f3a2d39fc51cf47d7e5138ee3a500` (`docs: record gap estimator implementation checkpoint (#248)`).
+- #248 verifier: GREEN — gap + FeatureEngine + ledger/inheritance **46** passed; ruff/black/mypy clean; no eval/exec/compile; no pyproject/machine edits.
+- #247 close-CI pin SHA: `3ed6298778a8072daa7a22b4be4d2135b08d2bc3` (`docs: pin FeatureEngine close SHA (#247)`); [CI run 34279302006](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34279302006) is green across 14/14 checks.
+- #247 closing SHA: `9c2ed439dae08bd52e47e79bbd710ec9ad156c22` (`docs: close FeatureEngine checkpoint (#247)`)
+- First #247 FeatureEngine SHA: `62402838432dc8676be79b6c295b2e73513c6d6d` (`feat: add typed FeatureEngine registry (#247)`). Local pytest: `tests/test_feature_engine.py` **10** passed.
+- #247 verifier: GREEN — `tests/test_feature_engine.py` + `test_fact_ledger.py` + `test_fact_inheritance.py` **33** passed; ruff/black/mypy clean; `FeatureEngine` not exported from `events/__init__.py`; no eval/exec/compile; no pyproject/machine edits.
+- First #246 inheritance SHA: `abe4d1af7ab159c84914027fc87dd291922a7326` (`feat: inherit ancestor facts without copying (#246)`); [CI run 34276541133](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34276541133) is green across 14/14 checks.
+- #246 closing SHA: `97bcda52e6b530a2adf903b8d61df64ae26aa093` (`docs: close fact inheritance checkpoint (#246)`)
+- First #245 ledger SHA: `a4afbf4e586cc21d776bde39991619adbd5a2bb8` (`feat: add typed AtomicFact ledger (#245)`); [CI run 34189938310](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34189938310) is green on QA HEAD `88fdd9c`.
+- #245 producer-order SHA: `d9bb8fc080c2b54ecdf221783cad863f8ef9253b` (`feat: apply AtomicFacts in producer order (#245)`).
+- #245 producer-order pin SHA: `32a351ccd28fb5fef784b5d274e373ed93e47cb6` (`docs: pin AtomicFact producer-order SHA (#245)`).
+- #245 producer-order QA SHA: `5b86dcb3ba37e1a258e5cd9f33113902e08fe507` (`docs: record AtomicFact producer-order local QA (#245)`); [CI run 34190529734](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34190529734) is green across 14/14 checks.
+- #244 closing SHA: `ecea6261c1da823d34fff48b4bf547f74b5319e8` (`docs: close session occurrence checkpoint (#244)`); [CI run 34178428939](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34178428939) is green.
+- First #244 occurrence SHA: `d6e87998aa79289278deab43871a8e266a937e05` (`feat: add SessionOccurrence lineage records (#244)`).
+- #244 pin/QA SHA: `f2fd52e47fdba8df8958f798d426688c4f100327` (`docs: record SessionOccurrence local QA (#244)`); [CI run 34178122353](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34178122353) is green across 14/14 checks.
+- First #243 timeline SHA: `fdaa2b8b41289b098cbbffb078e9396916157401` (`feat: add StreamTimeline lifecycle reducer (#243)`); [CI run 34177334667](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34177334667) is green.
+- #243 pin SHA: `53f0b3643d4600868b0cfae112ceafa811a205a4` (`docs: pin StreamTimeline reducer SHA (#243)`); [CI run 34177350244](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34177350244) is green across 14/14 checks.
+- First #242 replay SHA: `320fff19fea4877e11295433233e92f76583b1be` (`feat: add narrative tape replay reader (#242)`); [CI run 34176400529](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34176400529) is green.
+- #242 pin SHA: `d22d4840e09d9ba3c944df619a38237af843bee5` (`docs: pin narrative tape replay SHA (#242)`); [CI run 34176510811](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34176510811) is green across 14/14 checks.
+- First #241 compiler SHA: `6af884ef51a3501d6ef31fe92010acdecc1613c0` (`feat: compile immutable narrative CapturePlan (#241)`); [CI run 34175034084](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175034084) is green.
+- First #241 safety SHA: `fe68fa047d834a94a815aa44d74fb3b039146bcd` (`feat: add capture preflight completeness and safety coordinator (#241)`); [CI run 34175163311](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175163311) is green.
+- #241 pin SHA: `e57796055ecc0d8013392157df9b4f098e7ca698` (`docs: pin capture safety SHA in handover (#241)`); [CI run 34175254457](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34175254457) is green across 14/14 checks.
+- First #240 async-writer SHA: `23abfdefdde8db2f037311b6345b5af03c658e58` (`feat: add async narrative tape writer and rotation (#240)`)
+- First #240 file-session SHA: `ec3da3eb0b6bfb7901637919290a987fd802cf40` (`feat: add narrative tape NDJSON file session (#240)`)
+- First #240 queue SHA: `246fbee52a6e11f9fd949f407dca079344c0ee85` (`feat: add bounded narrative tape record queue (#240)`)
+- Last pushed design-freeze SHA: `b0cab18cba23c3acc96aecad7ac527793d22d4b0`
+- Control-plane evidence SHA: `2d2f014592d5728f0eebe49afae73424ff44c35d` (`ci: enforce v2 checkpoints and agent handover (#235)`)
+- Last pushed handover SHA before #236: `d81b70a85b67a30273abfddbb39cd0b6ad513097`
+- First #236 implementation SHA: `be7c915a410fa9e9752e5259f2ad9a04ff3c037c` (`feat: add v2 contract primitives (#236)`)
+- Final #236 implementation SHA: `4493615cce6b92842f7e5a0741c5bb8df71e5435` (`feat: complete v2 primitive contracts (#236)`)
+- Green CI: [first checkpoint run 34148330942](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34148330942), [final acceptance run 34149625428](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34149625428)
+- First #236 [dev diary checkpoint](https://github.com/Buchtanen/ir-obs-switcher/issues/236#issuecomment-5574070160)
+- Final #236 [dated dev diary](https://github.com/Buchtanen/ir-obs-switcher/issues/236#issuecomment-5566224409); every checklist item is complete and the issue is closed.
+- #236 closing metadata SHA: `935fb02eec07dccd94113f3cba0b0312edafff2d`
+- First #237 implementation SHA: `c7a6709160b29c483283fdaac0002daeb9eff56b` (`feat: add narrative event admission contracts (#237)`).
+- CI run [34151258760](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34151258760) correctly failed the first cross-platform acceptance attempt: raw packaged JSON bytes hash differently after Windows CRLF checkout materialization.
+- Portability-fix SHA: `7fdfb832a64add97f062e3998912ee91a80a87e0` (`fix: canonicalize narrative taxonomy hash (#237)`); corrective [CI run 34151680014](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34151680014) is green.
+- First #237 [dated dev diary](https://github.com/Buchtanen/ir-obs-switcher/issues/237#issuecomment-5566224531).
+- First #237 acceptance-metadata SHA: `eca280b` (`docs: record narrative admission checkpoint (#237)`).
+- Coherent-batch SHA: `2a6d57e03419a7e8cadfd2153184df6e01403da3` (`feat: add coherent narrative context batches (#237)`); [CI run 34152629347](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34152629347) is green on Python 3.11–3.13.
+- Bounded command/mailbox foundation SHA: `325e2020dff3768e70a16137905769f710ae7ff5` (`feat: add bounded narrative mailbox foundation (#237)`); [CI run 34155593258](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34155593258) is green on Python 3.11–3.13.
+- Lifecycle/idempotency SHA: `abce38b604cd51d4b22791f5ecf0ebcc9dabf8ac` (`feat: add lifecycle narrative admission (#237)`); [CI run 34156674432](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34156674432) is green on Python 3.11–3.13.
+- Recovery-evidence SHA: `3ce1535c06e542f88ccdd3fc58346c2e57e93318` (`fix: preserve bounded mailbox recovery evidence (#237)`). CI run [34157119475](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157119475) correctly failed the frozen-contract job because the dependent F01–F44 fixture bundle still named the prior actor-model hash.
+- Cross-artifact correction SHA: `4e8a1f7dfdb48f1c79f11c2e6108afcc7780ce99` (`docs: refresh recovery contract evidence (#237)`); corrective [CI run 34157345490](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157345490) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
+- The public #237 checklist now records the explicit implementation boundary: #237 owns deterministic admission/order/deduplication and the bounded mailbox primitive; #284 owns live actor wiring, reducer-state replay and integrated loop liveness.
+- #237 closing-metadata SHA: `a174c82d631aafb0009950b34e98fdfae8a0ce61` (`docs: close narrative admission checkpoint (#237)`); final [CI run 34157790048](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34157790048) is green and #237 is closed as completed.
+- First #238 parser SHA: `ccd88f707c7641c8845161e2991911e0fcd750d9` (`feat: add strict v2 config candidate parser (#238)`); [CI run 34158763067](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34158763067) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
+- #238 ConfigLedger SHA: `f06f38392bd8af68afec5cb37a7978711a2f1291` (`feat: add immutable v2 config ledger (#238)`); [CI run 34159447155](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34159447155) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
+- #238 detector/tuning/path SHA: `d35e0d65c72e9f9492bfe26ed783fd9289a55b57` (`feat: enforce v2 detector config safety (#238)`); [CI run 34160114565](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34160114565) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
+- #238 fail-soft load SHA: `349ee51587cadc909dbdad19b4da6a8d2a08ae2f` (`feat: load v2 commentary config fail-soft (#238)`); [CI run 34161392389](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34161392389) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
+- #238 persistent reload-owner SHA: `64b75f03dafc4bea2d6c9c194a43afc10617981d` (`feat: own v2 config reload generations (#238)`); [CI run 34162015998](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34162015998) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
+- #238 public-control/migration SHA: `fe72658f104180d2b02158ec426853075ccb76b5` (`refactor: remove legacy commentary config controls (#238)`); [CI run 34162505534](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34162505534) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
+- #238 closing-metadata SHA: `6278c3419b40763aae7c127dac020539f7b4934c` (`docs: close v2 config checkpoint (#238)`); final [CI run 34162894430](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34162894430) is green and #238 is closed as completed.
+- Runtime behavior edits so far: dependency-neutral v2 primitives, the stateless accepted-V4-to-NarrativeEvent adapter, immutable coherent context batching, a 17-kind NarrativeCommand factory/discriminator foundation and the bounded mailbox foundation; no live producer, actor reducer or tape wiring yet.
+
+Do not use `/home/richa/Dokumenty/ChatGPT/iROBSwitcher` for this work: it is a separate dirty checkout on another branch. Always verify the identity commands below before editing.
+
+## Accepted state
+
+- Independent design-freeze repair is complete: 11/11 machine builders pass.
+- Baseline evidence: 1,364 pytest tests passed; 12 branch Python files pass Ruff and Black; Mypy passes 174 source files; 33 JSON files parse and seven Draft 2020-12 schemas validate.
+- Issue #235 contains the published evidence at commit `b0cab18`; human acceptance was given on 2026-09-07.
+- The control-plane evidence and green CI are recorded in the [closing dev diary](https://github.com/Buchtanen/ir-obs-switcher/issues/235#issuecomment-5573626335); #235 is closed as completed.
+- The Codex-discoverable `.agents/skills/source-command-handover/` wrapper delegates to the canonical command/rule instead of duplicating their instructions.
+- Frozen architecture, DTO, catalog, detector, realization, transport and F01–F44 contracts live under `docs/v2.0.0/`.
+
+## Current checkpoint ownership
+
+- Editing owner: **unassigned** — handover from cloud agent; next agent resumes **#273** on integration `codex/commentary-story-flow-spec` only (**not** master). **#284 CLOSED** — AC **41/41**; **#272 CLOSED** — AC **4/4**; **#273 OPEN** (11 commits / 8 product slices through tip `75e128d`).
+- Dirty scope: clean at integration tip `75e128d` (feat `75e128d`; PR [#292](https://github.com/Buchtanen/ir-obs-switcher/pull/292) **MERGED**); #273 verifier **76** passed (`test_commentary_runtime_goldens` + `test_narrative_ingress` + `test_narrative_tape_queue`); #284 core subset **240** / related **336** retained. **Next open work (#273 on integration only):** (1) ~~**Expose fixed EN, catalog hash, desired/effective config hashes, apply sequence and pending boundaries**~~ **DONE** @ `b751d70`; (2) other #273 AC remainder; (3) master cutover only when cutover issue says so. Optional non-#273 integration: `planningCycleId` race tape wire / deeper tape-run wiring. **No master PR / no master merge.**
+- GitHub native `blockedBy` is now set for #239–#248 to match `docs/v2.0.0/README.md`.
+- issue-steward close-gates: [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239#issuecomment-5591500416), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240#issuecomment-5591500587), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241#issuecomment-5591500721), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242#issuecomment-5591500870), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243#issuecomment-5591501016), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244#issuecomment-5591501184), [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247#issuecomment-5591933090), [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248#issuecomment-5593964317), [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249#issuecomment-5594524472), [#250](https://github.com/Buchtanen/ir-obs-switcher/issues/250#issuecomment-5596439899), [#251](https://github.com/Buchtanen/ir-obs-switcher/issues/251#issuecomment-5596547148), [#252](https://github.com/Buchtanen/ir-obs-switcher/issues/252#issuecomment-5596708564), [#253](https://github.com/Buchtanen/ir-obs-switcher/issues/253#issuecomment-5596937942), [#254](https://github.com/Buchtanen/ir-obs-switcher/issues/254#issuecomment-5597268853), [#255](https://github.com/Buchtanen/ir-obs-switcher/issues/255#issuecomment-5597967428), [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256#issuecomment-5598208764), [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257#issuecomment-5598439278), [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258#issuecomment-5598884878), [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259#issuecomment-5599109155), [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260#issuecomment-5599318930), [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261#issuecomment-5599651860), [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263#issuecomment-5600006018), [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283#issuecomment-5600212027), [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262#issuecomment-5600513773), [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264#issuecomment-5600762067), [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265#issuecomment-5600959873), [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266#issuecomment-5601192589), [#267](https://github.com/Buchtanen/ir-obs-switcher/issues/267#issuecomment-5601364901), [#268](https://github.com/Buchtanen/ir-obs-switcher/issues/268#issuecomment-5601698435), [#269](https://github.com/Buchtanen/ir-obs-switcher/issues/269#issuecomment-5601906508), [#270](https://github.com/Buchtanen/ir-obs-switcher/issues/270#issuecomment-5602933368), [#271](https://github.com/Buchtanen/ir-obs-switcher/issues/271#issuecomment-5604113449), umbrella [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234#issuecomment-5591501315).
+- docs-keeper close-gates: [#239](https://github.com/Buchtanen/ir-obs-switcher/issues/239#issuecomment-5591525282), [#240](https://github.com/Buchtanen/ir-obs-switcher/issues/240#issuecomment-5591525412), [#241](https://github.com/Buchtanen/ir-obs-switcher/issues/241#issuecomment-5591525563), [#242](https://github.com/Buchtanen/ir-obs-switcher/issues/242#issuecomment-5591525718), [#243](https://github.com/Buchtanen/ir-obs-switcher/issues/243#issuecomment-5591525837), [#244](https://github.com/Buchtanen/ir-obs-switcher/issues/244#issuecomment-5591526009), [#247](https://github.com/Buchtanen/ir-obs-switcher/issues/247#issuecomment-5591937527), [#248](https://github.com/Buchtanen/ir-obs-switcher/issues/248#issuecomment-5593967050), [#249](https://github.com/Buchtanen/ir-obs-switcher/issues/249#issuecomment-5594526525), [#250](https://github.com/Buchtanen/ir-obs-switcher/issues/250#issuecomment-5596444674), [#251](https://github.com/Buchtanen/ir-obs-switcher/issues/251#issuecomment-5596554576), [#252](https://github.com/Buchtanen/ir-obs-switcher/issues/252#issuecomment-5596714308), [#253](https://github.com/Buchtanen/ir-obs-switcher/issues/253#issuecomment-5596944728), [#254](https://github.com/Buchtanen/ir-obs-switcher/issues/254#issuecomment-5597273744), [#255](https://github.com/Buchtanen/ir-obs-switcher/issues/255#issuecomment-5597970380), [#256](https://github.com/Buchtanen/ir-obs-switcher/issues/256#issuecomment-5598212322), [#257](https://github.com/Buchtanen/ir-obs-switcher/issues/257#issuecomment-5598447522), [#258](https://github.com/Buchtanen/ir-obs-switcher/issues/258#issuecomment-5598902924), [#259](https://github.com/Buchtanen/ir-obs-switcher/issues/259#issuecomment-5599117103), [#260](https://github.com/Buchtanen/ir-obs-switcher/issues/260#issuecomment-5599323162), [#261](https://github.com/Buchtanen/ir-obs-switcher/issues/261#issuecomment-5599657583), [#263](https://github.com/Buchtanen/ir-obs-switcher/issues/263#issuecomment-5600010389), [#283](https://github.com/Buchtanen/ir-obs-switcher/issues/283#issuecomment-5600214613), [#262](https://github.com/Buchtanen/ir-obs-switcher/issues/262#issuecomment-5600516541), [#264](https://github.com/Buchtanen/ir-obs-switcher/issues/264#issuecomment-5600765961), [#265](https://github.com/Buchtanen/ir-obs-switcher/issues/265#issuecomment-5600963934), [#266](https://github.com/Buchtanen/ir-obs-switcher/issues/266#issuecomment-5601197102), [#267](https://github.com/Buchtanen/ir-obs-switcher/issues/267#issuecomment-5601369270), [#268](https://github.com/Buchtanen/ir-obs-switcher/issues/268#issuecomment-5601703038), [#269](https://github.com/Buchtanen/ir-obs-switcher/issues/269#issuecomment-5601910885), [#270](https://github.com/Buchtanen/ir-obs-switcher/issues/270#issuecomment-5603036196), [#271](https://github.com/Buchtanen/ir-obs-switcher/issues/271#issuecomment-5604109818), umbrella [#234](https://github.com/Buchtanen/ir-obs-switcher/issues/234#issuecomment-5591526188).
+- Completed #237 scope: accepted-event and coherent-batch contracts; factory/discriminator coverage for all 17 command kinds; one ordered 56/7/1 `NarrativeMailbox`; atomic admission sequence assignment; exact ordinary/protected classification and permitted coalescing; deterministic ordinary eviction; atomic config/tape-health plus protected-context admission; visible recovery placement/refresh; idempotent shutdown ownership of the emergency cell; complete immutable evicted-command evidence; and bounded chained safety-effect commitment.
+- Deferred by explicit ownership, not incomplete #237 work: remainder of full #273 golden health (master cutover only — human kick; loop supervisor heartbeats landed feat `952cc1d`; legacy validate/speak cutover landed `f2c1f1b`; live TTS voice/quarantine projection landed `17a84eb` — thin identity + speech/language/components + bounded decisions ring + validate/speak thin slice + `ManualAdmissionLatch` thin slice + status_ready stub slice + live catalog/config/episodes/byTapeChannel status projection + components llm/tts schema stubs + live residency/lastAttempt/voice/quarantine + timeline session identity (null stubs + live APPLY_CONTEXT wiring) + bounded `/health` commentary landed at `9362084` + `93f9fb8` + `51dc1d1` + `65651bc` + `ca0f2f6` + `03c34b2` + `3670502` + `f58c992` + `ccd0697` + `bdb9633` + `60565ae` + `19887aa` + `17a84eb`); integrated loop service liveness; master cutover; and deeper tape-run multi-file product wiring beyond live command journal append (library helpers at `2a555df`; volatile-fingerprint replay fix + race `command_journal_path` + `append_command_journal_row` at `b0f7646`; prior reducer-trace harness at `1f509b8`) remain #284 after its dependencies. Live StoryDirector world/candidate seed is landed (`79a7966`: `narrative_director_bridge.py`, `_refresh_director_from_live`, effect `director_live_seeded`). Authored-pack live realization is landed (`44b37f6`: `realize_authored_text`, `build_realization_effect(..., prefer_authored=True)`, `_dispatch_plan` `beatId` token, related **172**). Idle-lane speech cutover is landed (`1a5e651`: `idle_speech_enabled=False` under cutover, related **176**). Optional Qwen realization hook is landed (`edd0ad6`: `realize_qwen_text`, `build_realization_effect(..., allow_qwen=)`, related **182** = **176** + **6**). Qwen enable+warmup is landed (`ddc3b80`: `warmup_qwen_component`, `_narrative_qwen_enabled=True`, `RealizerService(StdlibTransport())` + `LlmComponent`, `warmup_qwen_component(..., generation=1, timeout_ms=500)` soft-fail closed, `allow_qwen=self._narrative_qwen_enabled`, related **186** = **182** + **4**). Library reducer-trace replay harness is landed (`1f509b8`: `capture_reducer_trace`, `replay_reducer_trace`, `traces_equivalent`, `ReducerTrace.to_tape_rows`; related **190** = **186** + **4**). Command journal file→command reconstruction is landed (`2a555df`: `COMMAND_JOURNAL_SCHEMA`, `command_from_dict`, `write_command_journal`, `read_commands_from_journal`, `replay_command_journal`; related **195** = **190** + **5**). The landed library slice already assigns monotonic `reducer_sequence`, owns cancellable realization/TTS effect tasks and silence/validity/realization/speech deadline timers (`apply_effects` / `run()`), optionally composes `#265` FreshnessGate on the `REALIZATION_SUCCEEDED` commit path when injected, optionally composes `#283` OpportunityQueue reserve/release/consume on plan dispatch and playback/cancel paths when injected, optionally composes `#258` EpisodeRegistry open/activate/invalidate/spoken/resolve on plan dispatch and playback/cancel/terminal paths when injected, optionally composes `#262` StoryDirector evaluate/select/silence/failure on `_dispatch_plan` and cancel/fail paths when injected, and projects admission/`reason_codes` plus recovery diagnostics on `RuntimeStatus` after `MAILBOX_RECOVERY`. Shadow `#284` `NarrativeIngress` (`13b744a`) partitions fanout publications into mailbox `APPLY_CONTEXT_BATCH` commands. `#284` HTTP mount (`f4d1725`) serves `GET /api/commentary/runtime` (process attach via `set_narrative_runtime` when shadow enabled). Enabled shadow cutover (`16c0e66`): `_narrative_shadow_enabled=True` in `race.runtime`, `adapt_batch_for_shadow` live batch adapter. Actor-run activation (`dfd5a8e`): parallel fanout → adapter → ingress → mailbox → actor-owned `NarrativeRuntime.run()` via `WorkerSupervisor("narrative_runtime", _run_narrative_runtime_actor)` with `reduce_after_admit=False`. EventSubscription cutover (`95e6def`): `_narrative_subscription_cutover=True` → `_commentary_subscription=None`. EventSubscription full replace (`44dab2f`): `NarrativeShadowConsumer(..., legacy_stream_handler=None)` — no SessionReset/ConfigUpdate/batch mirror into `CommentaryConsumer`; sole ingress is shadow admit → mailbox. NarrativeRuntime-owned tts_effect (`c0f324c`): `build_tts_effect(director.sink, locale=...)` wired in race. Live realization_effect + StoryDirector composition (`bc26d4c`): `SpeechDraftCache` + `_adapt_batch_for_shadow_with_drafts`, `build_realization_effect(cache)`, live `StoryDirector`/`OpportunityQueue`/`EpisodeRegistry`/`FreshnessGate` wired in race — shadow adapt → draft cache → context admit → plan → `realization_effect` → `tts_effect`. Live StoryDirector world/candidate seed (`79a7966`): `narrative_director_bridge.py`, `_refresh_director_from_live` on planning `APPLY_CONTEXT_BATCH`, effect `director_live_seeded`, `_consult_director` runs `evaluate`; CommentaryConsumer supervisor still runs with `idle_speech_enabled=False` (TTS sink/status/filler only; no stream mirror after `44dab2f`).
+- Completed #238 scope: packaged copies of the frozen config and detector registries back a pure immutable desired-candidate parser. It enforces the fully defaulted 50-key static map, exported detector override types/ranges, strict INI scalar grammar, normalized strings/sets, local/LAN literal URL policy, root-path rejection, cross-field goldens, unknown-key rejection and all frozen v1 legacy matching without installing a partial candidate. Snapshot hashes include real normalized sensitive values while replay export uses markers.
+- Completed #238 ledger scope: lock-owned `ConfigLedger` preserves complete immutable desired/effective snapshots, installs only whole valid candidates, monotonically assigns desired generations and apply sequence, recomputes sorted pending changes from the whole desired/effective maps, applies only exact named-boundary patches and emits no no-op record. Component preflights are generation-tagged; stale completions cannot make an old backend available. Invalid input installs no generation, disables automatic narration in its outcome and preserves the last valid manual component readiness.
+- Completed #238 detector safety scope: all directional detector parameter overrides are composed over catalog defaults and checked against the eight frozen cross-field relations. Required-tuning detectors can be enabled only in calibration with detector-tuning tape, explicit allowlist, input windows and successful writable-recorder preflight. URL validation uses exact loopback/RFC1918/link-local/IPv6-ULA networks rather than Python's broader `is_private`; default and explicit output paths reject root, unwritable parents and existing relative symlinks escaping the working parent.
+- Completed #238 load scope: every `AppConfig.from_file` call, including `POST /config/reload`, produces a strict immutable v2 commentary candidate. Invalid or legacy commentary sections emit value-free diagnostics, do not abort other application-domain loading and leave the legacy commentary runtime disabled. Valid v2 values remain isolated from `OverlaySettings.commentary`, so this checkpoint cannot activate the future `NarrativeRuntime` or reinterpret a v1 key.
+- Completed #238 reload-owner scope: one process-lifetime `CommentaryConfigCoordinator` owns `ConfigLedger` from application startup across reloads. Generation zero bootstraps from the valid startup candidate or disabled frozen defaults; each valid reload installs one generation and immediately applies only the `command` boundary. Invalid input creates no generation, sets automatic requested state false, preserves last-valid desired/effective maps and current manual TTS readiness. `POST /config/reload` projects hashes, generation, apply sequence, value-free sorted pending changes, fixed `speech_language=en`, diagnostics and generation-tagged preflight requests without constructing resources or activating NarrativeRuntime.
+- Completed #238 public-control scope: the schema-driven GET/PUT config surface, flattened overlay value projection and generic live-key whitelist contain no `commentary.*` key. Attempts to write legacy commentary or graph-runtime keys fail as unknown rather than persisting an unusable selector. The legacy manual-test page no longer offers a config save action; direct INI reload remains the sole current v2 entry and preserves frozen migration diagnostics. A runtime test derives all 13 migration rows from the packaged contract and exercises 16 exact/prefix/group/section representatives.
+- #239 schema scope is complete: the manifest uses exact redaction-safe effective-config projection entries and bounded exact detector parameter snapshots. The record-kind discriminator is closed to the frozen 16 kinds. All 16 TapeRecord payloads are exact named DTOs, including CoverageBucket and RedactionPolicy.
+- First #239 framing SHA: `ca02e8937f14ce6aad8e01960fff489421adaed4` (`feat: close narrative tape framing schemas (#239)`); [CI run 34163837729](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34163837729) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs. Its evidence is appended to the existing dated #239 dev diary.
+- #239 ordered/config SHA: `111c4a6ff6cb4b2a3a87c94a4e228bec9dd486ea` (`feat: enforce narrative tape ordering (#239)`); [CI run 34164288062](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34164288062) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs. Only actor-produced record families may carry non-null reducer order; detector/event/narrative/opportunity/director records require `tapeChannel`; `config_applied` has an exact replay-safe payload whose redacted entries cannot retain a value.
+- #239 loss/trailer DTO SHA: `7b98840653c01c8d79a844c9fcd6d3214c1049bd` (`feat: define narrative tape loss framing (#239)`); [CI run 34167346863](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34167346863) is green across frozen contracts, Python 3.11–3.13, lint, format, type and security jobs.
+- #239 loss/trailer golden SHA: `bfb4187637cb81d50113ce321f94e6b50ac6cc0d` (`feat: add narrative tape loss goldens (#239)`); [CI run 34167795931](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34167795931) is green across 14/14 checks.
+- #239 remaining-payload SHA: `7484487afa3c0da1fa87a9828dcbac8f5069fcde` (`feat: close remaining narrative tape payloads (#239)`); [CI run 34168334293](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34168334293) is green across 14/14 checks (frozen contracts, Python 3.11–3.13, lint, format, type, security). Runtime `taxonomyHash` is `sha256:720769b0a1dfb234c69529eab9e1818e37944eead1de6e41499e6cbb56baa26b`.
+- #239 coverage/redaction SHA: `eb0f1670f601abba56c37852c664901233029eaf` (`feat: derive coverage buckets and tape redaction policy (#239)`); [CI run 34170887655](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34170887655) is green across 14/14 checks. DTO builder 50 definitions, 24 valid + 23 invalid goldens; local pytest **1537** passed.
+- First #240 async-writer SHA: `23abfdefdde8db2f037311b6345b5af03c658e58` (`feat: add async narrative tape writer and rotation (#240)`). Local pytest: queue+writer+schema **35** passed. Final [CI run 34174315223](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34174315223) is green across 14/14 checks on HEAD `d079ff7`.
+- First #240 file-session SHA: `ec3da3eb0b6bfb7901637919290a987fd802cf40` (`feat: add narrative tape NDJSON file session (#240)`). Local pytest: `tests/test_narrative_tape_writer.py` **8** passed; queue+writer+schema **28** passed.
+- First #240 queue SHA: `246fbee52a6e11f9fd949f407dca079344c0ee85` (`feat: add bounded narrative tape record queue (#240)`). Handover SHA `67cbe196ed7ca23eb0289e0790539b930a1c1693`. Local pytest: `tests/test_narrative_tape_queue.py` **10** passed. [CI run 34173579819](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34173579819) is green across 14/14 checks.
+- #239 nested-row SHA: `1b73fcff5df6f6f6e511e504f78339dc6dc0f636` (`feat: type feature-frame and observation rows (#239)`); [CI run 34169039942](https://github.com/Buchtanen/ir-obs-switcher/actions/runs/34169039942) is green across 14/14 checks. DTO builder 48 definitions, 24 valid + 21 invalid goldens; local pytest **1536** passed.
+- Docs-only SHA `71a6f97` failed Python 3.12 on unrelated wall-clock flake `test_full_queue_500_batch_publication_meets_n12_deadline` (66ms > 50ms) after 14/14 green parent `7484487`; the nested-row SHA recovered CI without changing that test.
+- V4 boundary evidence: adapter tests prove the input EventEnvelope dictionary is unchanged; visual-only/compatibility identifiers and empty fact evidence fail closed.
+- Portability fix: runtime `taxonomyHash` remains canonical-JSON identity of the packaged freeze registry, not raw checkout bytes. The hash moved because the schema-version table grew; Windows CRLF lesson from #237 still applies.
+- Config impact: the strict v2 commentary load path is active. `config/config.example.ini` now uses only frozen v2 sections/keys; legacy commentary settings diagnose and cannot activate legacy execution. Other application config remains loadable when commentary is invalid.
+- API impact: additive `commentary_config` projection on the existing `POST /config/reload` success response. Invalid commentary returns `installed=false` and diagnostics while the endpoint remains successful for unrelated config. Frozen `/api/v2/commentary/*` routes remain deferred to #273.
+- Docs impact: branch-only schema-contract prose now states that `payloadSchemaVersion` is a schema-version token, not a generic ID. No public CONFIG/API/README change; TapeWriter/NarrativeRuntime remain inactive.
+- #241 compiler scope: `compile_capture_plan` assigns every catalog detector an explicit effective `none|optional|required` policy, keeps released none/optional enabled when tape is default-off, rejects production or non-experimental required, activates experimental required only after calibration + detector_tuning + allowlist + windows + preflight, and keeps purpose channels disjoint from catalog `tape_channel`. Startup/runtime status is a per-detector projection. Docs: no public CONFIG/API/README change.
+- #241 safety scope: fail-soft writable preflight, exact FeatureFrame-range completeness against the plan's parameter snapshot, and composition-owned capture-loss fanout. TapeWriter still does not import DetectorBank or NarrativeRuntime.
+- #241 is closed in its own scope: immutable CapturePlan, purpose/tape_channel split, writable preflight, FeatureFrame completeness, and composition-owned required-capture disable. Live DetectorBank wiring and NarrativeRuntime activation remain #284.
+- #242 replay scope: offline reader for written NarrativeTape. Labels never mutate source bytes. Missing required frames stay incomplete and are capture-loss only when the tape already recorded `TAPE_HEALTH_CHANGED(unavailable)`. Docs: no public CONFIG/API/README change.
+- #242 is closed in its own scope: versioned NDJSON/`.ndjson.gz` reader, file/catalog/config hash checks, FeatureFrame reconstruction across rotation without live config or interpolation, immutable `narrative-label-sidecar/2` bound to `fileHash`, and a deterministic evaluation report that splits `upstream_fact_error` from `realization_error`. Live NarrativeRuntime, DetectorBank and V4 overlay tape remain out of scope.
+- #243 timeline scope: `logic.StreamTimeline` is the sole `streamEpoch` owner. It consumes debounced BroadcastClock epochs plus iRSDK session observations, publishes `timeline-snapshot/2`, compiles `session-plan/2`, and emits fail-soft lifecycle commands.
+- #243 is closed in its own scope: SessionRef identity, §5.7 precedence, exclusive start reasons, ordered `transitionReasons`, SessionPlan prefix/latch, confirmed rewind, and fail-soft RESET. Mailbox `CONFIG_UPDATE`+context admission and NarrativeRuntime activation remain #284.
+- #244 occurrence scope: retained `SessionOccurrence` records carry exact `<streamEpoch>:<stage>:<ordinal>` IDs, `>`-joined lineage, parent linkage and status `active|completed|restarted|superseded|abandoned`. `StreamTimeline.resolve()` maps each encoded ID to one occurrence + SessionRef.
+- #244 is closed in its own scope: monotonic per-stage ordinals, same-stage restart, R→Q / R→P / Q→P rewind, abandoned current tail on stream/narrative end, and historical superseded branches.
+- #245 ledger scope: `events.FactLedger` is the sole writer of immutable `atomic-fact/2` / `fact-view/2` projections. Stream-scope facts may omit occurrence/lineage; every other scope requires both. Eviction publishes `unknown`, never zero/false.
+- #245 is closed in its own scope: frozen 57-predicate registry, semantic-key supersession, half-open expiry, producer-order admission, timeline-command compilation, stale-view rejection and pinned-capacity fail-soft. Live FeatureEngine/DetectorBank wiring remains #247/#250/#252/#284.
+- #246 inheritance scope: published FactView is Current(o) ∪ Inherited(o,L) ∪ stream, without copying AtomicFact records. Occurrence/revalidate facts archive off the current occurrence. Downstream inherits only from active-lineage ancestors (R2 after rewind = P1+Q2). Superseded branches require `historical(..., framing="historical"|"recap")`. `occurrence_summary` keeps self-contained downstream/historical_only facts. Overflow historical detail merges into per-stage `compactedSummaryRefs`. Docs: no public CONFIG/API/README change; NarrativeRuntime remains inactive.
+- #247 FeatureEngine scope: dependency-neutral `contracts/feature.py` owns `FeatureDefinition`/`FeatureFrame`/`FeatureValue` and the frozen 21-ID registry. `events/feature_engine.py` owns bounded per-correlation windows and publishes immutable `feature-frame/2` with process-global `frameSequence`. First slice binds `gap.relation.seconds.estimated_v1` only (`est_time_v1` / `hybrid_v1` stay registered, not substituted). Catalog `definition` strings are docs only. Duplicate/older samples are audited no-ops. Docs: no public CONFIG/API/README change; `FeatureEngine` is not exported from `events/__init__.py` and is not wired into the live loop.
+- #247 is closed in its own scope: 21-ID registry, FeatureFrame identity/sort contract, bounded windows, `estimated_v1` first slice, detector unit validation, fail-soft unknown (pit/tow/teleport/wrap/target-swap/missing lap ref), duplicate/stale no-ops. Live DetectorBank wiring and NarrativeRuntime remain #250/#284.
+- #248 estimator scope: `events/gap_estimators.py` owns `estimated_v1` / `est_time_v1` / `hybrid_v1` plus bucket coverage/OLS/net-closing; `events/feature_engine.py` integrates them (extra sample fields, trend tunables, per-window gap history). Hybrid emits only on agreement (`HYBRID_MAX_DISAGREEMENT_S=0.5`); `est_time_v1` never replaces `estimated_v1`. Algorithm IDs are in `evidenceRefs`. A lone sample cannot fill a bucket; slope/net-closing need three usable medians. `gap.trend.confidence` and `gap.target_stable` stay registry-only. Docs: no public CONFIG/API/README change; not live-wired.
+- #248 is closed in its own scope: versioned estimators, lap-down/wrap/pit validity, hybrid disagreement, bucket coverage, OLS/net-closing after three usable medians. Live DetectorBank FSM and NarrativeRuntime remain #250/#284.
+- #249 compile scope: `contracts/predicate.py` owns the closed AST, named catalog atoms, frozen invariant map and catalog-load type/unit/`unknownSatisfies` gate. `events/predicate_ast.py` owns ternary evaluation plus temporal memory. Catalog strings are never executed. Evaluator is not exported from `events/__init__.py` and is not live-wired. Docs: no public CONFIG/API/README change.
+- #249 is closed in its own scope: packaged catalog compile, ternary unknown, held_for/changed/crossed/within/since/count/sequence, unit/ref load failures, invariant map, bounded recursion/cost. Live DetectorBank FSM and NarrativeRuntime remain #250/#284.
+- #250 FSM scope: `events.detector_bank.DetectorBank` owns directional `inactive|candidate|active|clearing` instances keyed by `(detectorId, detectorVersion, streamEpoch, occurrenceId, orderedCorrelationKey)`. `reduce_lifecycle` matches frozen directional goldens. Enter uses compiled `enter_signal` (FSM owns `confirm_s`); unknown never satisfies enter. Clear/immediate come from compiled trees; unknown/stale clear starts the clear hold. Material revisions compare to the last emitted net-closing/band and honor `update_min_interval_s`. STARTED/UPDATED submit existing V4 `HUNTING`/`HUNTED` only; ENDED records detector close and expires `battle.closing` without a new V4 `*_ENDED`. Duplicate/older `frameSequence` is an audited no-op. `disable_for_run` is the capture-loss latch. Not exported from `events/__init__.py`; not live-wired. Band projection is implemented in #253; two-front composite is #255.
+- #250 is closed in its own scope: frozen directional reducer, instance keys, enter/clear hysteresis, material throttle vs last emission, mapped V4 `HUNTING`/`HUNTED` on enter/update, detector ENDED without a new V4 `*_ENDED`, `required_capture_lost` disable latch. Live EventManager/NarrativeRuntime wiring remains #284. Band projection is #253; two-front is #255. Docs: no public CONFIG/API/README change.
+- #251 edge scope: `events.direct_edges.DirectEdgeBank` owns identity-deduped S/F and sector crossings (`sourceClass=direct`). Lap identity is `(LAP_COMPLETE, streamEpoch, occurrenceId, heroId, lap)`; sector adds `sectorId`. Duplicate/older `sampleSequence` is an audited no-op. Overlay eligibility is explicit: lap `PRACTICE|QUALIFYING|RACE`, sector `PRACTICE|QUALIFYING` only. Missing sector metadata, invalid ids, and `session_finished`/`player_finished` emit nothing. A completed race is not a lap edge. Same-occurrence reset cannot reuse a prior lap key; a new occurrence can. Does not reuse DetectorBank thresholds. Master `LapEmitter` / `SectorSplitEmitter` stay live. Not exported from `events/__init__.py`. Docs: no public CONFIG/API/README change.
+- #251 is closed in its own scope: identity-deduped S/F and sector crossings, explicit overlay-mode eligibility, completed race ≠ lap, restart cannot reuse prior identity. Live EventManager/NarrativeRuntime wiring remains #284. Docs: no public CONFIG/API/README change.
+- #252 lifecycle scope: `events.lifecycle_edges.LifecycleTriggerBank` owns exact-once stream/session lifecycle candidates (`sourceClass=lifecycle`). Canonical kinds `STREAM_STARTED|STREAM_ENDED|SESSION_STARTED|SESSION_ENDED|SESSION_RESTARTED|SESSION_CHECKERED|FINISH`; `STREAM_START` rejected (`legacy_stream_start_rejected`), never aliased. `RESET` / `SESSION_REWOUND` are not narrative kinds. Identity `(kind, streamEpoch[, occurrenceId][, heroId])`; duplicate/stale `timelineRevision` is an audited no-op. Checkered, session end, and hero finish are distinct; checkered/FINISH only for race occurrences. Same-step order: SESSION_ENDED, SESSION_CHECKERED, FINISH, STREAM_ENDED, STREAM_STARTED, SESSION_STARTED, SESSION_RESTARTED. `invalidate_speech` on STREAM_ENDED. `attached_live` / `process_recovery` / `enabled_mid_stream` are STREAM_STARTED reason codes; `broadcast_unknown` / `broadcast_resumed` without commands emit nothing. Previous/current occurrence+lineage on candidates. Live STREAM_START commentary, SessionEndTracker, and V4 overlay wire unchanged. Not exported from `events/__init__.py`; not live-wired. Docs: no public CONFIG/API/README change.
+- #252 is closed in its own scope: exact-once stream/session lifecycle commands, STREAM_START rejected not aliased, checkered ≠ session end ≠ hero finish, reconnect artifacts do not extra-start, previous/current occurrence attached, V4 overlay wire unchanged. Live EventManager/NarrativeRuntime wiring remains #284. UNDER_PRESSURE is #254; two-front is #255. Docs: no public CONFIG/API/README change.
+- #253 CLOSING scope: `events/closing.py` owns `reduce_band` (matches frozen `bandBoundaries` goldens), `ClosingDetector`, `ClosingTrace`, `ClosingCandidate`, `ClosingStep`. Uses `DetectorBank` for `battle_ahead_v1` FSM only; does not drive `battle_two_front_v1` or `reduce_composite` (#255). UNDER_PRESSURE / `battle_behind_v1` is #254. V4 mapping: `closing`→`HUNTING`, `approach`→`APPROACH`, `attack`→`ATTACK_RANGE`, `overlap`→`SIDE_BY_SIDE`. Close expires `battle.closing` plus band facts; no new V4 `*_ENDED`. One spike cannot activate (confirm hold). At most one latest band candidate per step. Decision trace exposes effective thresholds and evidence refs. Not exported from `events/__init__.py`; not live-wired. Docs: no public CONFIG/API/README change.
+- #253 is closed in its own scope: frozen `reduce_band`, `ClosingDetector` for `battle_ahead_v1`, existing V4 HUNTING/APPROACH/ATTACK_RANGE/SIDE_BY_SIDE, fact expiry without a new V4 end, spike cannot activate, decision trace. Live EventManager/NarrativeRuntime wiring remains #284. UNDER_PRESSURE (#254) is closed; two-front (#255) is closed. Docs: no public CONFIG/API/README change.
+- #254 UNDER_PRESSURE scope: `events/pressure.py` owns `PressureDetector`, `PressureTrace`, `PressureCandidate`, `PressureStep`. Reuses `reduce_band` from `events/closing.py` (no duplicate band goldens). Uses `DetectorBank` for `battle_behind_v1` only; does not drive `battle_two_front_v1` or `reduce_composite` (#255). V4 mapping: `closing`→`HUNTED` / `battle.pressure_behind` / `race.battle.pressure`; inward bands `approach|attack|overlap`→`RIVAL_THREAT` / `battle.rival_threat` / `race.battle.pressure`. Facts: catalog `battle.closing` on the FSM; inward bands publish registered `battle.position_threat` (no `battle.pressure_behind.band`, no `UNDER_PRESSURE` V4 id / boolean / `*_ENDED`). Close expires `battle.closing` plus `battle.position_threat`; no new V4 end type. One spike cannot activate (confirm hold). At most one latest band candidate per step. Decision trace exposes effective thresholds and evidence refs. Not exported from `events/__init__.py`; not live-wired. Docs: no public CONFIG/API/README change.
+- #254 is closed in its own scope: `PressureDetector` for `battle_behind_v1`, reused `reduce_band`, existing V4 HUNTED/RIVAL_THREAT, registered `battle.position_threat` facts, fact expiry without a new V4 end, spike cannot activate, decision trace. Live EventManager/NarrativeRuntime wiring remains #284. Two-front (#255) is closed. Docs: no public CONFIG/API/README change.
+- #255 two-front scope: `events/two_front.py` owns `reduce_composite` (matches frozen `compositeScenarios` goldens), `TwoFrontDetector`, `TwoFrontTrace`, `TwoFrontCandidate`, `TwoFrontStep`. Uses compiled `battle_two_front_v1` predicates plus `reduce_lifecycle`; does not extend `DetectorBank` (bank stays directional-only). Correlation key `(streamEpoch, occurrenceId, frontRelationEpoch, rearRelationEpoch)`; replacement never mutates the old key. Opens only when both parent relations are active, same hero/occurrence, distinct targets, and both parent `battle.closing` truths are supplied (`front_closing`/`rear_closing`); composite never invents missing parent facts. V4 `BATTLE_FOR_POSITION` / `battle.two_front` / `race.battle.two_front` once on confirmed entry only (no UPDATED). Publishes registered `battle.two_front_active` on STARTED; clears on ENDED; catalog `factPredicate` is null (no two-front AtomicFact, no `*_ENDED`). One-side loss starts `two_front_clear_s`; restore of the same epochs cancels clearing without a new STARTED; remaining parent facts are not expired. Target/epoch replacement force-closes the old instance without V4 end. Not exported from `events/__init__.py`; not live-wired. Docs: no public CONFIG/API/README change.
+- #255 is closed in its own scope: `reduce_composite` matches frozen `compositeScenarios` goldens, `TwoFrontDetector` for `battle_two_front_v1`, correlation-key replacement without mutating old keys, parent `battle.closing` open guards, V4 `BATTLE_FOR_POSITION` once on confirmed entry only, registered `battle.two_front_active` facts, one-side clear hold with restore cancel, no composite AtomicFact or V4 `*_ENDED`. Live EventManager/NarrativeRuntime wiring remains #284. Docs: no public CONFIG/API/README change.
+- #256 coverage-matrix scope: `contracts/coverage_matrix.py` owns `audit_coverage_matrix` / `load_coverage_matrix` / `can_create_event_opportunity`. Packaged `beat-catalog.json`, `successor-graph.json`, `realization-pattern-cards.json` and `coverage-matrix-replay-refs.json` must match the frozen machine copies. Proves 60 identifiers (52/4/4), 64 beats, 37 families, 6 policies, 36 channels, 256 EN cards, 50 edges, 11 stories, DAG with 28 nonterminal nodes. Aliases and visual-only never create EventOpportunity. Replaced `STREAM_START` / `SESSION_INTRO_*` / `SESSION_WRAP` cannot be triggers. Stage/context/vehicle axes use normalized enums only. Replay refs point at F01–F44 (transition/identity/expiry/counterfactual) without a NarrativeRuntime. Re-exported from `contracts/__init__.py`; not from `events/__init__.py`; not live-wired. Complements the StoryDefinition catalog loader (#257). Docs: no public CONFIG/API/README change.
+- #256 is closed in its own scope: implementation-time catalog audit matches the approved matrix, successor SCC/DAG proof and 256 EN cards are packaged and tested, replay fixture references exist, catalog-behavior docs are generated from the catalogs. NarrativeRuntime remains inactive.
+- #257 catalog-loader scope: `contracts/catalog_loader.py` owns `load_narrative_catalog` / `apply_catalog_mutation` / typed `NarrativeCatalog` / `StoryDefinition` / `BeatDefinition`. Fail-soft invalid load (`outcome=commentary_disabled`, `CatalogLoadFailure` with `mainLoopRaises=false`). Frozen bundle: 64 beats, 11 stories, 50 edges, 37 families, 6 policies, 60 events, 5 lifecycle events, 3 detectors; schema `narrative-catalog/2`; catalog hash = `canonical_sha256(beat_doc)`. All 7 beat + 8 graph invariants and 12 mandatory checks execute. Event routes exclude aliases/visual and legacy triggers; `same_beat_authored_fallback=False`; no sequence-graph v1 fallback. Detector IDs on catalog only; beats have `detector_id=None`. Re-exported from `contracts/__init__.py`; not from `events/__init__.py`; not live-wired. Does not activate NarrativeRuntime. Docs: no public CONFIG/API/README change.
+- #257 is closed in its own scope: typed StoryDefinition/BeatDefinition load, packaged schema artifacts, 29 pytest cases (6 artifact parity + 8 named + 15 invalid goldens). NarrativeRuntime remains inactive.
+- #258 EpisodeRegistry scope: `events/episode_registry.py` owns runtime episode instances independently of speech. Schema `episode/2`; states `candidate|active|suspended|resolved|invalidated`. Occurrence scope requires occurrence + lineage; stream-only `stream_lifecycle` (and optional stream `filler_single`) may omit both. Semantic identity locates one live instance (`material_revision`++); distinct identities run concurrently. Exclusive battle group suspends overlapping live instances (`target_changed`). `reset_occurrences` invalidates only affected occurrence IDs. Capacity defaults `active_capacity=64`, `resolved_capacity=256`; pin kinds `reserved|building|committed|speaking`; all-pinned open returns `episode_capacity_rejected`. Definition IDs from #257 catalog. Not exported from `events/__init__.py`; not live-wired. Complements #259 `EpisodeRetention`; does not implement NarrativeRuntime. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #258 is closed in its own scope: lineage-aware EpisodeRegistry, speech-independent lifecycle, occurrence reset, exclusive battle group, capacity eviction and pin reject. NarrativeRuntime remains inactive.
+- #259 EpisodeRetention scope: `events/episode_retention.py` owns bounded resolved-outcome metadata without a prepared-speech queue. Schema `episode-retention/2`. Policy TTL/salience from frozen catalog families (`critical` 45s/90, `result` 30s/78, `live_story` 10s/64, `transient` 6s/56, `context` 20s/46, `filler` 12s/24). `speakable_until_ms = resolvedMonoMs + ttlMs`; half-open `now < speakable_until`. Self-contained `critical`/`result` remain selectable after speech complete; intermediate `live_story`/`transient` supersede same `(occurrenceId, definitionId, semanticIdentity)` and are `skipped` after speech. `on_speech_complete` re-evaluates `expired_ttl` / `skipped` / remaining self-contained by `(-salience, speakable_until_ms, episodeId)`. Default `resolved_capacity=256` matches frozen public contract. No BeatPlan/TtsUtterance storage. Not exported from `events/__init__.py`; not live-wired. Does not implement #260 fillers, #261 BeatPlan, or NarrativeRuntime. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #259 is closed in its own scope: resolved-episode retention without speech queue, catalog policy TTL/salience, self-contained pass/finish, superseded intermediate expiry, speech-complete re-eval. NarrativeRuntime remains inactive.
+- #260 SilenceClock scope: `events/silence_clock.py` owns the one-shot audience silence deadline and fact-grounded filler selection (`SilenceClock`, `evaluate_filler`). Default `LONG_SILENCE_MS=33_000` (`commentary.director.long_silence_s`, already frozen). Audience window is `ready|degraded` + enabled + `narrativeRunActive` + OBS `active`. Arm after lifecycle or speech terminal/resume; playback accepted cancels without credit; building/committed and race events do not move the origin. Fire `LONG_SILENCE_ELAPSED` at `now >= deadline`; stale token is a no-op; rearm is exactly `now + interval` when no playback is accepted. Busy lane `building|committed|speaking|stopping` selects no filler and still rearms. OBS unknown pauses without credit; disable/shutdown cancel. Pre-session admits only stream `filler.lobby` + fresh stream `context.track_identity`. Phase fillers need fresh `vehicle.phase` plus one `W_filler_phase` companion; other occurrence fillers need matching context plus one `W_filler_off_track` or `W_quiet_track` fact. Empty allowlist, forecast weather and `position.passed` fail `source_guard`; a live race opportunity is `no_candidate`. Race candidates replace an uncommitted filler without moving the origin. Not exported from `events/__init__.py`; not live-wired. Does not implement #261 BeatPlan or NarrativeRuntime. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #260 is closed in its own scope: long-silence lifecycle, one-shot `LONG_SILENCE_ELAPSED` with full-interval rearm, OBS pause without credit, phase-specific filler guards, pre-session lobby stream facts only. NarrativeRuntime remains inactive.
+- #261 BeatPlan scope: `events/beat_plan.py` owns immutable just-in-time planning when the speech lane is idle. Schemas `beat-plan/2` + `prompt-options/2`. Types: `BeatPlan`, `BeatPlanner`, `PlanIntent`, `PlanStep`, `BoundClaim`, `PromptOptions`, `FunnelLink`, `CandidateOrder`, `tight_prompt_options`. Reasons: `planned` / `lane_busy` / `source_guard_failed` / `future_successor_forbidden` / `ledger_dump_forbidden` / `consecutive_cap` / `not_self_contained` / `deduped` / `planning_cycle_exhausted`. Busy lanes `building|committed|speaking|stopping` → no plan. Dedup key `(beat_id, episode_id, episode_revision)` merges source refs. Same `planningCycleId`: ordinal `1|2` then `planning_cycle_exhausted`. `candidateOrder={reducerSequence,sourceOrdinal}` is the stable age/tie-break authority. Half-open expiry: `plannedMonoMs <= now < expiresMonoMs`. Null occurrence/lineage only for `stream.started` and stream-scope `filler.lobby`. Tight baseline PromptOptions via `tight_prompt_options`; first production catalog `promotedMaxFreedom=tight`. Role map: `result`→`outcome`, `single`→`filler`. Self-contained: closing / critical / catalog policy `critical|result`. Consecutive cap: min(`GLOBAL_CONSECUTIVE_CAP=3`, story `max_consecutive_non_closing_beats`); closing/critical spared. Ledger dump forbidden; future successor plans forbidden; every selected claim has fact refs; G0 forbidden claim types on plan. Language `en`. `opportunity_consumed` always False; no utterance emit. Replay fixtures: `tests/fixtures/beat_plan/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not emit utterance or own playback accept (#264 SpeechLane). Does not implement RealizationBundle. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #261 is closed in its own scope: immutable BeatPlan and just-in-time planner, tight PromptOptions baseline, planning-cycle ordinals, dedup merge, source guards, consecutive cap, replay fixtures. NarrativeRuntime remains inactive.
+- #263 ExposureStore scope: `events/exposure_store.py` owns spoken-only fatigue recording and query. Schema `exposure-view/2`. Types: `ExposureStore`, `ExposureIntent`, `SpokenExposure`, `FatigueView`, `ChannelPressureView`, `CadenceAudit`, `ExposureStep`, `EmbeddingAdapter`, `half_life_decay`, `content_tokens`. Record gate: only `phase=speaking` + `source_kind=narrative`; planned/rejected/stale/building/committed/manual add no fatigue. Weight 1.0 at PLAYBACK_ACCEPTED / SPEAKING. Decay `0.5 ** (age/half_life)` = `2^(-(t-spoken_at)/half_life)`; rejects `exp(-age/half_life)`. Semantic half-life 90_000 ms; pattern 180_000 ms (F23 goldens). Channel pressure `6 * min(3, Σ decay)` on accepted exposures of that `tape_channel`. `event_penalty = policy.penalty_coefficient * channel_pressure`. `cadence_half_life = max(global_min_interval 4s, numeric profile cadence)`; null cadence uses TTL; filler uses `LONG_SILENCE_MS=33_000` not TTL. Lexical Jaccard on EN-stopword content tokens; lexical-tail MVP = last 4 content tokens. Embedding adapter optional; `embedding_is_gate` always False. Family/role/filler histories are cadence/guard audit only (`cadence_audit`), not score terms. Capacity default 128 (`commentary.director.decision_capacity`, already frozen); evict oldest `(acceptedMonoMs, utteranceId)`; stream reset clears. Replay fixtures: `tests/fixtures/exposure_store/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not import commentary, overlay, or NarrativeRuntime. Playback-accept record gate only; #264 SpeechLane owns consume. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #263 is closed in its own scope: ExposureStore and base-2 fatigue, spoken-only record gate, channel pressure and event penalty, lexical Jaccard/tail, optional embedding (never a gate), cadence audit, capacity eviction, stream reset, replay fixtures. **#284 live composition (feat `c6ffbe3`):** when `NarrativeRuntime(exposure_store=...)` is injected, `_record_exposure` on `PLAYBACK_ACCEPTED` is the sole writer; manual speak never records; race shadow composes `ExposureStore()`.
+- #283 OpportunityQueue scope: `events/opportunity_queue.py` owns bounded expiring speakable metadata and one-pass post-beat event-versus-successor arbitration. Schema `event-opportunity/2`. Types: `OpportunityQueue`, `EventOpportunity`, `OpportunityIntent`, `ArbitrationContext`, `ArbitrationDecision`, `SelectedCandidate`, `EpisodeBeatRef`, `OpportunityStep`, `ChannelCounters`. Immutable `EventOpportunity`: identity + snapshot TTL/priority/urgency/penalty, one `tape_channel`, `candidateOrder`, no text/prompt/BeatPlan. Half-open validity `createdMonoMs <= now < expiresMonoMs`. Consume only on `SPEECH_STARTED` (`consumed_playback_accepted`); `reject_attempt` releases reservation (failed beat ≠ consume). Terminal reasons: `consumed_playback_accepted` / `expired_ttl` / `superseded_revision` / `invalidated_*` / `evicted_capacity`. Relations `opens|updates|resolves|conflicts|independent` map to frozen director IDs. Natural successors from last spoken beat + catalog edges; score `58 + 6` same-story + edge bonus + `6` material − `penaltyCoefficient * channel_pressure`. Event score: `basePriority − penaltyCoefficient * channel_pressure`. Switch: higher urgency always; equal/lower needs inclusive `switch_margin` 8. No event/successor → `SILENCE` (`no_candidate`); filler only on silence impulse. Overflow evicts oldest pending by `candidateOrder`; fail-soft. Per-`tape_channel` counters kick/queued/selected/consumed/expired/superseded/spoken/evicted. Six policy profiles + cadence scopes from event-beat-disposition. Expiry cancels reserved preaccept work; never starts a fallback impulse. Frozen knobs already in public contract: capacity 128, `switch_margin` 8, `selection_threshold` 35. Reads immutable `ChannelPressureView` from `ExposureStore` one-way (no import cycle). Replay fixtures: `tests/fixtures/opportunity_queue/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not import commentary, overlay, or NarrativeRuntime. Composed by #262 StoryDirector; reserve/consume API invoked by #264 SpeechLane at playback accept. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #283 is closed in its own scope: expiring EventOpportunity queue and post-beat arbitration policy. NarrativeRuntime remains inactive.
+- #262 StoryDirector scope: `events/story_director.py` owns hard eligibility before scoring and one H-then-M pass over event, successor and filler. Schema `director-decision/2` (internal decision). Types: `StoryDirector`, `DirectorCandidate`, `DirectorWorld`, `EligibilityGates`, `FatigueTerms`, `ScoreTerms`, `CandidateRecord`, `DirectorDecision`. Conjunction from spec §23.3 plus `source_guard`, half-open snapshot window, consecutive non-closing successor cap `min(3, story cap)`, and `(beat_id, episode_revision)` suppression. Named §9.2 terms only; EventScore / ContinuationScore / Score by source; no family/role hidden terms; V4 `wire_priority` unused. `P` focused continuation; `H` higher urgency; `M` inclusive `switch_margin=8`. Filler only when no story choice. Below `selection_threshold=35` → SILENCE. Building replace only from a newly accepted event after `replacement_cost`; winner is `replaced_precommit` and attempt 1 of a new cycle. Attempt 2 is a distinct beat after `note_failure`; second failure → `planning_cycle_exhausted` for that planning cycle. Live #362 adds `begin_cycle()` (see delta bullet below). Frozen knobs already public. Replay fixtures: `tests/fixtures/story_director/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not own playback accept (#264 SpeechLane). Docs: branch-only `inflight/` + `docs/v2.0.0/`; no public CONFIG/API/README change; `machine/` hashes unchanged at #262 close.
+- #262 is closed in its own scope: hard eligibility gates, named §9.2 score terms, H-then-M selection, building replace, two-attempt planning cycle, replay fixtures. NarrativeRuntime remains inactive.
+- #264 SpeechLane scope: `events/speech_lane.py` owns one in-flight utterance and playback-acceptance consume. Schemas `tts-utterance/2` + `tts-callback/2`. Types: `SpeechLane`, `SpeechIntent`, `TtsUtterance`, `TtsCallback`, `LaneStep`, `resolve_backend`. States `idle|building|committed|speaking|stopping`. Busy `try_start` is `lane_busy`; `pending_count=0` (no prepared waiter). Narrative `idle→building→committed`; manual skips building. `PLAYBACK_ACCEPTED` maps to public `SPEECH_STARTED` only at frozen adapter boundaries (`sapi`→`async_speak_positive_stream`, `sapi_waveout`→`waveout_write_success`, `espeak`→`owned_spawn_probe_ok`, `supertonic`→`sounddevice_play_accepted`). Consume `OpportunityQueue.consume_speech_started` exactly once on accept; pre-accept failure releases; post-accept failure/interrupt stays consumed. Race events on `committed|speaking` are `race_ignored`. Allowed cancel: stream/occurrence/run reset, commentary disable, truth invalidation, shutdown; disable does not cancel manual. `auto` backend SAPI then eSpeak; SuperTonic explicit-only; no post-dispatch failover. Watchdogs: `start_timeout_s=5`, `stop_timeout_s=1`, `max_utterance_s=14`; stop timeout quarantines generation. Manual latch `pending|actor_claimed|caller_abandoned`; `MANUAL_LATCH_TIMEOUT_MS=1000`. Replay fixtures: `tests/fixtures/speech_lane/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. No live TTS imports; does not implement RealizationBundle. Docs: branch-only `inflight/` + `docs/v2.0.0/`; no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #264 is closed in its own scope: single in-flight lane, no prepared waiter, consume-at-accept, non-preempt race policy, watchdog quarantine, manual latch. NarrativeRuntime remains inactive.
+- #265 FreshnessGate scope: `events/freshness_commit.py` owns the immutable commit token and pre-TTS freshness verdict. Schema `commit-token/2`. Types: `FreshnessGate`, `CommitToken`, `CommitWorld`, `BoundFactCopy`, `CommitStep`. Verdicts `current|freshness_stale|invalidated|not_reached`. Selected fact copies must remain canonical-equal and current in the newest FactView with matching occurrence/lineage/episode revision; unrelated view revisions may pass. Old lineage / changed target / dead episode / critical conflict → `invalidated`. Missing/changed/expired/superseded facts or invalid reservation → `freshness_stale`. Failure suppresses `(beat_id, episode_revision)` and may `reject_attempt`. `rebuilt_surfaces` always false. Replay fixtures: `tests/fixtures/freshness_commit/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not live-wired. Does not implement RealizationBundle. Docs: branch-only `inflight/` + `docs/v2.0.0/`; no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #265 is closed in its own scope: freshness commit gate, no same-revision retry, no surface rebuild. NarrativeRuntime remains inactive.
+- #266 RealizationCatalog scope: `contracts/realization_catalog.py` owns the EN-only audited pattern catalog and offline migration classifier. Schema `realization-catalog/2`. Types: `RealizationCatalog`, `PatternCard`, `MigrationClassifier`, `LegacyVariant`, `Classification`, `MigrationReport`. Composes `#256` `audit_coverage_matrix` and `#257` `load_narrative_catalog`. Frozen metrics stay separate: `pattern_count=256`, `beat_count=64`, `family_count=37`. Catalog hash = `canonical_sha256` of packaged `realization-pattern-cards.json`. Cards annotate required/forbidden claims from the beat catalog. Classifier inventories 2,128 EN + 2,128 CS variants from raw sequence-graph JSON (no commentary import). Dispositions `audited_pattern|authored_line|style_fragment|reject|cs_excluded` are proposed until explicit `accept()` / accept-set. CS cannot enter v2 routing. `v2_reachable` only for accepted EN `audited_pattern`/`authored_line` with mapped beats. Re-exported from `contracts/__init__.py`; not from `events/__init__.py`; not live-wired. The #267 authored pack consumes a frozen bundle; this catalog does not compile live surfaces. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #266 is closed in its own scope: EN-only RealizationCatalog, offline classifier with explicit acceptance, CS excluded from v2 routing, separate 256/64 metrics. NarrativeRuntime remains inactive.
+- #267 authored-pack scope: `contracts/authored_pack.py` owns authored catalog beats and their EN tight cards plus a bundle-only realizer (**33** / **132** at #267 close; **39** / **156** after #362). Schema `authored-pack/2`; bundle schema `realization-bundle/2`. Types: `AuthoredPack`, `AuthoredLine`, `AuthoredRealizer`, `AuthoredStep`, `RealizationBundle`, `SurfaceLexicon`. `load_authored_pack()` uses catalog `realization.backend == "authored"` and does not re-derive the rule. `authored_bundle(...)` is a pure constructor; `used_live_view` / `used_roster` / `used_config` stay false. Authored mode is chosen before generation; `fallback=True` is `authored_fallback_forbidden`. Shared `render_surface_forms` supplies finite EN number/unit/ordinal/band forms. Anti-repeat uses only the four existing cards. Replay fixtures: `tests/fixtures/authored_pack/{transition,counterfactual_identity,expiry}.json`. Re-exported from `contracts/__init__.py`; not from `events/__init__.py`; not live-wired. Does not implement the live RealizationBundle compiler from current facts/roster, Qwen transport or SemanticVerifier. PromptOptions compilation is #268. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #267 is closed in its own scope: authored critical/lifecycle pack, bundle-only realizer, anti-repeat on four cards, replay fixtures. NarrativeRuntime remains inactive.
+- **#362 live delta (uncommitted on `fix/narrative-live-silence`, slice 2):** authored pack **39** beats / **156** lines; `StoryDirector.begin_cycle()`; live Qwen deadline from INI `commentary.llm.timeout_s`; bridge Qwen miss → authored/template + VerifyFrame; beat-catalog + dependent `machine/` digests retargeted. Detail: [inflight § #362](../dokumentace/inflight/README.md#362-live-qwen-timeout--director-reset--battle-authored-lookup).
+- #268 PromptCompiler scope: `events/prompt_compiler.py` owns closed `PromptOptions` tuples and one tight `compiled-prompt/2`. Reuses `#261` `PromptOptions` (`prompt-options/2`); does not duplicate the type. Types: `PromptCompiler`, `PromptWorld`, `CompiledPrompt`, `PromptStep`. Closed tuples `tight|balanced|loose` are not freely combinable. Clamp is least permissive of operator / beat / family / runtime safety; first production `enabled_profiles={"tight"}`. Repetition and failure never widen. `realize()` of prompt text is legal only for tight (`qwen-surface-en-tight/1`); wider `prompt_options_for` results fail `profile_not_promoted`. Tight system text is BASE + one family grammar + one pattern card + OUTPUT LIMITS. Seed via `deterministic_planning_seed` (F33 golden `16041955996680716084`). Method is `realize`, not `compile`. `used_live_view` / `used_roster` / `used_config` stay false. Replay fixtures: `tests/fixtures/prompt_compiler/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`; not live-wired. Does not implement Qwen transport or SemanticVerifier. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #268 is closed in its own scope: compiled PromptOptions, closed tight/balanced/loose tuples, least-permissive clamp, tight-only `qwen-surface-en-tight/1` prompt text, replay fixtures. NarrativeRuntime remains inactive.
+- #269 Qwen transport scope: `events/qwen_transport.py` owns one cancellable realization request, exact OpenAI-compatible SSE, generation-tagged warm-up and measured latency. Schemas `realization-request/2`, `realization-result/2`, `llm-attempt/2`. Types: `RealizationIntent`, `RealizationRequest`, `RealizationResult`, `TransportStep`, `SseParse`, `LlmComponent`, `AttemptReducer`, `FakeTransport`, `StdlibTransport`. Lives in `events/` because the request embeds `#268` `compiled-prompt/2`. One BeatPlan → at most one request and one candidate. Authored uses `{patternId,renderContractVersion}` with null prompt/component generation and no I/O. Qwen requires CompiledPrompt, positive component generation and `component.qwen_ready`. `try_start` never queues. Failed beats discard the same `(beatId, episodeRevision)`; cancelled is cleanup only. Transport failure never starts an authored fallback. Warm-up uses already-frozen `commentary.llm.warmup`; failure makes Qwen-backed beats ineligible while authored stays eligible. Stale generation completions are ignored. HTTP: no proxies, no redirects, stdlib urllib only. `used_live_view` / `used_roster` / `used_config` stay false. Replay fixtures: `tests/fixtures/qwen_transport/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`; not live-wired. Does not implement SemanticVerifier. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #269 is closed in its own scope: bounded Qwen transport, exact SSE, generation-tagged warm-up, one-worker admit, no authored fallback, replay fixtures. NarrativeRuntime remains inactive.
+- #270 SemanticVerifier scope: `events/semantic_verifier.py` owns the tight-family acceptance function over one visible sentence and one frozen claim frame. Schema `verification-result/2`. Types: `VerifyIntent`, `VerificationResult`, `VerifyStep`. Reads frozen `realization-contract.json` / `realization-corpus.json` (37 grammars, 222 cases). ShapeEn plus four tight `{subjectSurface,requiredClaimSurface}` patterns. Actor lexicon (missing / unused / casefold collision) and thinking/reasoning/tool/multiple/truncated/oversized transport forms fail before parse. A/B vs B/A cannot both accept. Ambiguity discards without repair. Technical TTS stays on SpeechLane. `used_live_view` / `used_roster` / `used_config` stay false. Replay fixtures: `tests/fixtures/semantic_verifier/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`. Standalone library API not live-wired beyond optional #284 `NarrativeRuntime(..., semantic_verifier=SemanticVerifier())` composition (feat `447382c2aa4a667891539407049521c5a30d03c8`). Does not implement the latency corpus. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #270 is closed in its own scope: family-specific SemanticVerifier, frozen Accept(x,C,f), 37-family corpus, actor lexicon and transport-form gates before parse, A/B vs B/A, no repair, replay fixtures. Optional live composition on #284 race path landed separately (feat `447382c2aa4a667891539407049521c5a30d03c8`); live verify-frame attachment on authored/template paths landed feat `a1ba998` (side-stash `narrative_verify_frame.py`; effect `verify_frame_attached_live`; Qwen/unframed still skip via `semantic_verdict:skipped_no_frame`).
+- #271 eval-corpus scope: `events/eval_corpus.py` owns the offline 222-case tight report, holdout gates, recorded latency aggregates and config-sequence replay. Schema `evaluation-report/2`. Types: `EvalIntent`, `CorpusReport`, `EvalStep`, `ProfileGate`, `LatencySample`, `LatencyReport`, `ConfigReplay`, `AttemptBinding`. Release 185 / holdout 37. Tight enables only at zero material false accepts. Balanced/loose stay disabled. Warm/cold residency cannot mix. Tokens never estimated. Config replay refuses gaps and `config_transition_lost`. Each completion binds to one bundle hash. Replay fixtures: `tests/fixtures/eval_corpus/{transition,counterfactual_identity,expiry}.json`. Not exported from `events/__init__.py`; not re-exported from `contracts/__init__.py`; not live-wired. Default tests do not open a live Qwen socket. Docs: no public CONFIG/API/README change; `machine/` hashes unchanged.
+- #271 is closed in its own scope: offline 222-case tight report, holdout gates, recorded latency aggregates, config-sequence replay, replay fixtures. NarrativeRuntime remains inactive.
+
+## Exact next implementation slice
+
+1. #284 **thin #273 golden-health identity slice is landed** — feat `9362084` (`RuntimeStatus`/`NarrativeRuntime` identity fields; `project_runtime_status` timeline identity; `project_commentary_health_component` + `GET /health` `commentary`; goldens `tests/fixtures/commentary_runtime/status_identity_*.json`); related **198** (= prior **195** + `tests/test_narrative_ingress.py` **3** identity/health rows).
+2. #284 **thin #273 speech/language/components status slice is landed** — feat `93f9fb8` (`RuntimeStatus` speech projection + retained `lastTerminal`; `project_runtime_status` `language=en`, full `speech` shape, bounded `components.{llm,tts,tape}`; golden `tests/fixtures/commentary_runtime/status_speech_idle.json`; `API.md` `/api/commentary/runtime` example); related **201** (= prior **198** + `tests/test_narrative_ingress.py` **3** speech projection rows). Prior command journal feat `2a555df` (related **195**). Prior reducer-trace replay harness feat `1f509b8` (related **190**). Prior Qwen enable+warmup feat `ddc3b80` (related **186**). Prior slices unchanged through shadow cutover, ingress, HTTP mount, NarrativeRuntime library **124**. **Issue stays OPEN**.
+3. #284 **thin #273 golden-health decisions slice is now landed** — feat `51dc1d1` (`events/narrative_decision_projection.py`; bounded ring `DECISION_CAPACITY=128` on each `_consult_director`; `NarrativeRuntime.decisions(limit)`; additive `GET /api/commentary/runtime/decisions?limit=`; golden `tests/fixtures/commentary_runtime/decisions_selected.json`; `API.md` table + section); related **207** (= prior **201** + **6** new tests: `tests/test_narrative_ingress.py` **3** decision rows + `tests/test_narrative_runtime_http.py` **3** decisions rows). **Issue stays OPEN**.
+4. #284 **thin #273 golden-health validate/speak slice is now landed** — feat `65651bc` (`events/narrative_validate_projection.py` + `project_validate_response`; `NarrativeRuntime.try_manual_speak` + `ManualSpeakOutcome`; additive `POST /api/commentary/runtime/validate|speak`; goldens `tests/fixtures/commentary_runtime/validate_*`, `speak_*`; legacy validate/speak unchanged; `API.md` table rows + sections); related **215** (= prior **207** + **8** new tests: `tests/test_narrative_ingress.py` **3** validate rows + `tests/test_narrative_runtime_http.py` **5** validate/speak rows). **Issue stays OPEN**. **#273 remainder still open**.
+5. #284 **thin #273 ManualAdmissionLatch slice is now landed** — feat `ca0f2f6` (`events/narrative_manual_latch.py`; latch rendezvous in `try_manual_speak` + `_on_manual`; HTTP 503 `admission_timeout`; golden `error_admission_timeout.json`); related **219** (= prior **215** + **4** new tests: `tests/test_narrative_runtime.py` **3** latch rows + `tests/test_narrative_runtime_http.py` **1** admission-timeout map row). **Issue stays OPEN**. **#273 remainder still open**.
+6. #284 **thin #273 status_ready stub slice is now landed** — feat `03c34b2` (`project_runtime_status` catalog/config/episodes/byTapeChannel/opportunities/detectors/facts stubs; golden `tests/fixtures/commentary_runtime/status_ready_library.json`; `API.md` example updated); related **220** (= prior **219** + **1** new test: `tests/test_narrative_ingress.py` **1** status_ready golden row). Live wiring landed separately at feat `bdb9633` (see item 10). **Issue stays OPEN**.
+7. #284 **thin #273 components llm/tts schema stub slice is now landed** — feat `3670502` (`_llm_component_projection` / `_tts_component_projection` in `project_runtime_status`; goldens `tests/fixtures/commentary_runtime/status_components_llm_tts.json`; `status_speech_idle.json` llm/tts shapes updated; ingress+http **33** = prior **32** + **1**); related **221** (= prior **220** + **1** new test: `tests/test_narrative_ingress.py` **1** llm/tts golden row). **Issue stays OPEN**. **#273 remainder still open** (live llm/tts transport; live catalog/config/episodes wiring; legacy cutover).
+8. #284 **thin #273 timeline session identity null stub slice is landed** — feat `f58c992` (`project_runtime_status` emits `sessionPlan`/`sessionRef`/`occurrenceId`/`lineageId`/`stage` all-or-none nulls on `timeline` when idle; golden `tests/fixtures/commentary_runtime/status_timeline_session_null.json`; ingress+http **34** = prior **33** + **1**); related **222** (= prior **221** + **1** new test). **Issue stays OPEN**.
+9. #284 **live timeline session identity slice is now landed** — feat `ccd0697` (`RuntimeStatus` session fields via `_session_identity_from_timeline` on APPLY_CONTEXT; `_timeline_session_identity` in `project_runtime_status`; golden `tests/fixtures/commentary_runtime/status_identity_after_context.json` populated; ingress+http **37** = prior **34** + **3**); related **225** (= prior **222** + **3** new tests: null golden + live-after-context golden + all-or-none clear). **Issue stays OPEN**. **#273 remainder still open** (live llm/tts transport; legacy cutover).
+10. #284 **live catalog/config/episodes/byTapeChannel status projection is now landed** — feat `bdb9633` (`RuntimeStatus.config_ledger` / `episode_counts` / `by_tape_channel`; `_config_projection` / `_episodes_projection` / `_by_tape_channel_projection` in `project_runtime_status`; `EpisodeRegistry.status_counts()`; `OpportunityQueue.tape_channel_status_counts()`; ingress+http **40** = prior **37** + **3**); related **228** (= prior **225** + **3** new tests: config ledger, episode counts, byTapeChannel counters). **Issue stays OPEN**. **#273 remainder still open** (live llm/tts transport/residency; live detectors/facts beyond stubs).
+11. #284 **legacy validate/speak public-path cutover is now landed** — feat `f2c1f1b` (`commentary/http.py` routes public `POST /api/commentary/validate|speak` to `handle_commentary_runtime_validate|speak`; `/api/commentary/runtime/validate|speak` remain aliases; legacy CSRF/sequence-graph handlers removed; commentary test page posts `commentary-runtime/2` speak body; `tests/test_commentary_http.py` rewritten **7** rows; `tests/test_narrative_runtime_http.py` **16** (= prior **14** + **2** public-path parity rows)); related **237** (= prior **228** + **9**). **Issue stays OPEN**. **#273 remainder still open** (live llm/tts transport/residency; live detectors/facts beyond stubs).
+12. #284 **live detectors/facts status projection is now landed** — feat `d13d6bd` (`RuntimeStatus` fact fields + `detector_disabled`; `_ingest_fact_view_counts` on APPLY_CONTEXT; optional `NarrativeRuntime(detector_bank=...)` + `DetectorBank.disabled_for_status()`; live `components.facts` + `components.detectors.disabled` in `project_runtime_status`; related **249** (= prior **246** + **3** new tests: facts live after context, detectors from bank, empty without bank). **Issue stays OPEN**. **#273 remainder still open** (master cutover).
+12b. #273 **fact-health continuation slice landed on feature branch** — branch `cursor/fact-health-273-cad3` (feat `05efef3`); `RuntimeStatus` capacity latches + `note_fact_capacity`; `components.facts` health/recovery projection; related **252** (= prior **249** + **3** new tests: eviction, exhaustion, new lossless run). **FF into** integration tip `ebd78db`. **#273 remainder still open** (master cutover).
+13. #284 **loop supervisor heartbeats thin slice is now landed** — feat `952cc1d` (`loop.lastReduceMonoMs` / `loop.reduceCount` / `loop.supervisors`; `attach_supervisor_heartbeat`; race attaches `narrativeRuntime` + `narrativeShadow`; related **252** (= prior **249** + **3** new tests: reduce heartbeats, attached supervisors, race-source guard)). **Issue stays OPEN**. **#273 remainder still open** (master cutover only — human kick).
+14. #284 **live TTS voice + quarantine projection is now landed** — feat `17a84eb` (`_tts_voice_from_ledger`; `speech_quarantined_generation` on stop-deadline timeout; `_on_component_health` quarantine clear/held; `components.tts.voice` + `quarantinedGeneration` on `GET /api/commentary/runtime`; related **256** (= prior **252** + **4** new tests: ingress voice/quarantine rows + runtime quarantine-clear row)). **Issue stays OPEN**. **#273 remainder still open** (master cutover).
+15. #284 **command journal race append + replay fingerprint fix is now landed** — feat `b0f7646` (`_STATUS_FINGERPRINT_VOLATILE`; `append_command_journal_row`; `NarrativeRuntime(command_journal_path=)` live append on `reduce_next`; race `recordings/.../narrative-command-journal.ndjson`; related **259** (= prior **256** + **3** new command-journal rows)). **Issue stays OPEN**. **No master PR**.
+16. #284 **optional #270 SemanticVerifier live-wiring slice is now landed** — feat `447382c2aa4a667891539407049521c5a30d03c8` (`NarrativeRuntime(..., semantic_verifier=SemanticVerifier())`; on `REALIZATION_SUCCEEDED` after FreshnessGate, before TTS: accept/reject/skip-no-frame; test seam `seed_semantic_frame_for_test(...)`; race wires verifier alongside FreshnessGate + command journal; related **262** (= prior **259** + **3** new semantic-verifier rows in `tests/test_narrative_runtime.py`)). **Issue stays OPEN**. **#270 stays closed**. **No master PR**. **API.md unchanged** (effects internal; no status projection).
+17. #284 **owned tape flush effect slice is now landed** — feat `fed99d1d2095301c7771250a8e1097cade784439` (`NarrativeRuntime(..., tape_effect=, shutdown_flush_timeout_s=2.0)`; `SHUTDOWN` emits `effect:flush_tape` when `tape_effect` present; `apply_effects` runs owned `_tape_task` via `_run_tape_flush`; `effect:cancel_tape` cancels; flush timeout fail-soft via `NarrativeCommand.tape_health(... status=degraded)` or local `_tape_status = "degraded"` when ingress closed; `wait_effects_idle` + `tape_task_active()`; `events/narrative_tape_bridge.py` `build_tape_flush_effect(NarrativeTapeWriter)` wraps `aclose`; race wires tape writer feat `fc6e394`; related **265** (= prior **262** + **3** new tape-flush rows in `tests/test_narrative_runtime.py`)). **Issue stays OPEN**. **No master PR**. **API.md unchanged** (existing `components.tape.status` projection; no new HTTP).
+18. #284 **AC checkbox audit completed (2026-09-10)** — conservative audit vs landed code on `cursor/narrative-runtime-284-matrix-cad3` (HEAD at audit: SemanticVerifier feat `447382c2aa4a667891539407049521c5a30d03c8` + owned tape flush feat `fed99d1d2095301c7771250a8e1097cade784439`); **1/41 → 22/41** checked (**21** flipped **LANDABLE_NOW**); **19** remain **PARTIAL/OPEN** at audit time (superseded by item 19 → **25/41**); issue stays **OPEN**; diary [issuecomment-5620687359](https://github.com/Buchtanen/ir-obs-switcher/issues/284#issuecomment-5620687359). **API.md unchanged** (audit is docs-only).
+19. #284 **planningCycleId + streamEpoch library slice landed** — feat `d80a319`, docs `5d45c82`; `_begin_planning_cycle` / `_dispatch_plan(..., open_cycle_reason=)` with `MAX_PLANS_PER_CYCLE=2`; cycle reasons `event_impulse` / `event_replacement` / `event_after_exhausted` / `silence_impulse` / `silence_after_exhausted`; effects `planning_cycle_opened:{reason}`, `planning_cycle_id:{n}`, `planning_cycle_exhausted`; manual speak never opens a cycle; disable emits `narrative_run_closed` + `building_cancelled_on_disable` (optional `effect:flush_tape` when `tape_effect` set); re-enable emits `narrative_run_opened` + `stream_epoch_allocated:{n}`; tests **137** in `tests/test_narrative_runtime.py` (was **134**); related **268** (= prior **265** + **3** new rows); issue AC checkboxes → **25/41** (**16** remain). **#284 stays OPEN**. **No master PR**. **API.md unchanged** (internal reducer effects).
+20. #284 **race tape_effect wire landed** — feat `fc6e394` (`open_narrative_tape_writer` + `build_tape_flush_effect` → `NarrativeRuntime(tape_effect=...)`; writer start on actor loop; stop/cancel admits `SHUTDOWN` for owned flush); tests `tests/test_narrative_tape_bridge.py` **3**; AC **27/41** (**14** remain). **#284 stays OPEN**. **No master PR**.
+21. #284 **next open work (superseded)** — was (1) process TDD AC; now **41/41** via human-accepted TDD-exception (item 37). Remaining non-AC: `planningCycleId` race tape wire; deeper tape-run wiring; #273 master cutover; issue close gate (human).
+22. #284 **ExposureStore sole-writer slice landed** — feat `c6ffbe3` (`NarrativeRuntime(..., exposure_store=)`; `_arm_pending_exposure` at realization commit; `_record_exposure` sole-writes on `PLAYBACK_ACCEPTED` with `phase=speaking`, `source_kind=narrative`; manual speak never records; race shadow composes `ExposureStore()`); tests `tests/test_narrative_runtime.py` **3** new rows (**140** total; was **137**); AC **28/41** (**13** remain). **#284 stays OPEN**. **No master PR**. **API.md / CONFIG.md unchanged** (no new HTTP/INI keys).
+23. #284 **EventSubscription full-replace slice landed** — feat `44dab2f` (`NarrativeShadowConsumer(..., legacy_stream_handler=None)`; removed `_mirror_lifecycle_without_speech`; SessionReset/ConfigUpdate/batches no longer mirror into `CommentaryConsumer`; sole ingress shadow admit → `NarrativeMailbox`; `CommentaryConsumer` TTS sink/status/filler with `idle_speech_enabled=False`, `_commentary_subscription=None`); tests `tests/test_narrative_fanout_cutover.py` **8** cutover rows (was **7**); related subset **165** passed; AC **29/41** (**12** remain). **#284 stays OPEN**. **No master PR**. **API.md / CONFIG.md unchanged** (no new HTTP/INI keys).
+24. #284 **handover checkpoint (2026-09-10, EventSubscription)** — HEAD `44dab2f`; docs-keeper updated `inflight/` + `domeny/events.md` + this file; verifier PASS **140**; related subset **165**; working tree clean; **no master PR**. Immutable pushed SHA: feat `44dab2f`.
+25. #284 **replay-closure slice landed** — feat `b86a336` (`command_from_dict` rebuilds `REALIZATION_SUCCEEDED`/`FAILED`; optional `runtime_factory` on capture/replay/journal; journal replay reproduces `director_selected` + committed lane when recorded realization supplied); tests `tests/test_narrative_reducer_replay.py` **5** (was **4**) + `tests/test_narrative_command_journal.py` **9** (was **8**); combined replay/journal **14** passed (= prior **12** + **2**); related **273** passed; AC **30/41** (**11** remain). **#284 stays OPEN**. **No master PR**. **API.md / CONFIG.md unchanged** (no new HTTP/INI keys).
+26. #284 **docs + style after replay closure** — docs `8e19c9a` (`docs: record #284 replay closure (AC 30/41)` — inflight + domeny/events + prior handover); style `bfdbd56` (`style: black-format replay closure tests (#284)`); working tree clean; **#284 stays OPEN**; **no master PR**.
+27. #284 **handover checkpoint (2026-09-10, replay closure @ da82722)** — HEAD `da82722`; this file refreshed for clean resume; replay/journal pytest **14** passed; runtime **140**; related **273**; stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → v2 base; **no master PR**. Immutable feat SHA: `b86a336`; tip: `da82722`.
+28. #284 **actor-transition model-tests slice landed** — test `fe70f2a` (`test: model-test actor raceTraces and overflowScenarios (#284)`); `tests/test_actor_transition_goldens.py` **29** passed (frozen `docs/v2.0.0/machine/actor-transition-goldens.json` — **13** `raceTraces`, **10** `overflowScenarios`, **2** `orderingScenarios`, `pairCoverage`↔`transitionMatrix` sync **85**, on-disk↔builder sync, plus **2** `NarrativeRuntime` race rows); with `tests/test_narrative_runtime.py` **140** → **169** passed; related **303** passed; AC **31/41** (**10** remain). **#284 stays OPEN**. **No master PR**. **API.md / CONFIG.md unchanged** (tests-only).
+29. #284 **health/API reason-code schema slice landed** — feat `cffaab1` (`feat: complete actor/recovery reason codes on health/API (#284)`); `NarrativeRuntime._reason_codes()` projects mailbox/admission freeze-registry codes; `/health` `commentary.reason` + runtime `diagnostics.reasonCodes`; `HealthCommentarySummary.reason` closed enum in `api-contracts.schema.json`; `API.md` + `CONFIG.md` capacity/timeout impact; `tests/test_narrative_runtime.py` **141** + `tests/test_narrative_ingress.py` **45** → related **305** passed; AC **33/41** (**8** remain). **#284 stays OPEN**. **No master PR**.
+30. #284 **fact-only wait / coalesce / callback-branches slice landed** — feat `dd64047` (`feat: fact-only wait, shared coalesce lists, narrative/manual callbacks (#284)`); `contracts/coalesce_policy.py` shared allowlist; pure FactView `fact_only_wait`; narrative vs manual playback+terminal callback branches; silence pause/rearm; `tests/test_coalesce_policy.py` **3** + `tests/test_narrative_runtime.py` **144** (+ **3** rows) → core subset **221** passed; related **311** passed; AC **34/41** (**7** remain). **#284 stays OPEN**. **No master PR**. **API.md / CONFIG.md / README unchanged**.
+31. #284 **live #270 verify-frame attachment slice landed** — feat `a1ba998` (`feat: attach live #270 verify frames on authored/template realization (#284)`); `events/narrative_verify_frame.py` side-stash; bridge `realize_authored_speech` / `template_speech` / `SpeechDraft.verify_frame`; runtime `_verify_frame_fields` + effect `verify_frame_attached_live`; `tests/test_narrative_runtime.py` **146** (+ **2** rows) + `tests/test_narrative_realization_bridge.py` **5** (+ **2** rows) → core subset **223** passed; related **315** passed; AC **34/41** (**7** remain). **#284 stays OPEN**. **#270 stays closed**. **No master PR**. **API.md / CONFIG.md / README unchanged** (internal effects).
+32. #284 **overflow linearization / deadline-skip / quarantine model-tests slice landed** — test `f465bfd` (`test(narrative-runtime): overflow manual linearization, deadline skip, quarantine (#284)`); `tests/test_actor_transition_goldens.py` **32** (+ **3** overflow evidence rows); core subset **226** passed; related **318** passed; AC **35/41** (**6** remain). **#284 stays OPEN**. **No master PR**. **API.md / CONFIG.md / README unchanged** (tests-only).
+33. #284 **cancel-on-disable / transition / config-boundary slice landed** — test `d9089a1` (`test: cover #284 cancel-on-disable, timeline transition, config boundary`); `tests/test_narrative_runtime.py` **149** (+ **3** cancel/disable/transition rows); `tests/test_narrative_tape_bridge.py` **4** (+ **1** disable flush row); core subset **229** passed; related **325** passed; AC **36/41** (**5** remain). **#284 stays OPEN**. **No master PR**. **API.md / CONFIG.md / README unchanged** (tests-only).
+34. #284 **ordering+races verification slice landed** — test `5f4eb61` (`test(#284): library evidence for ordering and completion races`); `tests/test_narrative_runtime.py` **155** (+ **6** ordering/completion race rows: `same_time_external_before_callback`, `same_time_callback_before_reset`, `deadline_before_result`, `reset_before_result`, `config_generation_then_completion`, `validity_expiry_before_completion`); core subset **235** passed; related **331** passed; AC **38/41** (**3** remain). **#284 stays OPEN**. **No master PR**. **API.md / CONFIG.md / README unchanged** (tests-only). Transition matrix row coverage unchanged via existing `test_actor_transition_matrix_row`.
+35. #284 **AC5 actor command + transition matrices embed landed** — docs `9b0c860` (`docs(#284): embed complete actor command and transition matrices`); `docs/v2.0.0/actor-transition-contract.md` mirrors frozen **17**-command inventory + all **85** lane×command disposition rows from `docs/v2.0.0/machine/actor-transition-model.json`; library-only completion races clarified (`config_generation_then_completion`, `validity_expiry_before_completion` not frozen `raceTrace` IDs); pytest matrix coverage unchanged; core subset **235** passed; related **331** passed; AC **39/41** (**2** remain at that checkpoint). **#284 stays OPEN**. **No master PR**. **API.md / CONFIG.md / README unchanged** (docs-only).
+36. #284 **upstream snapshot immutability slice landed** — test `78a1aeb` (`test(#284): assert upstream timeline/feature/detector snapshots stay immutable`); `tests/test_narrative_runtime.py` **157** (+ **2** rows: `test_runtime_does_not_back_mutate_upstream_timeline_or_fact_snapshots`, `test_runtime_reads_detector_bank_status_without_stepping_or_owning_engines`); core subset **237** passed; related **333** passed; AC **40/41** at that checkpoint (**1** remain: process TDD AC — later flipped via human-accepted TDD-exception). **#284 stays OPEN**. **No master PR**. **API.md / CONFIG.md / README unchanged** (tests-only).
+37. #284 **process TDD AC human-accepted TDD-exception (docs-only)** — docs tip `777843d`; issue AC → **41/41** (process TDD AC flipped via human-accepted TDD-exception). **TDD-exception:** Add focused pytest/pytest-asyncio tests before behavior code. **Reason:** behavior already landed in prior slices; cannot honestly claim tests-first retrospectively. **Alternative verification:** existing `NarrativeRuntime` + actor-transition matrix/ordering/races/immutability pytest evidence. **Risk:** process dilution — scoped to this historical checkbox only. At that checkpoint **#284 stayed OPEN** pending human close gate. **No master PR**. **API.md / CONFIG.md / README unchanged** (docs-only).
+38. #284 **issue CLOSED (docs-only)** — docs tip `e8c4a2e`; human close gate satisfied; AC **41/41** final. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) → base `codex/commentary-story-flow-spec` (**not** master). **No master merge**. **API.md / CONFIG.md / README unchanged** (docs-only).
+39. #284 **merged to integration** — merge commit `77452a9` (`Merge pull request #289 from Buchtanen/cursor/narrative-runtime-284-matrix-cad3`); integration branch `codex/commentary-story-flow-spec` now carries full #284 library + cutover stack. **No master merge**.
+40. #272 **lap-family legacy↔v2 director shadow compare first slice landed** — feat `f72eb8c` (`feat(#272): add silent lap-family legacy↔v2 director shadow compare`); new `events/legacy_v2_shadow_compare.py` — private in-module `FAMILY_ROUTE` (`lap` → `shadow`; unlisted → `legacy`), `DivergenceRecord`, `ShadowCompareResult`, `compare_director_decisions` (director `selected_beat_mismatch` aspect only; `speech_effects` always empty); **not** exported from `events/__init__.py`; must not survive final v2 cutover PR (`final-pr-exclusion-manifest.md`); `tests/test_legacy_v2_shadow_compare.py` **5** passed; issue AC **2/4** at that checkpoint; atomic **2/6** (+ partial director compare); race/commentary **not** wired; **#272 stayed OPEN**; **no master PR**. **API.md / CONFIG.md / README unchanged** (branch-private harness; no INI/API).
+41. #272 **legacy↔v2 shadow harness complete** — feat `6cfce0c` (`feat(#272): complete legacy↔v2 shadow harness across remaining ACs`); expanded `events/legacy_v2_shadow_compare.py` with `adapt_race_state_to_v2`, `adapt_event_envelope_to_v2`, `compare_event_decisions`, `compare_episode_decisions`, unmigrated-family `legacy` routes, `observe_family_safely` fail-soft timeout/cancel/stale observation, `latency_ms`/`evidence` on `ShadowCompareResult`, `REMOVAL_MANIFEST_ENTRIES`; explicit removal symbols in `docs/v2.0.0/final-pr-exclusion-manifest.md`; `tests/test_legacy_v2_shadow_compare.py` **16** passed; issue AC **4/4**; atomic **6/6**; race **not** wired; stack PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) → base `codex/commentary-story-flow-spec`; **#272 CLOSED** (human close gate); **no master PR**. **Docs impact: `CONFIG.md` none; `API.md` none; temporary harness in `final-pr-exclusion-manifest.md`**
+42. #272 **issue CLOSED (docs-only)** — docs tip `5b849b8` (`docs(#272): record issue CLOSED (AC 4/4) after complete shadow harness`); human close gate satisfied; AC **4/4** final. Stack PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) → base `codex/commentary-story-flow-spec` (**not** master). **No master merge**. **Docs impact: `CONFIG.md` none; `API.md` none; harness documented in inflight + `domeny/events.md` + `final-pr-exclusion-manifest.md`**
+
+43. #272 **merged to integration** — merge commit `1c993c0` (`Merge pull request #290 from Buchtanen/cursor/legacy-v2-shadow-272-cad3`); integration carries #272 harness. **No master merge**.
+44. #273 **assignments route unregister landed** — feat `11f5b59` (`feat(#273): unregister GET /api/commentary/assignments`); public assignments route removed; HTTP tests assert 404; `API.md` + branch docs updated. **#273 OPEN**. **No master PR**.
+45. #273 **dashboard versioned contracts landed** — feat `b4f9b47` (`feat(#273): cut commentary dashboard to versioned contracts`); commentary dashboard/HTTP cut to versioned `commentary-runtime/2` contracts; tests updated. **#273 OPEN**. **No master PR**.
+46. #273 **error/request golden freeze landed** — test `a2792ff` (`test(#273): freeze commentary-runtime error goldens`); goldens under `tests/fixtures/commentary_runtime/error_*.json`; `tests/test_commentary_runtime_goldens.py`; local **15** passed with `test_commentary_http`. **#273 OPEN**. **No master PR**.
+47. #273 **bounded `/health` commentary freeze landed** — test `61b71af` (`test(#273): freeze bounded /health commentary summary`); goldens `health_commentary_{disabled,ready,ready_history_incomplete,degraded}.json`; HTTP isolation in `tests/test_api.py`; local **37** passed (`test_commentary_runtime_goldens` + `test_api`). **#273 OPEN**. **No master PR**.
+48. #273 **component health projections landed** — feat `ac44ddd` (`feat(#273): freeze recorder/model/timeline/detector health projections`); tape `capture_unavailable`; `detectors.disabled` id-sorted; library timeline/llm/tape/detectors goldens; local **57** passed (`test_commentary_runtime_goldens` + `test_narrative_ingress`). **#273 OPEN**. **No master PR**.
+49. #273 **tape drop/size/purpose-channel counters landed** — feat `aed3d1b` (`feat(#273): wire tape drop/size/purpose-channel counters on components.tape`); import fix `606ac8f` (`fix(#273): correct tape-counter live-writer test import`); `components.tape` gains `size`/`drops`/`dropsByPriority`/`purposeCounts`; golden `status_component_tape_counters.json`; local **71** passed (`test_commentary_runtime_goldens` + `test_narrative_ingress` + `test_narrative_tape_queue`). **#273 OPEN**. **No master PR**.
+50. #273 **byTapeChannel funnel bounds + cohort rates landed** — feat `466c2f3` (`feat(#273): bound byTapeChannel counters with cohort funnel rates`); docs `25c7204`; style `b01f7a6`; `project_by_tape_channel_status` + `cohort_funnel_rates`; golden `status_by_tape_channel.json`; local **73** passed; PR [#291](https://github.com/Buchtanen/ir-obs-switcher/pull/291) **MERGED** into integration @ tip `b01f7a6`. **#273 OPEN**. **No master PR**.
+51. #273 **decisions/queue-age landed** — feat `75e128d` (`feat(#273): expose successor decisions and opportunity queue expiry`); `story_successor` decision rows, expired TTL terminal decisions, live `queues.opportunities` depth/expired/evicted; goldens `decisions_story_successor.json`, `decisions_expired_ttl.json`, `status_opportunities_queue.json`; local **76** passed; PR [#292](https://github.com/Buchtanen/ir-obs-switcher/pull/292) **MERGED** into integration @ tip `75e128d`. **#273 OPEN**. **No master PR**.
+52. #273 **next open slice** — ~~**Expose fixed EN, catalog hash, desired/effective config hashes, apply sequence and pending boundaries**~~ **DONE** @ `b751d70`. Work only on `codex/commentary-story-flow-spec`. **No master PR until cutover**.
+
+## Handover checkpoint — 2026-09-11 (#273 progress @ 75e128d)
+
+**Authoritative issue:** [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) — **OPEN** (v2 health, observability and operator configuration)
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Active branch | `codex/commentary-story-flow-spec` (integration — **only**) |
+| Upstream | `origin/codex/commentary-story-flow-spec` |
+| #272 | **CLOSED**/merged via PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) @ `1c993c0` |
+| #284 | **CLOSED**/merged via PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) @ `77452a9` |
+| #292 | **MERGED** (decisions/queue-age) |
+| #291 | **MERGED** (byTapeChannel funnel bounds + cohort rates) @ `b01f7a6` |
+| Master PR | **None** — **no master PR until cutover** |
+
+**HEAD (integration tip):** `ebd78db` (docs `ebd78db`; feat `05efef3` fact-health)
+
+**Completed #273 slices on integration**
+
+1. `11f5b59` — unregister `GET /api/commentary/assignments`
+2. `b4f9b47` — commentary dashboard cut to versioned contracts
+3. `a2792ff` — freeze commentary-runtime error/request goldens
+4. `61b71af` — freeze bounded `/health` commentary summary
+5. `ac44ddd` — freeze recorder/model/timeline/detector health projections (`capture_unavailable`, `detectors.disabled`, library timeline/llm/tape/detectors goldens)
+6. `aed3d1b` / `606ac8f` — wire tape drop/size/`purposeCounts` counters on `components.tape` (feat + import fix)
+7. `466c2f3` / `25c7204` / `b01f7a6` — byTapeChannel funnel bounds + cohort rates (feat + docs + style; PR [#291](https://github.com/Buchtanen/ir-obs-switcher/pull/291) **MERGED**)
+8. `75e128d` — expose event-versus-successor decisions and queue age/expiry reasons (feat; PR [#292](https://github.com/Buchtanen/ir-obs-switcher/pull/292) **MERGED**)
+
+**Working tree:** clean at integration tip `ebd78db`
+
+**Verifier:** `pytest tests/test_commentary_runtime_goldens.py tests/test_narrative_ingress.py tests/test_narrative_tape_queue.py -q` → **76** passed
+
+**Next action (#273 — integration only)**
+
+1. ~~**Expose fixed EN, catalog hash, desired/effective config hashes, apply sequence and pending boundaries**~~ **DONE** @ `b751d70`.
+2. Continue remaining #273 AC on `codex/commentary-story-flow-spec` only.
+3. **Do not** open a master PR until the cutover issue says so.
+
+**Blockers / risks:** Do **not** leave the integration branch for this issue-set. Do **not** reopen #272/#284 for slice work. Do **not** merge to master.
+
+## Handover checkpoint — 2026-09-11 (#273 progress @ b01f7a6)
+
+**Authoritative issue:** [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) — **OPEN** (v2 health, observability and operator configuration)
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Active branch | `codex/commentary-story-flow-spec` (integration — **only**) |
+| Upstream | `origin/codex/commentary-story-flow-spec` |
+| #272 | **CLOSED**/merged via PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) @ `1c993c0` |
+| #284 | **CLOSED**/merged via PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) @ `77452a9` |
+| #291 | **MERGED** (byTapeChannel funnel bounds + cohort rates) |
+| Master PR | **None** — **no master PR until cutover** |
+
+**HEAD (integration tip):** `b01f7a6c46f3c51ee705056a937399654a2c4ef7` (`b01f7a6` — style; docs `25c7204`; feat `466c2f3`)
+
+**Completed #273 slices on integration**
+
+1. `11f5b59` — unregister `GET /api/commentary/assignments`
+2. `b4f9b47` — commentary dashboard cut to versioned contracts
+3. `a2792ff` — freeze commentary-runtime error/request goldens
+4. `61b71af` — freeze bounded `/health` commentary summary
+5. `ac44ddd` — freeze recorder/model/timeline/detector health projections (`capture_unavailable`, `detectors.disabled`, library timeline/llm/tape/detectors goldens)
+6. `aed3d1b` / `606ac8f` — wire tape drop/size/`purposeCounts` counters on `components.tape` (feat + import fix)
+7. `466c2f3` / `25c7204` / `b01f7a6` — byTapeChannel funnel bounds + cohort rates (feat + docs + style; PR [#291](https://github.com/Buchtanen/ir-obs-switcher/pull/291) **MERGED**)
+
+**Working tree:** clean at integration tip `b01f7a6`
+
+**Verifier:** `pytest tests/test_commentary_runtime_goldens.py tests/test_narrative_ingress.py tests/test_narrative_tape_queue.py -q` → **73** passed
+
+**Next action (#273 — integration only)**
+
+1. **Expose event-versus-successor decisions and queue age/expiry reasons**.
+2. Continue remaining #273 AC on `codex/commentary-story-flow-spec` only.
+3. **Do not** open a master PR until the cutover issue says so.
+
+**Blockers / risks:** Do **not** leave the integration branch for this issue-set. Do **not** reopen #272/#284 for slice work. Do **not** merge to master.
+
+## Handover checkpoint — 2026-09-11 (#273 progress @ 606ac8f)
+
+**Authoritative issue:** [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) — **OPEN** (v2 health, observability and operator configuration)
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Active branch | `codex/commentary-story-flow-spec` (integration — **only**) |
+| Upstream | `origin/codex/commentary-story-flow-spec` |
+| #272 | **CLOSED**/merged via PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) @ `1c993c0` |
+| #284 | **CLOSED**/merged via PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) @ `77452a9` |
+| Master PR | **None** — **no master PR until cutover** |
+
+**HEAD (evidence tip):** `606ac8f0b1586d029ba4c63b55a8efd37c633901` (`606ac8f` — tape-counter live-writer test import fix; feat `aed3d1b`)
+
+**HEAD (resume gate / docs tip):** `de1354e` (`docs(#273): record integration handover resume after 606ac8f`)
+
+**Completed #273 slices on integration**
+
+1. `11f5b59` — unregister `GET /api/commentary/assignments`
+2. `b4f9b47` — commentary dashboard cut to versioned contracts
+3. `a2792ff` — freeze commentary-runtime error/request goldens
+4. `61b71af` — freeze bounded `/health` commentary summary
+5. `ac44ddd` — freeze recorder/model/timeline/detector health projections (`capture_unavailable`, `detectors.disabled`, library timeline/llm/tape/detectors goldens)
+6. `aed3d1b` / `606ac8f` — wire tape drop/size/`purposeCounts` counters on `components.tape` (feat + import fix)
+
+**Working tree:** clean at docs tip `de1354e`
+
+**Verifier:** `pytest tests/test_commentary_runtime_goldens.py tests/test_narrative_ingress.py tests/test_narrative_tape_queue.py -q` → **71** passed
+
+**Next action (#273 — integration only)**
+
+1. Per-`tape_channel` kick/accepted/queued/selected/started/expired counters **or** facts eviction recovery **or** remaining observability.
+2. Continue remaining #273 AC on `codex/commentary-story-flow-spec` only.
+3. **Do not** open a master PR until the cutover issue says so.
+
+**Blockers / risks:** Do **not** leave the integration branch for this issue-set. Do **not** reopen #272/#284 for slice work. Do **not** merge to master.
+
+## Handover checkpoint — 2026-09-11 (#273 progress @ ac44ddd)
+
+**Authoritative issue:** [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) — **OPEN** (v2 health, observability and operator configuration)
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Active branch | `codex/commentary-story-flow-spec` (integration — **only**) |
+| Upstream | `origin/codex/commentary-story-flow-spec` |
+| #272 | **CLOSED**/merged via PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) @ `1c993c0` |
+| #284 | **CLOSED**/merged via PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) @ `77452a9` |
+| Master PR | **None** — **no master PR until cutover** |
+
+**HEAD (evidence tip):** `ac44ddd129526749206469121432334705f91b0c` (`ac44ddd` — recorder/model/timeline/detector health projections)
+
+**HEAD (resume gate / docs tip):** `06ae24b18192efe825e5ba6f0831495dd1a8a9c3` (`06ae24b` — handover resume after #273 progress @ `ac44ddd`)
+
+**Completed #273 slices on integration**
+
+1. `11f5b59` — unregister `GET /api/commentary/assignments`
+2. `b4f9b47` — commentary dashboard cut to versioned contracts
+3. `a2792ff` — freeze commentary-runtime error/request goldens
+4. `61b71af` — freeze bounded `/health` commentary summary
+5. `ac44ddd` — freeze recorder/model/timeline/detector health projections (`capture_unavailable`, `detectors.disabled`, library timeline/llm/tape/detectors goldens)
+
+**Working tree:** clean at docs tip `06ae24b`
+
+**Verifier:** `pytest tests/test_commentary_runtime_goldens.py tests/test_narrative_ingress.py -q` → **57** passed
+
+**Next action (#273 — integration only)**
+
+1. Tape/per-channel counters, facts eviction recovery, remaining observability, **or** golden completeness.
+2. Continue remaining #273 AC on `codex/commentary-story-flow-spec` only.
+3. **Do not** open a master PR until the cutover issue says so.
+
+**Blockers / risks:** Do **not** leave the integration branch for this issue-set. Do **not** reopen #272/#284 for slice work. Do **not** merge to master.
+
+## Handover checkpoint — 2026-09-11 (#273 progress @ 61b71af)
+
+**Authoritative issue:** [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) — **OPEN** (v2 health, observability and operator configuration)
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Active branch | `codex/commentary-story-flow-spec` (integration — **only**) |
+| Upstream | `origin/codex/commentary-story-flow-spec` |
+| #272 | **CLOSED**/merged via PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) @ `1c993c0` |
+| #284 | **CLOSED**/merged via PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) @ `77452a9` |
+| Master PR | **None** — **no master PR until cutover** |
+
+**HEAD (evidence tip):** `61b71af0b9052613084f45f574e7c9b0cd7f55e2` (`61b71af` — bounded `/health` commentary summary freeze)
+
+**HEAD (resume gate / docs tip):** `fe8f458063819f88fe77d60acabb6bbdfb94b6cc` (`fe8f458` — handover resume after #273 progress @ `61b71af`)
+
+**Completed #273 slices on integration**
+
+1. `11f5b59` — unregister `GET /api/commentary/assignments`
+2. `b4f9b47` — commentary dashboard cut to versioned contracts
+3. `a2792ff` — freeze commentary-runtime error/request goldens
+4. `61b71af` — freeze bounded `/health` commentary summary
+
+**Working tree:** clean at docs tip `fe8f458`
+
+**Verifier:** `pytest tests/test_commentary_runtime_goldens.py tests/test_api.py -q` → **37** passed
+
+**Next action (#273 — integration only)**
+
+1. Immutable recorder/model/timeline/detector health projections **or** remaining observability (tape counters, facts health).
+2. Continue remaining #273 AC on `codex/commentary-story-flow-spec` only.
+3. **Do not** open a master PR until the cutover issue says so.
+
+**Blockers / risks:** Do **not** leave the integration branch for this issue-set. Do **not** reopen #272/#284 for slice work. Do **not** merge to master.
+
+## Handover checkpoint — 2026-09-11 (#273 progress @ a2792ff)
+
+**Authoritative issue:** [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) — **OPEN** (v2 health, observability and operator configuration)
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Active branch | `codex/commentary-story-flow-spec` (integration — **only**) |
+| Upstream | `origin/codex/commentary-story-flow-spec` |
+| #272 | **CLOSED**/merged via PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) @ `1c993c0` |
+| #284 | **CLOSED**/merged via PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) @ `77452a9` |
+| Master PR | **None** — **no master PR until cutover** |
+
+**HEAD (evidence tip):** `a2792ffd7a44d5d794ea4c8eb4d6e4a1c7c764fa` (`a2792ff` — error/request golden freeze)
+
+**HEAD (resume gate / docs tip):** `71958fbfb8480841c7be416e62c37beac3c11e2b` (`71958fb` — handover resume after #273 progress)
+
+**Completed #273 slices on integration**
+
+1. `11f5b59` — unregister `GET /api/commentary/assignments`
+2. `b4f9b47` — commentary dashboard cut to versioned contracts
+3. `a2792ff` — freeze commentary-runtime error/request goldens
+
+**Working tree:** clean at docs tip `71958fb`
+
+**Verifier:** `pytest tests/test_commentary_runtime_goldens.py tests/test_commentary_http.py -q` → **15** passed
+
+**Next action (#273 — integration only)**
+
+1. Bounded `/health` commentary summary freeze **or** remaining observability (tape counters, facts health, etc.).
+2. Continue remaining #273 AC on `codex/commentary-story-flow-spec` only.
+3. **Do not** open a master PR until the cutover issue says so.
+
+**Blockers / risks:** Do **not** leave the integration branch for this issue-set. Do **not** reopen #272/#284 for slice work. Do **not** merge to master.
+
+## Handover checkpoint — 2026-09-11 (#272 CLOSED)
+
+**Authoritative issue:** [#272](https://github.com/Buchtanen/ir-obs-switcher/issues/272) — **CLOSED** (**4/4** AC; atomic tasks **6/6**)
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent) |
+| Feature branch | `cursor/legacy-v2-shadow-272-cad3` |
+| Upstream | `origin/cursor/legacy-v2-shadow-272-cad3` (tracking) |
+| Base / integration | `codex/commentary-story-flow-spec` @ `77452a9` (PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) merged) |
+| Stack PR | [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) → base `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** — **no master merge** |
+
+**HEAD (feat):** `6cfce0ce24141644fcd1b4e6b45919de35131678` (`6cfce0c` — feat #272 complete shadow harness)
+
+**Chain tip:** first-slice feat `f72eb8c` → partial docs `9a0eee0` → complete feat `6cfce0c` → close docs `5b849b8` → pin `5bad145`
+
+**HEAD (resume gate):** `5bad145236c26cba589690d0b9eba1713653ffea` (`5bad145` — docs pin handover close record)
+
+**Working tree:** clean at docs tip `5bad145`
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #272 | **CLOSED** — AC **4/4** |
+| Dev diary | Steward records feat SHA `6cfce0c` + human close gate |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, `docs/v2.0.0/README.md`, this handover |
+| Verifier | **PASS** — `pytest tests/test_legacy_v2_shadow_compare.py -q` → **16** passed |
+
+**Landed (behavior)**
+
+- Private `FAMILY_ROUTE` maps `lap` → `shadow`; unmigrated families (`timing`, `battle`, `position`, `pit`, `bio`, `incident`, `session`) → `legacy`; unlisted → `legacy` (not CONFIG/API).
+- `adapt_race_state_to_v2` / `adapt_event_envelope_to_v2` — immutable RaceState/EventEnvelope projections for shadow checks.
+- `compare_event_decisions`, `compare_episode_decisions`, `compare_director_decisions` — event/episode/director aspects with `DivergenceRecord` reasons.
+- `observe_family_safely` — fail-soft wrapper; v2 failures, timeouts, and cancellations become divergence rows without crashing callers.
+- `ShadowCompareResult.speech_effects` always `()`; optional `latency_ms` + `evidence` for observability.
+- `REMOVAL_MANIFEST_ENTRIES` + `docs/v2.0.0/final-pr-exclusion-manifest.md` explicit removal list — harness must not survive final v2 cutover PR.
+- No mailbox, TTS, or upstream timeline/fact ownership. Race/commentary **not** wired.
+
+**AC (#272) — all checked**
+
+- [x] Shadow mode is silent and observational
+- [x] One family can be exercised independently as an internal checkpoint
+- [x] v2 failure leaves master loop and legacy families operational (`observe_family_safely` fail-soft evidence)
+- [x] Temporary routing and legacy fallback absent from final release diff (`REMOVAL_MANIFEST_ENTRIES` + exclusion manifest + pytest proof)
+
+**Docs impact:** `CONFIG.md` **none** (no keys); `API.md` **none** (not public); temporary harness listed in `final-pr-exclusion-manifest.md`.
+
+**Blockers / risks:** Do **not** export from `events/__init__.py`. Do **not** add CONFIG/API keys for routing. Harness must be deleted before final v2 cutover PR (#279/#282). Do **not** reopen #272 for slice work.
+
+## Handover checkpoint — 2026-09-11 (#272 first slice — historical)
+
+**Authoritative issue:** [#272](https://github.com/Buchtanen/ir-obs-switcher/issues/272) — was **OPEN** (**2/4** AC at first slice feat `f72eb8c`; superseded by [CLOSED checkpoint](#handover-checkpoint--2026-09-11-272-closed))
+
+## Handover checkpoint — 2026-09-11 (#284 CLOSED)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **CLOSED** (**41/41** AC; human close gate satisfied)
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Feature branch | `cursor/narrative-runtime-284-matrix-cad3` |
+| Upstream | `origin/cursor/narrative-runtime-284-matrix-cad3` (tracking) |
+| Base / integration | `codex/commentary-story-flow-spec` (v2) |
+| Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) **merged** @ `77452a9` → `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** — **no master merge** |
+
+**HEAD (resume gate):** integration `77452a9`; prior docs close record `e8c4a2e`; immutability test `78a1aeb`
+
+**Working tree:** clean at docs tip `e8c4a2e`
+
+**Chain tip:** immutability test `78a1aeb` → TDD-exception record `777843d` → close record `e8c4a2e`
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | **CLOSED** — AC **41/41** |
+| Dev diary | Steward records human close gate |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover |
+| Verifier | **PASS** (unchanged) — core subset **237**; related **333** |
+
+**Next action (v2 integration — not #284)** — superseded by [#273 progress checkpoint](#handover-checkpoint--2026-09-11-273-progress--75e128d)
+
+1. ~~Merge stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289)~~ — **done** @ `77452a9`.
+2. ~~#272 legacy↔v2 shadow harness~~ — **done**/merged via PR [#290](https://github.com/Buchtanen/ir-obs-switcher/pull/290) @ `1c993c0`.
+3. ~~#273 early slices~~ — assignments `11f5b59`, dashboard contracts `b4f9b47`, error goldens `a2792ff`, bounded `/health` freeze `61b71af`, component health projections `ac44ddd`, tape drop/size/`purposeCounts` counters `aed3d1b`/`606ac8f`, byTapeChannel funnel bounds `466c2f3`/`25c7204`/`b01f7a6` (PR [#291](https://github.com/Buchtanen/ir-obs-switcher/pull/291) **MERGED**) landed on integration.
+4. ~~**Expose event-versus-successor decisions and queue age/expiry reasons**~~ — **done**/merged via PR [#292](https://github.com/Buchtanen/ir-obs-switcher/pull/292) @ `75e128d`.
+5. **Current:** ~~**Expose fixed EN, catalog hash, desired/effective config hashes, apply sequence and pending boundaries**~~ **DONE** @ `b751d70` on integration only.
+6. Master cutover only when cutover issue says so.
+
+**Blockers / risks:** Do **not** open a master PR. Do **not** merge to master. #284 and #272 are closed — do not reopen for slice work.
+
+## Handover checkpoint — 2026-09-10 (#284 process TDD AC TDD-exception)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **OPEN** (**41/41** AC checked; process TDD AC closed via human-accepted TDD-exception; pending non-AC close gate / human close)
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Feature branch | `cursor/narrative-runtime-284-matrix-cad3` |
+| Upstream | `origin/cursor/narrative-runtime-284-matrix-cad3` (tracking) |
+| Base / integration | `codex/commentary-story-flow-spec` (v2) |
+| Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → base `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** (v2 cutover gate) |
+
+**HEAD (resume gate):** `777843d` (docs tip; immutability test `78a1aeb`)
+
+**Working tree:** clean at docs tip `777843d`
+
+**Chain tip:** immutability test `78a1aeb` → docs tips through `ed138a1` → TDD-exception record `777843d`
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | OPEN — AC **41/41**; do **not** close (non-AC close gate / human close pending) |
+| Dev diary | Steward records human-accepted TDD-exception; process TDD AC flipped → **41/41**; issue stays OPEN |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover |
+| Verifier | **PASS** (unchanged) — core subset **237**; related **333** |
+
+**TDD phase:** GREEN; process TDD AC closed via human-accepted TDD-exception (scoped to historical checkbox only)
+
+**TDD-exception record**
+
+- **TDD-exception:** Add focused pytest/pytest-asyncio tests before behavior code.
+- **Reason:** behavior already landed in prior slices; cannot honestly claim tests-first retrospectively.
+- **Alternative verification:** existing `NarrativeRuntime` + actor-transition matrix/ordering/races/immutability pytest evidence.
+- **Risk:** process dilution — scoped to this historical checkbox only.
+
+**Next action (non-AC work)**
+
+1. `planningCycleId` advancement **race tape wire** (library-only evidence landed; live race tape still open).
+2. Deeper bounded shutdown/tape-run product wiring + owned-effects race wiring remainder.
+3. #273 master cutover (human kick).
+4. Issue close gate (human).
+
+**Blockers / risks:** Do not close #284 without human close gate. Do not open a master PR. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) stays draft to v2 base only.
+
+## Handover checkpoint — 2026-09-10 (#284 upstream snapshot immutability)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **OPEN** (**40/41** AC checked at that checkpoint — superseded by [process TDD AC TDD-exception checkpoint](#handover-checkpoint--2026-09-10-284-process-tdd-ac-tdd-exception) above)
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Feature branch | `cursor/narrative-runtime-284-matrix-cad3` |
+| Upstream | `origin/cursor/narrative-runtime-284-matrix-cad3` (tracking) |
+| Base / integration | `codex/commentary-story-flow-spec` (v2) |
+| Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → base `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** (v2 cutover gate) |
+
+**HEAD (resume gate):** `5b71246` (docs tip; immutability test `78a1aeb`)
+
+**Working tree:** clean at docs tip `5b71246` (immutability test `78a1aeb`)
+
+**Chain tip:** AC5 matrix embed docs `9b0c860` → docs handover `b4203bc` → immutability test `78a1aeb` → docs-keeper `e782f8c` → tip-align `d85ed05` → tip pin `5b71246`
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | OPEN — slice landed; AC **40/41** (**1** remain); do **not** close |
+| Dev diary | Steward flip upstream-immutability AC → **40/41**; **process TDD AC intentionally not flipped**; issue stays OPEN |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover |
+| Verifier | **PASS** — `tests/test_narrative_runtime.py` **157**; core subset **237**; related **333** |
+
+**TDD phase:** GREEN (tests-only immutability evidence)
+
+**Last evidence commands**
+
+- `pytest tests/test_narrative_runtime.py tests/test_coalesce_policy.py tests/test_narrative_ingress.py tests/test_actor_transition_goldens.py -q` → **237** passed
+- `pytest tests/test_narrative_runtime.py tests/test_narrative_tape_bridge.py -q` → **161** passed
+
+**Slice landed (immutable SHAs)**
+
+- `5b71246` — docs(#284): pin handover docs tip to branch HEAD (**current docs tip**)
+- `d85ed05` — docs(#284): align checkpoint HEAD resume gate with `e782f8c`
+- `e782f8c` — docs(#284): handover resume gate after upstream snapshot immutability (40/41)
+- `78a1aeb` — test(#284): assert upstream timeline/feature/detector snapshots stay immutable (**current feat/test resume gate**)
+- `9b0c860` — docs(#284): embed complete actor command and transition matrices (prior AC5 matrix embed)
+- `b4203bc` — docs(#284): handover resume gate after AC5 matrix embed (prior docs tip)
+
+**Landed this slice (behavior)**
+
+- `tests/test_narrative_runtime.py` — `test_runtime_does_not_back_mutate_upstream_timeline_or_fact_snapshots` (frozen `StreamTimeline`/`FactView` in context batches; caller mutation cannot rewrite admitted batch; property accessors return fresh dicts); `test_runtime_reads_detector_bank_status_without_stepping_or_owning_engines` (`DetectorBank.disabled_for_status()` read-only; no `step()`; no `StreamTimeline`/`FeatureEngine` ownership on `NarrativeRuntime`)
+- **Docs:** branch inflight/handover/`domeny/events.md` synced here; **API.md / CONFIG.md / README unchanged** (tests-only)
+- **Process AC:** **intentionally not flipped** — remains the sole unchecked AC; human STOP before claiming #284 closed
+
+**Next action (sole unchecked AC)**
+
+1. **Process TDD AC** — “tests before behavior” (not retrospectively claimed; human gate).
+
+**Blockers / risks:** Do not close #284 or open a master PR. Do not flip process TDD AC without human review. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) stays draft to v2 base only.
+
+## Handover checkpoint — 2026-09-10 (#284 AC5 matrix embed)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **OPEN** (**39/41** AC checked, **2** remain at that checkpoint) — superseded by [upstream snapshot immutability checkpoint](#handover-checkpoint--2026-09-10-284-upstream-snapshot-immutability) above
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Feature branch | `cursor/narrative-runtime-284-matrix-cad3` |
+| Upstream | `origin/cursor/narrative-runtime-284-matrix-cad3` (tracking) |
+| Base / integration | `codex/commentary-story-flow-spec` (v2) |
+| Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → base `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** (v2 cutover gate) |
+
+**HEAD (resume gate):** `b4203bc` (docs; matrix embed `9b0c860`; feat/test gate `5f4eb61`)
+
+**Working tree:** clean at docs tip `b4203bc` (matrix embed `9b0c860`; feat/test gate `5f4eb61`)
+
+**Chain tip:** ordering+races test `5f4eb61` → docs `5754278` → AC5 matrix embed docs `9b0c860` → docs-keeper handover `b4203bc`
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | OPEN — slice landed; AC **39/41** (**2** remain); do **not** close |
+| Dev diary | Steward flip AC → **39/41** (**2** remain); issue stays OPEN |
+| Docs-keeper | Updated `docs/v2.0.0/actor-transition-contract.md`, `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover |
+| Verifier | **PASS** — core subset **235** unchanged (docs-only); related **331** |
+
+**TDD phase:** GREEN (docs-only; no new tests)
+
+**Last evidence commands**
+
+- `pytest tests/test_narrative_runtime.py tests/test_coalesce_policy.py tests/test_narrative_ingress.py tests/test_actor_transition_goldens.py -q` → **235** passed
+- `pytest tests/test_narrative_runtime.py tests/test_narrative_tape_bridge.py -q` → **159** passed
+
+**Slice landed (immutable SHAs)**
+
+- `b4203bc` — docs(#284): handover resume gate after AC5 matrix embed (39/41) — superseded by `78a1aeb`
+- `9b0c860` — docs(#284): embed complete actor command and transition matrices (AC5 matrix embed)
+- `5f4eb61` — test(#284): library evidence for ordering and completion races (feat/test gate)
+
+**Landed this slice (behavior)**
+
+- `docs/v2.0.0/actor-transition-contract.md` — complete **17**-command inventory table + **85** lane×command disposition matrix embedded from frozen machine; library-only completion race wording aligned with ordering+races tests
+- **Docs:** branch inflight/handover/`domeny/events.md` synced here; **API.md / CONFIG.md / README unchanged** (docs-only)
+
+**Next 2 actions (priority order)**
+
+1. **Upstream snapshot immutability** — actor receives immutable upstream snapshots without back-mutation.
+2. **Process TDD AC** — “tests before behavior” (not retrospectively claimed).
+
+**Blockers / risks:** Do not close #284 or open a master PR. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) stays draft to v2 base only.
+
+## Handover checkpoint — 2026-09-10 (#284 ordering+races verification)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **OPEN** (**38/41** AC checked, **3** remain) — superseded by [AC5 matrix embed checkpoint](#handover-checkpoint--2026-09-10-284-ac5-matrix-embed) above
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Feature branch | `cursor/narrative-runtime-284-matrix-cad3` |
+| Upstream | `origin/cursor/narrative-runtime-284-matrix-cad3` (tracking) |
+| Base / integration | `codex/commentary-story-flow-spec` (v2) |
+| Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → base `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** (v2 cutover gate) |
+
+**HEAD (resume gate):** `5754278` (docs; feat/test gate `5f4eb61`)
+
+**Working tree:** clean at docs tip `5754278` (feat/test gate `5f4eb61`)
+
+**Chain tip:** cancel/disable/transition test `d9089a1` → docs `9ac76b7` → ordering+races test `5f4eb61` → docs `5754278`
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | OPEN — slice landed; AC **38/41** (**3** remain); do **not** close |
+| Dev diary | Steward flip AC → **38/41** (**3** remain); issue stays OPEN |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover |
+| Verifier | **PASS** — `tests/test_narrative_runtime.py` **155**; combined core subset **235**; related **331** |
+
+**TDD phase:** GREEN
+
+**Last evidence commands**
+
+- `pytest tests/test_narrative_runtime.py tests/test_coalesce_policy.py tests/test_narrative_ingress.py tests/test_actor_transition_goldens.py -q` → **235** passed
+- `pytest tests/test_narrative_runtime.py tests/test_narrative_tape_bridge.py -q` → **159** passed
+
+**Slice landed (immutable SHAs)**
+
+- `5f4eb61` — test(#284): library evidence for ordering and completion races (**current resume gate**)
+- `d9089a1` — test: cover #284 cancel-on-disable, timeline transition, config boundary (prior slice)
+
+**Landed this slice (behavior)**
+
+- `tests/test_narrative_runtime.py` — `test_narrative_runtime_same_time_external_before_callback_order` (maps `orderingScenarios.same_time_external_before_callback`); `test_narrative_runtime_same_time_callback_before_reset_order` (maps `same_time_callback_before_reset`); `test_narrative_runtime_deadline_before_result_race` (maps `raceTraces.deadline_before_result`); `test_narrative_runtime_reset_before_result_race` (maps `reset_before_result`); `test_narrative_runtime_config_generation_then_completion_race` (library-only config-generation race); `test_narrative_runtime_validity_expiry_before_completion_race` (library-only validity-expiry race)
+- **Docs:** branch inflight/handover/`domeny/events.md` synced here; **API.md / CONFIG.md / README unchanged** (tests-only)
+
+**Next 3 actions (priority order)**
+
+1. **`planningCycleId` advancement race tape wire** — library-only evidence landed; live race tape still open.
+2. **Process AC + transition matrices doc + upstream snapshot immutability.**
+3. **Remaining PARTIAL clusters** — deeper tape-run product wiring, owned-effects race wiring remainder; #273 master cutover (human kick).
+
+**Blockers / risks:** Do not close #284 or open a master PR. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) stays draft to v2 base only.
+
+## Handover checkpoint — 2026-09-10 (#284 cancel-on-disable / transition / config-boundary)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **OPEN** (**36/41** AC checked, **5** remain) — superseded by [ordering+races verification checkpoint](#handover-checkpoint--2026-09-10-284-orderingraces-verification) above
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Feature branch | `cursor/narrative-runtime-284-matrix-cad3` |
+| Upstream | `origin/cursor/narrative-runtime-284-matrix-cad3` (tracking) |
+| Base / integration | `codex/commentary-story-flow-spec` (v2) |
+| Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → base `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** (v2 cutover gate) |
+
+**HEAD (resume gate):** `9ac76b7` (docs; feat/test gate `d9089a1`) — superseded by test `5f4eb61`
+
+**Working tree:** clean at docs tip `9ac76b7` (feat/test gate `d9089a1`) — superseded
+
+**Chain tip:** overflow model-tests test `f465bfd` → cancel/disable/transition test `d9089a1` → docs `9ac76b7` — superseded
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | OPEN — slice landed; AC **36/41** (**5** remain); do **not** close — superseded |
+| Dev diary | Steward flip AC → **36/41** (**5** remain); issue stays OPEN — superseded |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover — superseded |
+| Verifier | **PASS** — `tests/test_narrative_runtime.py` **149**; `tests/test_narrative_tape_bridge.py` **4**; combined core subset **229**; related **325** — superseded |
+
+**TDD phase:** GREEN
+
+**Last evidence commands**
+
+- `pytest tests/test_narrative_runtime.py tests/test_coalesce_policy.py tests/test_narrative_ingress.py tests/test_actor_transition_goldens.py -q` → **229** passed
+- `pytest tests/test_narrative_runtime.py tests/test_narrative_tape_bridge.py -q` → **153** passed
+
+**Slice landed (immutable SHAs)**
+
+- `d9089a1` — test: cover #284 cancel-on-disable, timeline transition, config boundary (**current resume gate**)
+- `f465bfd` — test(narrative-runtime): overflow manual linearization, deadline skip, quarantine (#284) (prior slice)
+
+**Landed this slice (behavior)**
+
+- `tests/test_narrative_runtime.py` — `test_timeline_transition_cancels_building_and_stale_deadline_generations` (`building_cancelled`, deadline cancel/arm, `stale_silence_generation`, `stale_validity_generation`); `test_disable_with_tape_effect_flushes_tape` (`narrative_run_closed`, `building_cancelled_on_disable`, `effect:flush_tape`); `test_config_then_timeline_transition_cancels_building` (config rearm then transition cancel)
+- `tests/test_narrative_tape_bridge.py` — `test_open_writer_flush_effect_closes_on_disable` (`effect:flush_tape` through owned `tape_effect`)
+- **Docs:** branch inflight/handover/`domeny/events.md` synced here; **API.md / CONFIG.md / README unchanged** (tests-only)
+
+**Next 3 actions (priority order)**
+
+1. **`planningCycleId` advancement race tape wire** — library-only evidence landed; live race tape still open.
+2. **Process AC + transition matrices doc + upstream snapshot immutability.**
+3. **Remaining PARTIAL clusters** — deeper tape-run product wiring, owned-effects race wiring remainder; #273 master cutover (human kick).
+
+**Blockers / risks:** Do not close #284 or open a master PR. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) stays draft to v2 base only.
+
+## Handover checkpoint — 2026-09-10 (#284 overflow linearization model-tests)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **OPEN** (**35/41** AC checked, **6** remain) — superseded by [cancel-on-disable / transition / config-boundary checkpoint](#handover-checkpoint--2026-09-10-284-cancel-on-disable--transition--config-boundary) above
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Feature branch | `cursor/narrative-runtime-284-matrix-cad3` |
+| Upstream | `origin/cursor/narrative-runtime-284-matrix-cad3` (tracking) |
+| Base / integration | `codex/commentary-story-flow-spec` (v2) |
+| Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → base `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** (v2 cutover gate) |
+
+**HEAD (resume gate):** `5bc84ad` (docs after test `f465bfd` overflow linearization model-tests)
+
+**Working tree:** clean at docs tip `5bc84ad` (feat/test gate `f465bfd`)
+
+**Chain tip:** live verify-frame feat `a1ba998` → overflow model-tests test `f465bfd` → docs pending
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | OPEN — slice landed; AC **35/41** (**6** remain); do **not** close — superseded |
+| Dev diary | Posted [issuecomment-5626067291](https://github.com/Buchtanen/ir-obs-switcher/issues/284#issuecomment-5626067291) |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover — superseded |
+| Verifier | **PASS** — `tests/test_actor_transition_goldens.py` **32**; combined core subset **226**; related **318** — superseded |
+
+**TDD phase:** GREEN
+
+**Last evidence commands**
+
+- `pytest tests/test_narrative_runtime.py tests/test_coalesce_policy.py tests/test_narrative_ingress.py tests/test_actor_transition_goldens.py -q` → **226** passed
+- `pytest tests/test_actor_transition_goldens.py -q` → **32** passed
+
+**Slice landed (immutable SHAs)**
+
+- `f465bfd` — test(narrative-runtime): overflow manual linearization, deadline skip, quarantine (#284) (**current resume gate**)
+- `a1ba998` — feat: attach live #270 verify frames on authored/template realization (#284) (prior slice)
+
+**Landed this slice (behavior)**
+
+- `tests/test_actor_transition_goldens.py` — `_fill_ordinary_partition`; `test_narrative_runtime_manual_full_partition_linearization` (`mailbox_overloaded`, latch abandon); `test_narrative_runtime_deadline_admission_skipped_under_overflow` (`deadline_admission_skipped`); `test_narrative_runtime_quarantined_cannot_admit_under_overflow` (quarantine + overflow fail-soft)
+- **Docs:** branch inflight/handover/`domeny/events.md` synced here; **API.md / CONFIG.md / README unchanged** (tests-only)
+
+**Next 3 actions (priority order)**
+
+1. **Cancel-on-disable + `streamEpoch` race tape wire** — library evidence landed; race tape wire still open.
+2. **`planningCycleId` advancement race tape wire** — library evidence + goldens landed; live race tape wire still open.
+3. **Remaining PARTIAL clusters** — deeper tape-run product wiring, owned-effects race wiring remainder, process AC; #273 master cutover (human kick).
+
+**Blockers / risks:** Do not close #284 or open a master PR. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) stays draft to v2 base only.
+
+## Handover checkpoint — 2026-09-10 (#284 live verify-frame attachment)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **OPEN** (**34/41** AC checked, **7** remain) — superseded by [overflow linearization model-tests checkpoint](#handover-checkpoint--2026-09-10-284-overflow-linearization-model-tests) above
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Feature branch | `cursor/narrative-runtime-284-matrix-cad3` |
+| Upstream | `origin/cursor/narrative-runtime-284-matrix-cad3` (tracking) |
+| Base / integration | `codex/commentary-story-flow-spec` (v2) |
+| Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → base `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** (v2 cutover gate) |
+
+**HEAD (resume gate):** `a1ba998` (`feat: attach live #270 verify frames on authored/template realization (#284)`)
+
+**Working tree:** dirty (branch docs pending parent commit; feat `a1ba998` landed)
+
+**Chain tip:** fact-only feat `dd64047` → live verify-frame feat `a1ba998` → docs pending
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | OPEN — slice landed; AC **34/41** (**7** remain); do **not** close |
+| Dev diary | Pending for feat SHA `a1ba998` |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover |
+| Verifier | **PASS** — `tests/test_narrative_runtime.py` **146**; `tests/test_narrative_realization_bridge.py` **5**; `tests/test_coalesce_policy.py` **3**; `tests/test_narrative_ingress.py` **45**; combined with goldens **223**; related **315** |
+
+**TDD phase:** GREEN
+
+**Last evidence commands**
+
+- `pytest tests/test_narrative_runtime.py tests/test_coalesce_policy.py tests/test_narrative_ingress.py tests/test_actor_transition_goldens.py -q` → **223** passed
+- Full related suite (18 files listed in inflight status) → **315** passed
+
+**Slice landed (immutable SHAs)**
+
+- `a1ba998` — feat: attach live #270 verify frames on authored/template realization (#284) (**current resume gate**)
+- `dd64047` — feat: fact-only wait, shared coalesce lists, narrative/manual callbacks (#284) (prior slice)
+
+**Landed this slice (behavior)**
+
+- `events/narrative_verify_frame.py` — `VerifyFrame`, `stash_live_verify_frame`, `take_live_verify_frame` (side-stash keyed by requestId/requestOrdinal/dispatchGeneration; not exported)
+- `events/narrative_realization_bridge.py` — `realize_authored_speech`, `template_speech`, `SpeechDraft.verify_frame`; stashes frame before `REALIZATION_SUCCEEDED` (frozen `realization-result/2` payload stays verify-free)
+- `events/narrative_runtime.py` — `_verify_frame_fields` merges token + live stash + payload; effect `verify_frame_attached_live` when stash-sourced; skip-no-frame mainly for Qwen/unframed
+- **Docs:** branch inflight/handover/`domeny/events.md` synced here; **API.md / CONFIG.md / README unchanged** (internal effects)
+
+**Next 3 actions (priority order)**
+
+1. **Manual linearization-under-overflow model-test** — actor-transition goldens overflow scenario.
+2. **Remaining PARTIAL clusters** — upstream snapshot immutability, cancel-on-transition, complete transition matrices doc, process AC.
+3. **#273 remainder** — master cutover only (human kick).
+
+**Blockers / risks:** Do not close #284 or open a master PR. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) stays draft to v2 base only.
+
+## Handover checkpoint — 2026-09-10 (#284 fact-only wait / coalesce / callbacks)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **OPEN** (**34/41** AC checked, **7** remain) — superseded by [live verify-frame attachment checkpoint](#handover-checkpoint--2026-09-10-284-live-verify-frame-attachment) above
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Feature branch | `cursor/narrative-runtime-284-matrix-cad3` |
+| Upstream | `origin/cursor/narrative-runtime-284-matrix-cad3` (tracking) |
+| Base / integration | `codex/commentary-story-flow-spec` (v2) |
+| Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → base `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** (v2 cutover gate) |
+
+**HEAD (resume gate):** `d6789a0` (style tip; feat `dd64047`) (`feat: fact-only wait, shared coalesce lists, narrative/manual callbacks (#284)`)
+
+**Working tree:** clean at tip `d6789a0`
+
+**Chain tip:** health/API feat `cffaab1` → fact-only feat `dd64047` → docs `ddac717` → style `d6789a0`
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | OPEN — slice landed; AC **34/41** (**7** remain); do **not** close |
+| Dev diary | Posted for feat SHA `dd64047` |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover |
+| Verifier | **PASS** — `tests/test_narrative_runtime.py` **144**; `tests/test_coalesce_policy.py` **3**; `tests/test_narrative_ingress.py` **45**; combined with goldens **221**; related **311** |
+
+**TDD phase:** GREEN
+
+**Last evidence commands**
+
+- `pytest tests/test_narrative_runtime.py tests/test_coalesce_policy.py tests/test_narrative_ingress.py tests/test_actor_transition_goldens.py -q` → **221** passed
+- Full related suite (18 files listed in inflight status) → **311** passed
+
+**Slice landed (immutable SHAs)**
+
+- `dd64047` — feat: fact-only wait, shared coalesce lists, narrative/manual callbacks (#284) (**current resume gate**)
+- `cffaab1` — feat: complete actor/recovery reason codes on health/API (#284) (prior slice)
+
+**Landed this slice (behavior)**
+
+- `contracts/coalesce_policy.py` — shared `COALESCE_FIELD_PATHS` for mailbox, `NarrativeCommand.coalesce_key`, and `build_actor_transition_model.py`
+- Pure FactView `APPLY_CONTEXT_BATCH` without planning impulse → `fact_only_wait` (cancel building, no replan)
+- Narrative vs manual playback accept + terminal callback branches; silence pause on accept / rearm on terminal; `_terminal_director_policy` `replan_if_enabled|never`
+- **Docs:** branch inflight/handover/`domeny/events.md` synced here; **API.md / CONFIG.md / README unchanged**
+
+**Next 3 actions (priority order)**
+
+1. ~~**Live verify-frame attachment**~~ — **landed** feat `a1ba998`.
+2. **Manual linearization-under-overflow model-test** — actor-transition goldens overflow scenario.
+3. **Remaining PARTIAL clusters** — upstream snapshot immutability, cancel-on-transition, complete transition matrices doc, process AC.
+
+**Blockers / risks:** Do not close #284 or open a master PR. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) stays draft to v2 base only.
+
+## Handover checkpoint — 2026-09-10 (#284 actor-transition model-tests)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **OPEN** (**31/41** AC checked, **10** remain) — superseded by [health/API reason-code schema checkpoint](#handover-checkpoint--2026-09-10-284-healthapi-reason-code-schema) above
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Feature branch | `cursor/narrative-runtime-284-matrix-cad3` |
+| Upstream | `origin/cursor/narrative-runtime-284-matrix-cad3` (tracking, in sync) |
+| Base / integration | `codex/commentary-story-flow-spec` (v2) |
+| Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → base `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** (v2 cutover gate) |
+
+**HEAD:** `93ff7e0` (`docs: record #284 actor-transition model-tests (AC 31/41)`); immutable test SHA `fe70f2a`
+
+**Working tree:** **clean** (no uncommitted files at test SHA; docs update pending parent commit)
+
+**Chain tip:** prior replay closure `b86a336` → model-tests `fe70f2a` → docs `93ff7e0`
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | OPEN — slice landed; AC **31/41** (**10** remain); do **not** close |
+| Dev diary | Published with test SHA `fe70f2a`; docs SHA `93ff7e0` |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover |
+| Verifier | **PASS** — `tests/test_actor_transition_goldens.py` **29** passed; `tests/test_narrative_runtime.py` **140**; combined **169** |
+
+**TDD phase:** GREEN (tests-only slice)
+
+**Last evidence commands**
+
+- `pytest tests/test_actor_transition_goldens.py -q` → **29** passed
+- `pytest tests/test_narrative_runtime.py tests/test_actor_transition_goldens.py -q` → **169** passed
+
+**Slice landed (immutable SHAs)**
+
+- `93ff7e0` — docs: record #284 actor-transition model-tests (AC 31/41) (**current HEAD**)
+- `fe70f2a` — test: model-test actor raceTraces and overflowScenarios (#284)
+- `b86a336` — feat: close reducer journal replay for director+Qwen (#284) (prior slice)
+
+**Landed this slice (behavior)**
+
+- New `tests/test_actor_transition_goldens.py` parametrizes frozen goldens: trace/overflow/ordering model-tests + builder/on-disk sync + **2** runtime race evidence rows
+- `machine/` hashes unchanged; no runtime behavior change
+- **Docs:** inflight + v2 handover + `domeny/events.md`; **`API.md` / `CONFIG.md` unchanged**
+
+**Next 3 actions (priority order)**
+
+1. **Health/API reason-code schema** — full reason-code completeness; capacity/timeout config impact note.
+2. **Fact-only wait** — semantics + manual linearization-under-overflow model-test.
+3. **Live verify-frame attachment** — verify frame on template/authored paths.
+
+**Blockers / risks:** Do not close #284 or open a master PR. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) stays draft to v2 base only. **Docs: `API.md` / `CONFIG.md` unchanged** for model-tests slice.
+
+## Handover checkpoint — 2026-09-10 (#284 replay closure)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **OPEN** (**30/41** AC checked, **11** remain) — superseded by model-tests checkpoint above
+
+**Integration context**
+
+| Field | Value |
+| --- | --- |
+| Repository | `Buchtanen/ir-obs-switcher` |
+| Worktree | `/workspace` (cloud agent); linked local: `/home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec` |
+| Feature branch | `cursor/narrative-runtime-284-matrix-cad3` |
+| Upstream | `origin/cursor/narrative-runtime-284-matrix-cad3` (tracking, in sync) |
+| Base / integration | `codex/commentary-story-flow-spec` (v2) |
+| Stack PR | [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) draft → base `codex/commentary-story-flow-spec` (**not** master) |
+| Master PR | **None** (v2 cutover gate) |
+
+**HEAD:** `da827222dce096506d862678d54a1adbeeff6a64` (`da82722` — docs: handover checkpoint #284 replay closure)
+
+**Working tree:** **clean** (no uncommitted files)
+
+**Chain tip:** feat `b86a336` → docs `8e19c9a` → style `bfdbd56` → handover `da82722`
+
+**`/flow` steps for this slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | OPEN — slice landed; AC **30/41** (**11** remain); do **not** close |
+| Dev diary | Published with immutable feat SHA (`b86a336`); docs SHA `8e19c9a` |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover (`8e19c9a` + this checkpoint) |
+| Verifier | **PASS** — replay/journal suite **14** passed; `tests/test_narrative_runtime.py` **140** unchanged; ruff/black clean after `bfdbd56` |
+
+**TDD phase:** GREEN / N/A (library slice complete)
+
+**Last evidence commands**
+
+- `pytest tests/test_narrative_reducer_replay.py tests/test_narrative_command_journal.py -q` → **14** passed
+- `pytest tests/test_narrative_runtime.py -q` → **140** passed
+
+**Slice landed (immutable SHAs)**
+
+- `da82722` — docs: handover checkpoint #284 replay closure (**current HEAD**)
+- `bfdbd56` — style: black-format replay closure tests (#284)
+- `8e19c9a` — docs: record #284 replay closure (AC 30/41)
+- `b86a336` — feat: close reducer journal replay for director+Qwen (#284) (immutable feat)
+- `44dab2f` — feat: drop commentary stream mirror for EventSubscription replace (#284) (prior slice)
+- `c6ffbe3` — feat: NarrativeRuntime sole-writes ExposureStore on playback (#284) (prior slice)
+
+**Landed this slice (behavior)**
+
+- Replay closure: `command_from_dict` rebuilds `REALIZATION_SUCCEEDED`/`FAILED`; optional `runtime_factory` for seeded `StoryDirector`; journal replay reproduces `director_selected` + committed lane when recorded realization supplied
+- Race path still append-only (`command_journal_path=`); helpers not exported from `events/__init__.py`
+- **Docs:** inflight + v2 handover + `domeny/events.md`; **`API.md` / `CONFIG.md` unchanged**
+
+**Next 3 actions (priority order)** — superseded by [model-tests checkpoint](#handover-checkpoint--2026-09-10-284-actor-transition-model-tests) above
+
+1. ~~**Model tests**~~ — **landed** (test `fe70f2a`).
+2. **Health/API reason-code schema** — full reason-code completeness; capacity/timeout config impact note.
+3. **Fact-only wait / live verify-frame** — fact-only wait semantics + live verify-frame attachment on template/authored paths.
+
+**Blockers / risks:** Do not close #284 or open a master PR. Stack PR [#289](https://github.com/Buchtanen/ir-obs-switcher/pull/289) stays draft to v2 base only. One file cluster has one editing owner at a time. **Docs: `API.md` / `CONFIG.md` unchanged** for replay-closure slice.
+
+## Handover checkpoint — 2026-09-10 (#284 EventSubscription)
+
+**Authoritative issue:** [#284](https://github.com/Buchtanen/ir-obs-switcher/issues/284) — **OPEN** (**29/41** AC checked, **12** remain) — superseded by replay-closure checkpoint above
+
+**HEAD (prior):** `44dab2f5edc394d56d2c2596428fb73cf904f61d` (`44dab2f` — feat: drop commentary stream mirror for EventSubscription replace (#284))
+
+**Working tree (prior):** clean (no uncommitted files)
+
+**`/flow` steps for prior slice**
+
+| Step | Status |
+| --- | --- |
+| Issue #284 | OPEN — slice landed; AC **29/41** |
+| Dev diary | Published with immutable SHA (`44dab2f`) |
+| Docs-keeper | Updated `docs/dokumentace/inflight/README.md`, `docs/dokumentace/domeny/events.md`, this handover |
+| Verifier | **PASS** — `tests/test_narrative_runtime.py` **140** passed; ruff/black/mypy clean |
+
+**TDD phase:** GREEN / N/A (library slice complete)
+
+**Last evidence command:** `pytest tests/test_narrative_runtime.py -q` → **140** passed
+
+**Slice landed (immutable SHAs)**
+
+- `44dab2f` — feat: drop commentary stream mirror for EventSubscription replace (#284)
+- `c6ffbe3` — feat: NarrativeRuntime sole-writes ExposureStore on playback (#284) (prior slice)
+
+**Next 3 actions (priority order)**
+
+1. **Replay closure** — director decisions + recorded Qwen beyond current journal harness.
+2. **Model tests** — full matrix `raceTraces` / `overflowScenarios` as pytest model-tests.
+3. **Health/API reason-code schema** — full reason-code completeness; capacity/timeout config impact note.
+
+**Blockers / risks:** Do not close #284 or open a master PR. One file cluster has one editing owner at a time. **Docs: `API.md` / `CONFIG.md` unchanged** for EventSubscription full-replace slice.
+
+## Resume commands
+
+```bash
+cd /workspace   # or the linked local worktree: /home/richa/Dokumenty/ChatGPT/iROBSwitcher-story-flow-spec
+pwd
+git status --short --branch
+git rev-parse HEAD          # expect b01f7a6 integration tip (feat 466c2f3, docs 25c7204, style b01f7a6) on integration
+git rev-parse @{upstream}
+git branch --show-current   # must be: codex/commentary-story-flow-spec (integration only)
+pytest tests/test_commentary_runtime_goldens.py tests/test_narrative_ingress.py tests/test_narrative_tape_queue.py -q   # expect 73 passed at b01f7a6
+pytest tests/test_narrative_runtime.py tests/test_coalesce_policy.py tests/test_narrative_ingress.py tests/test_actor_transition_goldens.py -q   # expect 240 passed (#284 core)
+pytest tests/test_actor_transition_goldens.py -q   # expect 32 passed
+```
+
+Expected before resuming: worktree on integration branch `codex/commentary-story-flow-spec` only, local HEAD/upstream relationship understood, **#235–#272, #283, #262, #284 implemented/closed**, **#273 OPEN** with slices through integration tip `75e128d` (feat `75e128d`; PR [#292](https://github.com/Buchtanen/ir-obs-switcher/pull/292) **MERGED**), clean working tree (or intentionally scoped dirty files matching the ownership section), and **no master PR / no master merge**. Do not resume #239–#272 or #284 — those checkpoints are complete. Next work is #273 remainder on the integration branch (~~**Expose fixed EN, catalog hash, desired/effective config hashes, apply sequence and pending boundaries**~~ **DONE** @ `b751d70`). If path, branch, SHA or dirty-file ownership differs from [Handover checkpoint — 2026-09-11 (#273 progress @ 75e128d)](#handover-checkpoint--2026-09-11-273-progress--75e128d), stop and reconcile before editing.
+
+## Known risks
+
+- A pushed `codex/**` branch previously skipped CI; this checkpoint adds it to the CI trigger.
+- Freeze builders were manual-only; this checkpoint adds an explicit CI job while branch-only artifacts exist.
+- Local git hooks are intentionally not installed: linked worktrees share the repository hook directory and the current installer assumes `.git` is a directory. Installing it from this worktree would affect unrelated dirty branches. CI plus explicit `/qa` remains the safe gate until a separately reviewed worktree-aware hook policy exists.
+- Multiple worktrees exist, so path verification is mandatory.
+- Quota exhaustion does not automatically transfer ownership. Resume from this file plus the latest issue diary.
+- Mailbox foundation alone is not live actor acceptance: remainder of full #273 golden health (master cutover only — human kick; loop supervisor heartbeats landed `952cc1d`; legacy validate/speak cutover landed `f2c1f1b`; live TTS voice/quarantine landed `17a84eb`), deeper tape-run multi-file product wiring beyond live command journal append (library helpers at `2a555df`; race append + replay fingerprint fix at `b0f7646`; reducer-trace harness at `1f509b8`; replay closure at `b86a336`), and master service activation remain #284 even though thin identity + speech/language/components + bounded decisions ring + validate/speak thin slice + `ManualAdmissionLatch` thin slice + status_ready stub slice + live catalog/config/episodes/byTapeChannel status projection + components llm/tts schema stubs + live llm/tts residency + llm `lastAttempt` + live detectors/facts status projection (`d13d6bd`) + timeline session identity (null stubs + live APPLY_CONTEXT wiring) + bounded `/health` `commentary` landed at `9362084` + `93f9fb8` + `51dc1d1` + `65651bc` + `ca0f2f6` + `03c34b2` + `3670502` + `f58c992` + `ccd0697` + `bdb9633` + `60565ae` + `19887aa` + `17a84eb` and the library slice already reduces in mailbox order, owns silence/validity/realization/speech deadline timers, optionally composes FreshnessGate on the commit path when injected, projects recovery diagnostics on `RuntimeStatus`, and the shadow race path now runs async `run()` through commit/shutdown (feat `dfd5a8e`); EventSubscription full replace landed (`44dab2f`); actor-transition model-tests landed (test `fe70f2a`); health/API reason-code schema landed (feat `cffaab1`); fact-only wait landed (`dd64047`); live verify-frame attachment landed (`a1ba998`); manual linearization-under-overflow model-test remains open.
+- The two independent audit agents exhausted their own quota after the lifecycle checkpoint. Continuity remained intact through this handover, the existing issue diary, local TDD evidence and reproducible machine builders; rerun independent review when capacity returns, but do not discard the verified working state.
+- The packaged `config-contract.json` and `detector-catalog.json` are runtime validation inputs and must remain byte-semantic JSON equivalents of their branch-only frozen machine sources; the focused test enforces this until the final-PR generation/copy path is formalized.
+
+
+### #273 fixed-EN/config-pending-boundaries slice lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| Ingress | `events/narrative_ingress.py` — `_pending_changes_projection` value-free `{key,boundary,desiredGeneration}`, sort by key, cap **128**, fail-closed unload |
+| Status | fixed `language=en`; packaged `catalog.hash`; live `desiredHash`/`effectiveHash`/`applySequence` |
+| Goldens | `tests/fixtures/commentary_runtime/status_config_pending_boundaries.json`; `REQUIRED_FIXTURES` |
+| Evidence | feat SHA `b751d70`; prior mypy tip `d0f3863`; n12 shadow-cutover test fix `4a5c57b`; tip `b751d70`; PR [#294](https://github.com/Buchtanen/ir-obs-switcher/pull/294) **FF-merged**; **no master PR** |
+| Scope | Branch-only; atomic task **done**; #273 main atomic list complete — remaining open AC/design-freeze items only |
+
+
+
+### #273 status-identity verify lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| Evidence tip | `86b5b0f` (no new feat SHA — verify-only) |
+| Timeline | `broadcastEpoch`, retained `streamEpoch`, required `narrativeRunActive`; OBS `streamActive` independent |
+| Mailbox | fixed capacity in status; no public INI capacity key (`CONFIG.md`) |
+| Goldens | `status_identity_disabled.json`, `status_identity_after_context.json` |
+| Tests | 162 related passed (`identity`/`streamActive`/`mailbox_capacity`/`broadcastEpoch`/`narrative_run` filter) |
+| Checkboxes | Status identity addition **all three flipped** |
+| Scope | Branch-only verify; **no master PR** |
+
+
+
+### #273 TTS quarantine + tape drop health lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| Runtime | `speech_quarantine_reason` + pending start/stop timeout induction on speech deadline |
+| Ingress | `components.tts.reason` + force unavailable while quarantined; tape drops → `degraded`/`tape_queue_drop` |
+| Goldens | `status_component_tts_quarantine_timeout.json`; tape counters golden updated |
+| Evidence | feat `13ab3d5`; tip `13ab3d5`; PR [#295](https://github.com/Buchtanen/ir-obs-switcher/pull/295) FF-merged; **no master PR** |
+| Checkbox | Public-liveness TTS/tape health **flipped** |
+
+
+
+### #273 session-plan continuation verify lookup
+
+| | |
+| --- | --- |
+| Issue | [#273](https://github.com/Buchtanen/ir-obs-switcher/issues/273) |
+| SessionPlan | timeline identity goldens + live APPLY_CONTEXT projection |
+| Components | llm/tts generations + reasons; TTS quarantine; tape dropsByPriority |
+| Public enums | `status_stopped.json`; `error_mailbox_overloaded.json`; `error_admission_timeout.json` |
+| Decisions/validate | `candidateOrder`; `actorBindings` / `evaluationAtMonoMs` |
+| Evidence | tip `7d5ca50` (stopped golden); prior TTS/tape feat `13ab3d5`; **no master PR** |
+| Checkboxes | Public/session-plan continuation **all three flipped** |
+

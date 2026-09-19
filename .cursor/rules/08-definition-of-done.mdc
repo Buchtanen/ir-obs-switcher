@@ -5,6 +5,8 @@ alwaysApply: true
 
 ## Definition of Done (PR gate)
 
+`/flow` reaches this gate via verifier GREEN → `/handover` → PR to `master` (unless the issue-set or a human prompt skips the PR).
+
 Before merge:
 
 - **AC**: all acceptance criteria checked and verified
@@ -12,7 +14,7 @@ Before merge:
   - added/updated for behavior changes, or
   - explicit `TDD-exception` + alternative verification (see `03-tdd-test-drive-policy.mdc`)
 - **Docs**:
-  - updated relevant docs (see `04-docs-policy.mdc`) including `docs/dokumentace/` or `Docs: no change (reason …)`
+  - updated relevant docs (see `04-docs-policy.mdc`)
   - PR includes Docs impact checklist
 - **Config**:
   - if config changed: `CONFIG.md` + `config/config.example.ini` updated

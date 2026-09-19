@@ -1,0 +1,10 @@
+{
+  "beatId": "battle.approach",
+  "widenForRepetition": true,
+  "widenForFailure": true,
+  "nowMs": 10000,
+  "deadlineMonoMs": 20000,
+  "expectOutcome": "succeeded",
+  "expectFreedom": "tight",
+  "expectReason": "succeeded"
+}

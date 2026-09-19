@@ -1,0 +1,14 @@
+{
+  "beatId": "battle.approach",
+  "claims": [
+    {
+      "objectId": "car:22",
+      "predicate": "battle.approaching",
+      "subjectId": "hero",
+      "verdict": "supported"
+    }
+  ],
+  "issues": [],
+  "schemaVersion": "commentary-runtime/2",
+  "valid": true
+}

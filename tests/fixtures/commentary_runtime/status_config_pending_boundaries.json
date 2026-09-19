@@ -1,0 +1,28 @@
+{
+  "language": "en",
+  "catalog": {
+    "schemaVersion": "narrative-catalog/2",
+    "hash": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
+    "eventIdentifierCount": 60,
+    "beatCount": 64
+  },
+  "config": {
+    "schemaVersion": "commentary-config/2",
+    "desiredGeneration": 7,
+    "desiredHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "effectiveHash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "applySequence": 12,
+    "pendingChanges": [
+      {
+        "key": "commentary.detector.battle_ahead_v1.max_closing_slope",
+        "boundary": "next_stream",
+        "desiredGeneration": 7
+      },
+      {
+        "key": "commentary.tts.voice",
+        "boundary": "next_utterance",
+        "desiredGeneration": 7
+      }
+    ]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "beatId": "battle.approach",
+  "episodeRevision": 4,
+  "nowMs": 91000,
+  "deadlineMonoMs": 92500,
+  "expectFirstOutcome": "failed",
+  "expectFirstReason": "realization_transport",
+  "expectRetryOutcome": "failed",
+  "expectRetryReason": "realization_discarded"
+}

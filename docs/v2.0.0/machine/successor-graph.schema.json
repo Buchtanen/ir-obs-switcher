@@ -1,0 +1,349 @@
+{
+  "$id": "https://irswitch.local/contracts/v2/successor-graph.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "analysis": {
+      "additionalProperties": false,
+      "properties": {
+        "cyclicComponents": {
+          "const": []
+        },
+        "edgeCount": {
+          "const": 50
+        },
+        "isDirectedAcyclic": {
+          "const": true
+        },
+        "nodeCount": {
+          "const": 64
+        },
+        "nonterminalComponentPolicy": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "strongComponentCount": {
+          "const": 64
+        }
+      },
+      "required": [
+        "nodeCount",
+        "edgeCount",
+        "strongComponentCount",
+        "cyclicComponents",
+        "isDirectedAcyclic",
+        "nonterminalComponentPolicy"
+      ],
+      "type": "object"
+    },
+    "edges": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "edgeClass": {
+            "enum": [
+              "non-closing",
+              "closing"
+            ]
+          },
+          "episodeTruthEffect": {
+            "const": "none"
+          },
+          "fromBeatId": {
+            "maxLength": 160,
+            "pattern": "^[a-z0-9][a-z0-9._>-]*$",
+            "type": "string"
+          },
+          "guardProfileId": {
+            "maxLength": 160,
+            "pattern": "^[a-z0-9][a-z0-9._>-]*$",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 160,
+            "pattern": "^[a-z0-9][a-z0-9._>-]*$",
+            "type": "string"
+          },
+          "ordinal": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "preference": {
+            "enum": [
+              "preferred",
+              "allowed"
+            ]
+          },
+          "scoreBonus": {
+            "enum": [
+              0,
+              6
+            ]
+          },
+          "toBeatId": {
+            "maxLength": 160,
+            "pattern": "^[a-z0-9][a-z0-9._>-]*$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "ordinal",
+          "fromBeatId",
+          "toBeatId",
+          "guardProfileId",
+          "preference",
+          "scoreBonus",
+          "edgeClass",
+          "episodeTruthEffect"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "globalGuards": {
+      "const": [
+        "source_is_last_playback_accepted_beat",
+        "same_narrative_stream_epoch",
+        "target_required_claims_true_not_unknown",
+        "target_hard_context_true_not_unknown",
+        "target_material_not_previously_exposed",
+        "target_within_half_open_validity",
+        "story_cadence_open",
+        "nonclosing_story_cap_open"
+      ]
+    },
+    "graphProjectionVersion": {
+      "const": 1
+    },
+    "guardProfiles": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "conditions": {
+            "items": {
+              "maxLength": 160,
+              "pattern": "^[a-z0-9][a-z0-9._>-]*$",
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "id": {
+            "maxLength": 160,
+            "pattern": "^[a-z0-9][a-z0-9._>-]*$",
+            "type": "string"
+          },
+          "identityBindings": {
+            "items": {
+              "maxLength": 160,
+              "pattern": "^[a-z0-9][a-z0-9._>-]*$",
+              "type": "string"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "normativeText": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "unknownVerdict": {
+            "const": "ineligible"
+          }
+        },
+        "required": [
+          "id",
+          "normativeText",
+          "identityBindings",
+          "conditions",
+          "unknownVerdict"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "language": {
+      "const": "en"
+    },
+    "nodePolicies": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "beatId": {
+            "maxLength": 160,
+            "pattern": "^[a-z0-9][a-z0-9._>-]*$",
+            "type": "string"
+          },
+          "incomingEdgeCount": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "outgoingEdgeCount": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "successorDisposition": {
+            "enum": [
+              "expand_explicit_edges",
+              "no_implicit_continuation"
+            ]
+          }
+        },
+        "required": [
+          "beatId",
+          "incomingEdgeCount",
+          "outgoingEdgeCount",
+          "successorDisposition"
+        ],
+        "type": "object"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "schemaVersion": {
+      "const": "successor-graph/2"
+    },
+    "selectionContract": {
+      "additionalProperties": false,
+      "properties": {
+        "allowedEdgeBonus": {
+          "const": 0
+        },
+        "closingBypassesConsecutiveCap": {
+          "const": true
+        },
+        "closingMutatesEpisodeTruth": {
+          "const": false
+        },
+        "continuationBasePriority": {
+          "const": 58
+        },
+        "continuityBonus": {
+          "const": 6
+        },
+        "deduplicateEventAndSuccessor": {
+          "const": true
+        },
+        "edgeSet": {
+          "const": "closed_explicit_only"
+        },
+        "materialRevisionBonus": {
+          "const": 6
+        },
+        "noEligibleSuccessor": {
+          "const": "return_to_normal_arbitration"
+        },
+        "preferredEdgeBonus": {
+          "const": 6
+        },
+        "tieBreak": {
+          "const": [
+            "urgency_desc",
+            "effective_score_desc",
+            "candidate_order_asc",
+            "stable_ids_asc"
+          ]
+        }
+      },
+      "required": [
+        "edgeSet",
+        "continuationBasePriority",
+        "continuityBonus",
+        "preferredEdgeBonus",
+        "allowedEdgeBonus",
+        "materialRevisionBonus",
+        "deduplicateEventAndSuccessor",
+        "closingBypassesConsecutiveCap",
+        "closingMutatesEpisodeTruth",
+        "noEligibleSuccessor",
+        "tieBreak"
+      ],
+      "type": "object"
+    },
+    "sourceBaseline": {
+      "additionalProperties": false,
+      "properties": {
+        "beatCatalogSha256": {
+          "pattern": "^[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "document": {
+          "type": "string"
+        },
+        "heading": {
+          "const": "Natural successor edges"
+        }
+      },
+      "required": [
+        "document",
+        "heading",
+        "beatCatalogSha256"
+      ],
+      "type": "object"
+    },
+    "storyDefinitions": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "cadenceMinimumMs": {
+            "maximum": 300000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "id": {
+            "maxLength": 160,
+            "pattern": "^[a-z0-9][a-z0-9._>-]*$",
+            "type": "string"
+          },
+          "maxConsecutiveNonClosingBeats": {
+            "maximum": 8,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "onNoEligibleSuccessor": {
+            "const": "remain_truth_owned_and_return_to_arbitration"
+          }
+        },
+        "required": [
+          "id",
+          "maxConsecutiveNonClosingBeats",
+          "cadenceMinimumMs",
+          "onNoEligibleSuccessor"
+        ],
+        "type": "object"
+      },
+      "maxItems": 11,
+      "minItems": 11,
+      "type": "array"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "graphProjectionVersion",
+    "language",
+    "sourceBaseline",
+    "selectionContract",
+    "globalGuards",
+    "storyDefinitions",
+    "guardProfiles",
+    "edges",
+    "nodePolicies",
+    "analysis"
+  ],
+  "title": "irswitch v2 natural successor graph",
+  "type": "object",
+  "x-irswitch-invariants": [
+    "successor_edges_match_human_table_exactly",
+    "all_beat_and_guard_references_resolve",
+    "edge_ids_and_ordinals_unique",
+    "preference_bonus_matches_policy",
+    "node_degrees_match_edges",
+    "scc_analysis_matches_graph",
+    "no_unbounded_nonterminal_component",
+    "beat_catalog_hash_matches"
+  ]
+}

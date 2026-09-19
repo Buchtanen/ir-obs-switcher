@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "commentary-runtime/2",
+  "runtime": true,
+  "decisions": [
+    {
+      "reducerSequence": 422,
+      "atMonoMs": 90410,
+      "decision": "selected",
+      "reason": "active_story_continuation",
+      "beatId": "battle.pursuit",
+      "episodeId": "battle-ahead:3:17:22:4",
+      "opportunityId": null,
+      "tapeChannel": "race.battle.closing",
+      "candidateSource": "story_successor",
+      "candidateOrder": {
+        "reducerSequence": 421,
+        "sourceOrdinal": 0
+      },
+      "relation": "continues_focused_episode",
+      "urgency": "story",
+      "score": 83.0,
+      "threshold": 35.0,
+      "runnerUp": null,
+      "terminalReason": null
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "beatId": "stream.started",
+  "backend": "qwen_compiled",
+  "fallback": true,
+  "nowMs": 10000,
+  "deadlineMonoMs": 20000,
+  "expectOutcome": "failed",
+  "expectReason": "authored_fallback_forbidden"
+}

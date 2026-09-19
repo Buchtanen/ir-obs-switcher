@@ -1,0 +1,8 @@
+{
+  "schemaVersion": "commentary-runtime/2",
+  "error": {
+    "code": "invalid_json",
+    "fields": {},
+    "message": "Bounded public detail."
+  }
+}

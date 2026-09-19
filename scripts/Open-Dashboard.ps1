@@ -2,16 +2,20 @@
 
 <#
 .SYNOPSIS
-  Opens the irswitch GR dashboard in the default browser.
+  Opens iRacing OBS Switcher dashboard in the default browser.
 
 .EXAMPLE
   .\Open-Dashboard.ps1 -ConfigPath "config\config.ini"
+
+.EXAMPLE
+  .\Open-Dashboard.ps1 -ConfigPath "config\config.ini" -Vr
 #>
 
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$true)]
-    [string]$ConfigPath
+    [string]$ConfigPath,
+    [switch]$Vr
 )
 
 $ErrorActionPreference = "Stop"
@@ -62,6 +66,8 @@ if (-not (Test-Path -LiteralPath $cfgAbs)) {
 }
 
 $app = Read-IniAppHostPort -Path $cfgAbs
-$url = "http://{0}:{1}/gr-status" -f $app.Host, $app.Port
+
+$path = if ($Vr) { "/vr-status" } else { "/gr-status" }
+$url = "http://{0}:{1}{2}" -f $app.Host, $app.Port, $path
 
 Start-Process $url | Out-Null

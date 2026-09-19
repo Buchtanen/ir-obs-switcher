@@ -31,7 +31,6 @@ from irswitch.race.pipeline import (
     RacePipeline,
     build_context_payload,
     context_stale_at_accept,
-    context_stale_level,
 )
 from irswitch.race.story import HeroSnapshot, QualiBag, StoryContext
 
@@ -197,19 +196,12 @@ def test_pipeline_context_includes_quali_bag_grid_story_system_and_hud() -> None
             "active_stories_v4": [{"eventType": "HUNTING"}],
         },
         grid_story=True,
-        prepared={"start_mode": "rolling", "field_size": 20},
     )
 
-    assert payload["story"]["quali_bag"] == {
-        "class_position": 4,
-        "best_lap_s": 90.0,
-        "class_id": None,
-        "subsession_id": None,
-    }
+    assert payload["story"]["quali_bag"] == {"class_position": 4, "best_lap_s": 90.0}
     assert payload["config"]["grid_story"] is True
     assert payload["system"]["cpu"]["load"] is None
     assert payload["hud"]["active_events"] == [{"id": "a"}]
-    assert payload["prepared"] == {"start_mode": "rolling", "field_size": 20}
 
 
 @pytest.mark.asyncio
@@ -233,18 +225,11 @@ def test_context_stale_at_accept_uses_publish_minus_capture() -> None:
         context_stale_at_accept(captured_ms=1_000, accepted_ms=1_000, poll_interval_ms=200) is False
     )
     assert (
-        context_stale_at_accept(captured_ms=1_000, accepted_ms=1_250, poll_interval_ms=200) is False
+        context_stale_at_accept(captured_ms=1_000, accepted_ms=1_150, poll_interval_ms=200) is False
     )
     assert (
-        context_stale_at_accept(captured_ms=1_000, accepted_ms=1_650, poll_interval_ms=200) is True
+        context_stale_at_accept(captured_ms=1_000, accepted_ms=1_250, poll_interval_ms=200) is True
     )
-    assert context_stale_level(captured_ms=1_000, accepted_ms=1_650) == "warning"
-    assert context_stale_level(captured_ms=1_000, accepted_ms=2_100) == "rebuild"
-    assert (
-        context_stale_level(captured_ms=1_000, accepted_ms=2_250, event_types=("OVERTAKE",))
-        == "hard"
-    )
-    assert context_stale_level(captured_ms=1_000, accepted_ms=2_600) == "error"
 
 
 def test_pipeline_logs_stale_accept_when_publish_clock_lags_capture(
@@ -275,7 +260,7 @@ def test_pipeline_logs_stale_accept_when_publish_clock_lags_capture(
         pipeline.publish_envelopes(
             [envelope],
             source="event_engine",
-            accepted_monotonic_ms=1_700,
+            accepted_monotonic_ms=1_400,
             poll_interval_ms=200,
         )
 

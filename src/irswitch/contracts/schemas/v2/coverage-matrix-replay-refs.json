@@ -1,0 +1,90 @@
+{
+  "claimFamilies": [
+    {
+      "fixtures": [
+        {
+          "id": "F01",
+          "title": "stream starts before iRacing session"
+        },
+        {
+          "id": "F02",
+          "title": "canonical stage progression with inheritance"
+        },
+        {
+          "id": "F03",
+          "title": "rewind Race to Qualifying"
+        },
+        {
+          "id": "F04",
+          "title": "same-session confirmed restart"
+        },
+        {
+          "id": "F22",
+          "title": "stream-run start reasons are exclusive"
+        },
+        {
+          "id": "F25",
+          "title": "simultaneous timeline boundaries retain every effect"
+        }
+      ],
+      "id": "transition"
+    },
+    {
+      "fixtures": [
+        {
+          "id": "F17",
+          "title": "pre-session lobby filler uses stream facts only"
+        },
+        {
+          "id": "F31",
+          "title": "session plan is explicit, ordered and stable"
+        },
+        {
+          "id": "F43",
+          "title": "tape-channel funnel preserves identity and valid denominators"
+        }
+      ],
+      "id": "identity"
+    },
+    {
+      "fixtures": [
+        {
+          "id": "F08",
+          "title": "event during speech, no prepared queue"
+        },
+        {
+          "id": "F15",
+          "title": "fact-only invalidation is not a speech trigger"
+        },
+        {
+          "id": "F24",
+          "title": "validity deadline expires a building beat without fallback"
+        }
+      ],
+      "id": "expiry"
+    },
+    {
+      "fixtures": [
+        {
+          "id": "F09",
+          "title": "invalid Qwen output chooses a different beat"
+        },
+        {
+          "id": "F15",
+          "title": "fact-only invalidation is not a speech trigger"
+        },
+        {
+          "id": "F33",
+          "title": "prompt freedom is a deterministic safety clamp"
+        },
+        {
+          "id": "F37",
+          "title": "switch policy cannot be undone by urgency sort or filler"
+        }
+      ],
+      "id": "counterfactual"
+    }
+  ],
+  "schemaVersion": "coverage-matrix-replay-refs/2",
+  "source": "docs/v2.0.0/machine/vertical-slice-fixtures.json"
+}

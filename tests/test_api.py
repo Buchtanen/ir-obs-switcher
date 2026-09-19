@@ -11,6 +11,7 @@ from irswitch.logic.policy import Policy
 from irswitch.logic.state_machine import StateMachine
 from irswitch.models import DrivingMode, SwitchState
 from irswitch.server.api import (
+    APP_COMMENTARY_CONFIG,
     APP_CONFIG,
     APP_CONFIG_PATH,
     create_app,
@@ -89,17 +90,6 @@ def app(state_machine: StateMachine, initial_state: SwitchState) -> web.Applicat
     set_obs_client(mock_obs)
 
     return app
-
-
-@pytest.mark.asyncio
-async def test_vr_status_removed(app: web.Application) -> None:
-    """GET /vr-status is gone; RaceLab widget is not a product surface."""
-    from aiohttp.test_utils import TestClient, TestServer
-
-    async with TestServer(app) as server:
-        async with TestClient(server) as client:
-            resp = await client.get("/vr-status")
-            assert resp.status == 404
 
 
 @pytest.mark.asyncio
@@ -222,6 +212,7 @@ async def test_health_healthy(app: web.Application) -> None:
             assert data["status"] == "healthy"
             assert "checks" in data
             assert "timestamp" in data
+            assert data["commentary"] == {"status": "disabled", "reason": None}
 
             checks = data["checks"]
             assert "iracing" in checks
@@ -311,6 +302,169 @@ async def test_health_unhealthy() -> None:
 
 
 @pytest.mark.asyncio
+@pytest.mark.asyncio
+async def test_health_commentary_matches_disabled_golden(app: web.Application) -> None:
+    """#273: GET /health commentary field freezes to health_commentary_disabled.json."""
+    import json
+    from pathlib import Path
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.events.narrative_runtime_http import set_narrative_runtime
+
+    set_narrative_runtime(None)
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "health_commentary_disabled.json"
+        ).read_text(encoding="utf-8")
+    )
+    async with TestServer(app) as server:
+        async with TestClient(server) as client:
+            resp = await client.get("/health")
+            assert resp.status == 200
+            data = await resp.json()
+            assert data["commentary"] == expected
+            assert set(data["commentary"]) == {"status", "reason"}
+
+
+@pytest.mark.asyncio
+async def test_health_commentary_ready_when_runtime_enabled(app: web.Application) -> None:
+    """#273: attached ready NarrativeRuntime projects health_commentary_ready.json."""
+    import json
+    from pathlib import Path
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+    from irswitch.events.narrative_runtime_http import set_narrative_runtime
+
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "health_commentary_ready.json"
+        ).read_text(encoding="utf-8")
+    )
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    set_narrative_runtime(runtime)
+    try:
+        async with TestServer(app) as server:
+            async with TestClient(server) as client:
+                resp = await client.get("/health")
+                assert resp.status == 200
+                data = await resp.json()
+                assert data["status"] == "healthy"
+                assert data["commentary"] == expected
+    finally:
+        set_narrative_runtime(None)
+
+
+@pytest.mark.asyncio
+async def test_health_commentary_degraded_does_not_fail_overall(app: web.Application) -> None:
+    """#273: commentary degraded/reason must not flip overall /health alone."""
+    import json
+    from dataclasses import replace
+    from pathlib import Path
+
+    from aiohttp.test_utils import TestClient, TestServer
+
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+    from irswitch.events.narrative_runtime_http import set_narrative_runtime
+
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "health_commentary_degraded.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    class _DegradedProvider:
+        def __init__(self) -> None:
+            runtime = NarrativeRuntime()
+            runtime.enable()
+            self._status = replace(
+                runtime.status(),
+                runtime_state="degraded",
+                reason_codes=("component_unavailable",),
+            )
+
+        def status(self):
+            return self._status
+
+    set_narrative_runtime(_DegradedProvider())  # type: ignore[arg-type]
+    try:
+        async with TestServer(app) as server:
+            async with TestClient(server) as client:
+                resp = await client.get("/health")
+                assert resp.status == 200
+                data = await resp.json()
+                assert data["status"] == "healthy"
+                assert data["commentary"] == expected
+                assert data["checks"]["iracing"]["available"] is True
+                assert data["checks"]["obs"]["available"] is True
+    finally:
+        set_narrative_runtime(None)
+
+
+@pytest.mark.asyncio
+async def test_health_commentary_reason_does_not_fail_overall(app: web.Application) -> None:
+    """#273: ready+reason (history_incomplete) keeps overall healthy when cores up."""
+    import json
+    from pathlib import Path
+
+    from aiohttp.test_utils import TestClient, TestServer
+    from test_narrative_runtime import _pure_fact
+
+    from irswitch.contracts.command import NarrativeCommand
+    from irswitch.events.narrative_runtime import NarrativeRuntime
+    from irswitch.events.narrative_runtime_http import set_narrative_runtime
+
+    expected = json.loads(
+        (
+            Path(__file__).resolve().parents[1]
+            / "tests"
+            / "fixtures"
+            / "commentary_runtime"
+            / "health_commentary_ready_history_incomplete.json"
+        ).read_text(encoding="utf-8")
+    )
+    runtime = NarrativeRuntime()
+    runtime.enable()
+    latest = _pure_fact("health:latest", revision=70, fanout=70)
+    runtime.admit(
+        NarrativeCommand.recovery(
+            "health:recovery",
+            9100,
+            latest_context=latest.context_part,
+            loss_first_sequence=1,
+            loss_last_sequence=2,
+            safety_effects=(latest.safety_effect(),),
+        )
+    )
+    assert runtime.reduce_next() is not None
+    set_narrative_runtime(runtime)
+    try:
+        async with TestServer(app) as server:
+            async with TestClient(server) as client:
+                resp = await client.get("/health")
+                assert resp.status == 200
+                data = await resp.json()
+                assert data["status"] == "healthy"
+                assert data["commentary"] == expected
+    finally:
+        set_narrative_runtime(None)
+
+
 async def test_metrics(app: web.Application, initial_state: SwitchState) -> None:
     """Test GET /metrics endpoint."""
     from aiohttp.test_utils import TestClient, TestServer
@@ -405,6 +559,7 @@ dashboard_gr_background_image =
 dashboard_gr_logo_obs =
 dashboard_gr_logo_iracing =
 dashboard_gr_logo_app =
+dashboard_vr_icons_path =
 dashboard_event_log_size = 50
 """)
 
@@ -422,7 +577,21 @@ dashboard_event_log_size = 50
             assert "needs_restart" in data
             assert isinstance(data["applied_live"], list)
             assert isinstance(data["needs_restart"], list)
+            assert data["commentary_config"] == {
+                "installed": True,
+                "desired_generation": 0,
+                "apply_sequence": 0,
+                "desired_hash": data["commentary_config"]["desired_hash"],
+                "effective_hash": data["commentary_config"]["effective_hash"],
+                "pending_changes": [],
+                "automatic_enabled": False,
+                "speech_language": "en",
+                "diagnostics": [],
+                "preflights": [],
+            }
             assert APP_CONFIG in app
+            assert APP_COMMENTARY_CONFIG in app
+            commentary_coordinator = app[APP_COMMENTARY_CONFIG]
             from irswitch.logic.policy import Policy
             from irswitch.logic.state_machine import StateMachine
             from irswitch.models import DrivingMode
@@ -498,11 +667,15 @@ dashboard_gr_background_image =
 dashboard_gr_logo_obs =
 dashboard_gr_logo_iracing =
 dashboard_gr_logo_app =
+dashboard_vr_icons_path =
 dashboard_event_log_size = 50
 """)
             resp2 = await client.post("/config/reload")
             assert resp2.status == 200
             data2 = await resp2.json()
+            assert app[APP_COMMENTARY_CONFIG] is commentary_coordinator
+            assert data2["commentary_config"]["installed"] is True
+            assert data2["commentary_config"]["desired_generation"] == 1
             assert "switching.debounce_ms" in data2["applied_live"]
             assert "iracing.poll_hz" in data2["applied_live"]
             assert "scenes.IDLE" in data2["applied_live"]
@@ -516,6 +689,19 @@ dashboard_event_log_size = 50
             assert sm._override_seconds == 99
             assert sm._policy.safe_scene == "SafeNew"
             assert sm._policy.scenes[DrivingMode.IDLE] == "IdleNew"
+
+            with config_file.open("a", encoding="utf-8") as handle:
+                handle.write("\n[commentary]\n" "enabled = true\n" "max_utterance_s = invalid\n")
+            resp3 = await client.post("/config/reload")
+            assert resp3.status == 200
+            data3 = await resp3.json()
+            assert data3["status"] == "success"
+            assert data3["commentary_config"]["installed"] is False
+            assert data3["commentary_config"]["desired_generation"] == 1
+            assert data3["commentary_config"]["automatic_enabled"] is False
+            assert data3["commentary_config"]["diagnostics"][0]["source_key"] == (
+                "commentary.max_utterance_s"
+            )
 
 
 @pytest.mark.asyncio

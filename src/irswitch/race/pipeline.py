@@ -30,23 +30,6 @@ from irswitch.race.story import StoryContext
 
 logger = logging.getLogger(__name__)
 
-STALE_WARNING_MS = 600
-STALE_REBUILD_MS = 1000
-STALE_HARD_BATTLE_MS = 1200
-STALE_ERROR_MS = 1500
-_STALE_BATTLE_TYPES = frozenset(
-    {
-        "HUNTING",
-        "HUNTED",
-        "BATTLE_FOR_POSITION",
-        "OVERTAKE",
-        "POSITION_ATTACK",
-        "POSITION_LOST",
-        "POSITION_GAINED",
-        "TARGET_LOCKED",
-    }
-)
-
 
 class RacePipeline:
     """Single producer for accepted identities and immutable stream batches."""
@@ -127,8 +110,6 @@ class RacePipeline:
         system: Any | None = None,
         hud: dict[str, Any] | None = None,
         grid_story: bool = False,
-        editorial: dict[str, object] | None = None,
-        prepared: dict[str, object] | None = None,
     ) -> FrozenContextSnapshot:
         self._context_version += 1
         payload = build_context_payload(
@@ -146,8 +127,6 @@ class RacePipeline:
             system=system,
             hud=hud,
             grid_story=grid_story,
-            editorial=editorial,
-            prepared=prepared,
         )
         if self.story_registry is not None:
             self.story_registry.observe_context(payload)
@@ -239,43 +218,16 @@ class RacePipeline:
             context_payload=self._context_payload,
             events=tuple(accepted),
         )
-        age_ms = max(0, accepted_monotonic_ms - self._captured_monotonic_ms)
-        event_types = tuple(record.envelope.event_type for record in records)
-        level = context_stale_level(
+        if context_stale_at_accept(
             captured_ms=self._captured_monotonic_ms,
             accepted_ms=accepted_monotonic_ms,
-            event_types=event_types,
-        )
-        if level == "error":
-            logger.error(
-                "context_stale_error captured_ms=%s accepted_ms=%s age_ms=%s poll_interval_ms=%s",
-                self._captured_monotonic_ms,
-                accepted_monotonic_ms,
-                age_ms,
-                poll_interval_ms,
-            )
-        elif level == "hard":
-            logger.warning(
-                "context_stale_hard captured_ms=%s accepted_ms=%s age_ms=%s poll_interval_ms=%s",
-                self._captured_monotonic_ms,
-                accepted_monotonic_ms,
-                age_ms,
-                poll_interval_ms,
-            )
-        elif level == "rebuild":
-            logger.warning(
-                "context_stale_rebuild captured_ms=%s accepted_ms=%s age_ms=%s poll_interval_ms=%s",
-                self._captured_monotonic_ms,
-                accepted_monotonic_ms,
-                age_ms,
-                poll_interval_ms,
-            )
-        elif level == "warning":
+            poll_interval_ms=poll_interval_ms,
+        ):
             logger.warning(
                 "context_stale_at_accept captured_ms=%s accepted_ms=%s age_ms=%s poll_interval_ms=%s",
                 self._captured_monotonic_ms,
                 accepted_monotonic_ms,
-                age_ms,
+                accepted_monotonic_ms - self._captured_monotonic_ms,
                 poll_interval_ms,
             )
         self.fanout.publish(batch)
@@ -304,8 +256,6 @@ def build_context_payload(
     system: Any | None = None,
     hud: dict[str, Any] | None = None,
     grid_story: bool = False,
-    editorial: dict[str, object] | None = None,
-    prepared: dict[str, object] | None = None,
 ) -> dict[str, Any]:
     story_payload = _jsonable(asdict(story)) if story is not None else {}
     story_payload["driver_profiles"] = driver_profiles or {}
@@ -345,8 +295,6 @@ def build_context_payload(
         "situation": situation,
         "system": system_payload,
         "hud": hud_payload,
-        "editorial": _jsonable(editorial or {}),
-        "prepared": _jsonable(prepared or {}),
         "config": {
             "generation": config_generation,
             "language": language,
@@ -356,36 +304,16 @@ def build_context_payload(
     }
 
 
-def context_stale_level(
-    *,
-    captured_ms: int,
-    accepted_ms: int,
-    event_types: tuple[str, ...] = (),
-) -> str | None:
-    """Stale band for a publish that lagged context capture."""
-    age_ms = max(0, accepted_ms - captured_ms)
-    if age_ms > STALE_ERROR_MS:
-        return "error"
-    if age_ms > STALE_HARD_BATTLE_MS and any(
-        event_type in _STALE_BATTLE_TYPES for event_type in event_types
-    ):
-        return "hard"
-    if age_ms > STALE_REBUILD_MS:
-        return "rebuild"
-    if age_ms > STALE_WARNING_MS:
-        return "warning"
-    return None
-
-
 def context_stale_at_accept(
     *,
     captured_ms: int,
     accepted_ms: int,
     poll_interval_ms: int,
 ) -> bool:
-    """True when publish/accept lagged capture past the warning band."""
-    del poll_interval_ms
-    return context_stale_level(captured_ms=captured_ms, accepted_ms=accepted_ms) is not None
+    """True when publish/accept lagged capture by more than one producer poll."""
+    if poll_interval_ms <= 0:
+        return False
+    return max(0, accepted_ms - captured_ms) > poll_interval_ms
 
 
 def build_situation_payload(

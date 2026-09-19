@@ -1,0 +1,765 @@
+{
+  "capturePlan": {
+    "postWindowSeconds": 5.0,
+    "preWindow": "complete_trend_window",
+    "requiredCaptureLossDisablesDetectorForRun": true,
+    "requiredFields": [
+      "effectiveParameters",
+      "featureQuality",
+      "coverage",
+      "predicateTrace",
+      "transitionReason",
+      "nearThresholdNegatives"
+    ]
+  },
+  "catalogProjectionVersion": 1,
+  "definitions": [
+    {
+      "algorithm": "bucketed_ols_closing_v1",
+      "bands": [
+        {
+          "enterGapParameter": null,
+          "event": null,
+          "exitGapParameter": "approach_enter_s",
+          "factPredicate": "battle.closing",
+          "id": "closing"
+        },
+        {
+          "enterGapParameter": "approach_enter_s",
+          "event": "APPROACH",
+          "exitGapParameter": "approach_exit_s",
+          "factPredicate": "battle.approaching",
+          "id": "approach"
+        },
+        {
+          "enterGapParameter": "attack_enter_s",
+          "event": "ATTACK_RANGE",
+          "exitGapParameter": "attack_exit_s",
+          "factPredicate": "battle.attack_range",
+          "id": "attack"
+        },
+        {
+          "enterGapParameter": "overlap_enter_s",
+          "event": "SIDE_BY_SIDE",
+          "exitGapParameter": "overlap_exit_s",
+          "factPredicate": "battle.side_by_side",
+          "id": "overlap"
+        }
+      ],
+      "clear": {
+        "anyPredicates": [
+          "gap_gte_exit_gap_min_s",
+          "slope_gte_clear_slope",
+          "coverage_lt_min_coverage",
+          "confidence_lt_min_confidence",
+          "feature_stale_or_unknown",
+          "race_flag_not_green"
+        ],
+        "holdParameter": "clear_s",
+        "immediateInvalidators": [
+          "occurrence_or_stream_change",
+          "ordered_target_or_relation_change",
+          "pit_tow_teleport_or_not_in_world",
+          "unsupported_stage",
+          "checkered_or_session_end",
+          "identity_conflict"
+        ]
+      },
+      "correlationKey": [
+        "streamEpoch",
+        "occurrenceId",
+        "relationEpoch"
+      ],
+      "crossFieldInvariants": [
+        "sample_interval_s < bucket_s <= trend_window_s",
+        "min_samples * sample_interval_s <= trend_window_s",
+        "confirm_s <= trend_window_s",
+        "enter_gap_max_s < exit_gap_min_s",
+        "overlap_enter_s < overlap_exit_s <= attack_enter_s < attack_exit_s",
+        "attack_exit_s <= approach_enter_s < approach_exit_s <= enter_gap_max_s",
+        "update_min_interval_s >= clear_s",
+        "stale_after_s <= trend_window_s"
+      ],
+      "entry": {
+        "allPredicates": [
+          "stream_confirmed_active",
+          "stage_race",
+          "both_actors_racing_or_target_surface_known",
+          "race_flag_green",
+          "ordered_relation_stable",
+          "feature_age_lte_stale_after_s",
+          "gap_lte_enter_gap_max_s",
+          "net_closing_gte_min_closing_change_s",
+          "slope_lte_max_closing_slope",
+          "coverage_gte_min_coverage",
+          "confidence_gte_min_confidence",
+          "actors_world_valid"
+        ],
+        "holdParameter": "confirm_s",
+        "unknownSatisfies": false
+      },
+      "experimental": true,
+      "features": [
+        "gap.relation.seconds.estimated_v1",
+        "gap.trend.slope",
+        "gap.trend.net_closing",
+        "gap.trend.coverage",
+        "gap.trend.confidence",
+        "gap.target_stable",
+        "vehicle.phase.current"
+      ],
+      "fsmStates": [
+        "inactive",
+        "candidate",
+        "active",
+        "clearing"
+      ],
+      "id": "battle_ahead_v1",
+      "kind": "directional",
+      "materialUpdate": {
+        "conditions": [
+          "hysteretic_band_changed",
+          "net_closing_delta_gte_material_change_s"
+        ],
+        "maximumCandidatesPerFrame": 1,
+        "minimumIntervalParameter": "update_min_interval_s"
+      },
+      "orderedActors": [
+        "hero",
+        "targetAhead"
+      ],
+      "output": {
+        "endedEvent": null,
+        "factPredicate": "battle.closing",
+        "internalKind": "battle.pursuit",
+        "startEvent": "HUNTING",
+        "tapeChannel": "race.battle.closing"
+      },
+      "parameters": [
+        {
+          "default": 0.25,
+          "id": "sample_interval_s",
+          "maximum": 1.0,
+          "minimum": 0.1,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 12.0,
+          "id": "trend_window_s",
+          "maximum": 30.0,
+          "minimum": 6.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 1.0,
+          "id": "bucket_s",
+          "maximum": 2.0,
+          "minimum": 0.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 8,
+          "id": "min_samples",
+          "maximum": 60,
+          "minimum": 6,
+          "provenance": "estimated",
+          "type": "integer",
+          "unit": "count"
+        },
+        {
+          "default": 0.8,
+          "id": "min_coverage",
+          "maximum": 1.0,
+          "minimum": 0.6,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "fraction"
+        },
+        {
+          "default": 0.7,
+          "id": "min_confidence",
+          "maximum": 1.0,
+          "minimum": 0.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "fraction"
+        },
+        {
+          "default": 3.0,
+          "id": "enter_gap_max_s",
+          "maximum": 8.0,
+          "minimum": 1.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 0.6,
+          "id": "min_closing_change_s",
+          "maximum": 2.0,
+          "minimum": 0.2,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": -0.04,
+          "id": "max_closing_slope",
+          "maximum": -0.01,
+          "minimum": -0.3,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds_per_second"
+        },
+        {
+          "default": 3.0,
+          "id": "confirm_s",
+          "maximum": 10.0,
+          "minimum": 1.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 0.4,
+          "id": "material_change_s",
+          "maximum": 1.5,
+          "minimum": 0.1,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 6.0,
+          "id": "update_min_interval_s",
+          "maximum": 30.0,
+          "minimum": 2.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 4.0,
+          "id": "exit_gap_min_s",
+          "maximum": 12.0,
+          "minimum": 1.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": -0.01,
+          "id": "clear_slope",
+          "maximum": 0.1,
+          "minimum": -0.05,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds_per_second"
+        },
+        {
+          "default": 2.0,
+          "id": "clear_s",
+          "maximum": 10.0,
+          "minimum": 1.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 1.0,
+          "id": "stale_after_s",
+          "maximum": 3.0,
+          "minimum": 0.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 1.5,
+          "id": "approach_enter_s",
+          "maximum": 3.0,
+          "minimum": 0.8,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 1.8,
+          "id": "approach_exit_s",
+          "maximum": 4.0,
+          "minimum": 1.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 0.8,
+          "id": "attack_enter_s",
+          "maximum": 1.5,
+          "minimum": 0.3,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 1.1,
+          "id": "attack_exit_s",
+          "maximum": 2.0,
+          "minimum": 0.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 0.35,
+          "id": "overlap_enter_s",
+          "maximum": 0.8,
+          "minimum": 0.1,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 0.55,
+          "id": "overlap_exit_s",
+          "maximum": 1.2,
+          "minimum": 0.2,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 0.5,
+          "id": "overlap_confirm_s",
+          "maximum": 2.0,
+          "minimum": 0.25,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        }
+      ],
+      "tuningPolicy": "required",
+      "version": 1
+    },
+    {
+      "algorithm": "bucketed_ols_closing_v1",
+      "bands": [
+        {
+          "enterGapParameter": null,
+          "event": null,
+          "exitGapParameter": "approach_enter_s",
+          "factPredicate": "battle.closing",
+          "id": "closing"
+        },
+        {
+          "enterGapParameter": "approach_enter_s",
+          "event": "APPROACH",
+          "exitGapParameter": "approach_exit_s",
+          "factPredicate": "battle.approaching",
+          "id": "approach"
+        },
+        {
+          "enterGapParameter": "attack_enter_s",
+          "event": "ATTACK_RANGE",
+          "exitGapParameter": "attack_exit_s",
+          "factPredicate": "battle.attack_range",
+          "id": "attack"
+        },
+        {
+          "enterGapParameter": "overlap_enter_s",
+          "event": "SIDE_BY_SIDE",
+          "exitGapParameter": "overlap_exit_s",
+          "factPredicate": "battle.side_by_side",
+          "id": "overlap"
+        }
+      ],
+      "clear": {
+        "anyPredicates": [
+          "gap_gte_exit_gap_min_s",
+          "slope_gte_clear_slope",
+          "coverage_lt_min_coverage",
+          "confidence_lt_min_confidence",
+          "feature_stale_or_unknown",
+          "race_flag_not_green"
+        ],
+        "holdParameter": "clear_s",
+        "immediateInvalidators": [
+          "occurrence_or_stream_change",
+          "ordered_target_or_relation_change",
+          "pit_tow_teleport_or_not_in_world",
+          "unsupported_stage",
+          "checkered_or_session_end",
+          "identity_conflict"
+        ]
+      },
+      "correlationKey": [
+        "streamEpoch",
+        "occurrenceId",
+        "relationEpoch"
+      ],
+      "crossFieldInvariants": [
+        "sample_interval_s < bucket_s <= trend_window_s",
+        "min_samples * sample_interval_s <= trend_window_s",
+        "confirm_s <= trend_window_s",
+        "enter_gap_max_s < exit_gap_min_s",
+        "overlap_enter_s < overlap_exit_s <= attack_enter_s < attack_exit_s",
+        "attack_exit_s <= approach_enter_s < approach_exit_s <= enter_gap_max_s",
+        "update_min_interval_s >= clear_s",
+        "stale_after_s <= trend_window_s"
+      ],
+      "entry": {
+        "allPredicates": [
+          "stream_confirmed_active",
+          "stage_race",
+          "both_actors_racing_or_target_surface_known",
+          "race_flag_green",
+          "ordered_relation_stable",
+          "feature_age_lte_stale_after_s",
+          "gap_lte_enter_gap_max_s",
+          "net_closing_gte_min_closing_change_s",
+          "slope_lte_max_closing_slope",
+          "coverage_gte_min_coverage",
+          "confidence_gte_min_confidence",
+          "actors_world_valid"
+        ],
+        "holdParameter": "confirm_s",
+        "unknownSatisfies": false
+      },
+      "experimental": true,
+      "features": [
+        "gap.relation.seconds.estimated_v1",
+        "gap.trend.slope",
+        "gap.trend.net_closing",
+        "gap.trend.coverage",
+        "gap.trend.confidence",
+        "gap.target_stable",
+        "vehicle.phase.current"
+      ],
+      "fsmStates": [
+        "inactive",
+        "candidate",
+        "active",
+        "clearing"
+      ],
+      "id": "battle_behind_v1",
+      "kind": "directional",
+      "materialUpdate": {
+        "conditions": [
+          "hysteretic_band_changed",
+          "net_closing_delta_gte_material_change_s"
+        ],
+        "maximumCandidatesPerFrame": 1,
+        "minimumIntervalParameter": "update_min_interval_s"
+      },
+      "orderedActors": [
+        "challengerBehind",
+        "hero"
+      ],
+      "output": {
+        "endedEvent": null,
+        "factPredicate": "battle.closing",
+        "internalKind": "battle.pressure_behind",
+        "startEvent": "HUNTED",
+        "tapeChannel": "race.battle.pressure"
+      },
+      "parameters": [
+        {
+          "default": 0.25,
+          "id": "sample_interval_s",
+          "maximum": 1.0,
+          "minimum": 0.1,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 12.0,
+          "id": "trend_window_s",
+          "maximum": 30.0,
+          "minimum": 6.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 1.0,
+          "id": "bucket_s",
+          "maximum": 2.0,
+          "minimum": 0.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 8,
+          "id": "min_samples",
+          "maximum": 60,
+          "minimum": 6,
+          "provenance": "estimated",
+          "type": "integer",
+          "unit": "count"
+        },
+        {
+          "default": 0.8,
+          "id": "min_coverage",
+          "maximum": 1.0,
+          "minimum": 0.6,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "fraction"
+        },
+        {
+          "default": 0.7,
+          "id": "min_confidence",
+          "maximum": 1.0,
+          "minimum": 0.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "fraction"
+        },
+        {
+          "default": 3.0,
+          "id": "enter_gap_max_s",
+          "maximum": 8.0,
+          "minimum": 1.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 0.6,
+          "id": "min_closing_change_s",
+          "maximum": 2.0,
+          "minimum": 0.2,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": -0.04,
+          "id": "max_closing_slope",
+          "maximum": -0.01,
+          "minimum": -0.3,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds_per_second"
+        },
+        {
+          "default": 3.0,
+          "id": "confirm_s",
+          "maximum": 10.0,
+          "minimum": 1.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 0.4,
+          "id": "material_change_s",
+          "maximum": 1.5,
+          "minimum": 0.1,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 6.0,
+          "id": "update_min_interval_s",
+          "maximum": 30.0,
+          "minimum": 2.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 4.0,
+          "id": "exit_gap_min_s",
+          "maximum": 12.0,
+          "minimum": 1.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": -0.01,
+          "id": "clear_slope",
+          "maximum": 0.1,
+          "minimum": -0.05,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds_per_second"
+        },
+        {
+          "default": 2.0,
+          "id": "clear_s",
+          "maximum": 10.0,
+          "minimum": 1.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 1.0,
+          "id": "stale_after_s",
+          "maximum": 3.0,
+          "minimum": 0.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 1.5,
+          "id": "approach_enter_s",
+          "maximum": 3.0,
+          "minimum": 0.8,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 1.8,
+          "id": "approach_exit_s",
+          "maximum": 4.0,
+          "minimum": 1.0,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 0.8,
+          "id": "attack_enter_s",
+          "maximum": 1.5,
+          "minimum": 0.3,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 1.1,
+          "id": "attack_exit_s",
+          "maximum": 2.0,
+          "minimum": 0.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 0.35,
+          "id": "overlap_enter_s",
+          "maximum": 0.8,
+          "minimum": 0.1,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 0.55,
+          "id": "overlap_exit_s",
+          "maximum": 1.2,
+          "minimum": 0.2,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "gap_seconds"
+        },
+        {
+          "default": 0.5,
+          "id": "overlap_confirm_s",
+          "maximum": 2.0,
+          "minimum": 0.25,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        }
+      ],
+      "tuningPolicy": "required",
+      "version": 1
+    },
+    {
+      "algorithm": "two_active_relations_v1",
+      "bands": [],
+      "clear": {
+        "anyPredicates": [
+          "either_relation_inactive"
+        ],
+        "holdParameter": "two_front_clear_s",
+        "immediateInvalidators": [
+          "target_or_relation_epoch_replaced",
+          "occurrence_or_stream_change"
+        ]
+      },
+      "correlationKey": [
+        "streamEpoch",
+        "occurrenceId",
+        "frontRelationEpoch",
+        "rearRelationEpoch"
+      ],
+      "crossFieldInvariants": [],
+      "entry": {
+        "allPredicates": [
+          "front_relation_active",
+          "rear_relation_active",
+          "same_stream_occurrence_hero",
+          "distinct_targets"
+        ],
+        "holdParameter": "two_front_confirm_s",
+        "unknownSatisfies": false
+      },
+      "experimental": true,
+      "features": [],
+      "fsmStates": [
+        "inactive",
+        "candidate",
+        "active",
+        "clearing"
+      ],
+      "id": "battle_two_front_v1",
+      "kind": "composite",
+      "materialUpdate": null,
+      "orderedActors": [
+        "rear",
+        "hero",
+        "front"
+      ],
+      "output": {
+        "endedEvent": null,
+        "factPredicate": null,
+        "featureId": "battle.two_front_active",
+        "internalKind": "battle.two_front",
+        "startEvent": "BATTLE_FOR_POSITION",
+        "tapeChannel": "race.battle.two_front"
+      },
+      "parameters": [
+        {
+          "default": 1.0,
+          "id": "two_front_confirm_s",
+          "maximum": 4.0,
+          "minimum": 0.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        },
+        {
+          "default": 1.0,
+          "id": "two_front_clear_s",
+          "maximum": 4.0,
+          "minimum": 0.5,
+          "provenance": "estimated",
+          "type": "number",
+          "unit": "seconds"
+        }
+      ],
+      "tuningPolicy": "required",
+      "version": 1
+    }
+  ],
+  "duplicateOrOlderFrame": "audited_noop",
+  "frameOrder": "strictly_increasing_process_global_frameSequence",
+  "schemaVersion": "detector-catalog/2",
+  "sourceBaseline": "master@0ce75d4"
+}

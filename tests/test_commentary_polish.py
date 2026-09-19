@@ -13,9 +13,7 @@ from irswitch.commentary.polish import (
     build_polish_request,
     fact_violation_codes,
     polish_skeleton,
-    skeleton_fallback_text,
 )
-from irswitch.commentary.speech_hero import normalize_hero_vocative, rewrite_schema_hero
 from irswitch.commentary.tts import ProcessTtsSink, build_tts_sink
 from irswitch.overlay.models import RaceState
 from irswitch.overlay.settings import (
@@ -254,18 +252,6 @@ def test_grounded_fact_lock_rejects_forbidden_pass_and_new_number() -> None:
         fact_pack={**facts, "allowed_names": ["Meyer", "Rossi"]},
     )
     assert "invented_name" in invented_name
-
-    live_atmosphere = fact_violation_codes(
-        facts["anchor"],
-        "Meyer takes the lead from Hamilton.",
-        fact_pack={
-            **facts,
-            "version": "commentary-facts/3",
-            "allowed_names": ["Meyer", "Rossi"],
-            "microplan": {"relation": "class_leader_changed", "actor_roles": []},
-        },
-    )
-    assert "invented_name" in live_atmosphere
 
     missing_relation = fact_violation_codes(
         facts["anchor"],
@@ -581,7 +567,7 @@ def test_polish_retries_when_model_addresses_the_driver() -> None:
     assert "address_driver" in (outcome.response or {}).get("validatorCodes", [])
 
 
-def test_polish_rewrites_hero_vocative_without_second_llm_call() -> None:
+def test_polish_retries_when_model_uses_hero_vocative() -> None:
     graph = load_sequence_graph()
     node = graph.nodes["hunting"]
     settings = CommentarySettings(llm_polish=True, llm_max_attempts=2)
@@ -600,9 +586,10 @@ def test_polish_rewrites_hero_vocative_without_second_llm_call() -> None:
         opener=opener,
         driver_names=("Richard",),
     )
-    assert outcome.outcome == "ok"
-    assert outcome.text.startswith("The gap to Smith")
-    assert len(calls) == 1
+    assert outcome.outcome == "retry_exhausted"
+    assert outcome.text == ""
+    assert len(calls) == 2
+    assert "hero_vocative" in (outcome.response or {}).get("validatorCodes", [])
 
 
 def test_polish_retries_fact_break_then_keeps_good_rewrite() -> None:
@@ -627,7 +614,7 @@ def test_polish_retries_fact_break_then_keeps_good_rewrite() -> None:
     assert "lead" not in outcome.text.lower()
 
 
-def test_process_sink_rejects_skeleton_when_retry_exhausted(
+def test_process_sink_speaks_skeleton_when_retry_exhausted(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     graph = load_sequence_graph()
@@ -678,7 +665,7 @@ def test_process_sink_rejects_skeleton_when_retry_exhausted(
             node=node,
         )
     )
-    assert spoken == []
+    assert spoken == ["Adamson is ahead."]
 
 
 def test_runtime_debug_gate_for_tape(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -687,203 +674,3 @@ def test_runtime_debug_gate_for_tape(monkeypatch: pytest.MonkeyPatch) -> None:
     set_runtime_log_level("DEBUG")
     assert logging.getLogger().getEffectiveLevel() == logging.DEBUG
     set_runtime_log_level("INFO")
-
-
-def test_placement_paraphrase_and_false_win() -> None:
-    pack = {
-        "version": "commentary-facts/3",
-        "anchor": "He finishes in P20.",
-        "required_facts": [
-            {
-                "id": "beat:placement",
-                "text": "He finishes in P20.",
-                "required_terms": [],
-                "required_numbers": ["20"],
-                "relation": "hero_placement",
-            }
-        ],
-        "allowed_names": ["Richard"],
-        "allowed_numbers": ["20"],
-        "microplan": {"relation": "hero_placement", "actor_roles": [["hero", "Richard"]]},
-        "hero": {"name": "Richard", "class_position": 20},
-        "beat": {"event": "FINISH", "node": "finish"},
-    }
-    assert (
-        fact_violation_codes(
-            pack["anchor"],
-            "Richard crosses the finish line in P20 — a solid finish.",
-            fact_pack=pack,
-        )
-        == []
-    )
-    assert (
-        fact_violation_codes(
-            pack["anchor"],
-            "Richard in P20 – a solid finish in the final lap.",
-            fact_pack=pack,
-        )
-        == []
-    )
-    checkered = {
-        "version": "commentary-facts/3",
-        "anchor": "That's the checkered flag.",
-        "required_facts": [
-            {
-                "id": "beat:event",
-                "text": "That's the checkered flag.",
-                "required_terms": [],
-                "required_numbers": [],
-                "relation": "factual_beat",
-            }
-        ],
-        "allowed_names": [],
-        "allowed_numbers": [],
-        "microplan": {"relation": "factual_beat", "actor_roles": [["hero", "Richard"]]},
-        "hero": {"name": "Richard", "class_position": 20},
-        "beat": {"event": "SESSION_FLAG", "node": "session_flag_checkered"},
-    }
-    codes = fact_violation_codes(
-        checkered["anchor"],
-        "Richard crosses the line in first — the checkered flag waves.",
-        fact_pack=checkered,
-    )
-    assert "invented_lead" in codes
-    assert "missing_required_name" not in codes
-
-
-def test_weather_does_not_require_unrelated_hero() -> None:
-    pack = {
-        "version": "commentary-facts/3",
-        "anchor": "Conditions are set, but the surface may still evolve.",
-        "required_facts": [
-            {
-                "id": "beat:event",
-                "text": "Conditions are set, but the surface may still evolve.",
-                "required_terms": [],
-                "required_numbers": [],
-                "relation": "factual_beat",
-            }
-        ],
-        "microplan": {"relation": "factual_beat", "actor_roles": [["hero", "Richard"]]},
-        "weather": {
-            "skies": "overcast",
-            "air_temp": "27 C",
-            "wind_speed": "1 m/s",
-            "precipitation": "dry",
-        },
-        "beat": {"event": "WEATHER_BRIEF", "node": "weather_brief"},
-    }
-    assert "missing_required_name" not in fact_violation_codes(
-        pack["anchor"],
-        "Overcast skies, 27 C air, 1 m/s wind, dry — no rain.",
-        fact_pack=pack,
-    )
-
-
-def test_retry_prompt_omits_validator_codes() -> None:
-    graph = load_sequence_graph()
-    node = graph.nodes["session_flag_checkered"]
-    request = build_polish_request(
-        "That's the checkered flag.",
-        CommentarySettings(llm_polish=True),
-        node=node,
-        rejected=["emoji", "unsupported_event"],
-        previous="Richard claims victory",
-        fact_pack={
-            "version": "commentary-facts/3",
-            "microplan": {"relation": "factual_beat", "actor_roles": []},
-            "beat": {"event": "SESSION_FLAG", "node": "session_flag_checkered"},
-        },
-    )
-    prompt = " ".join(message["content"] for message in request["messages"]).lower()
-    assert "emoji" not in prompt
-    assert "unsupported_event" not in prompt
-    assert "correct only" not in prompt
-    assert "facts only" not in prompt
-
-
-def test_strip_emoji_is_not_a_hard_reject() -> None:
-    from irswitch.commentary.validator import strip_emoji
-
-    assert strip_emoji("Green flag. 🔥") == "Green flag."
-    pack = {
-        "version": "commentary-facts/3",
-        "anchor": "Green flag.",
-        "required_facts": [],
-        "microplan": {"relation": "factual_beat", "actor_roles": []},
-        "beat": {"event": "SESSION_FLAG", "node": "session_flag_green"},
-    }
-    assert "emoji" not in fact_violation_codes(pack["anchor"], "Green flag.", fact_pack=pack)
-
-
-def test_overtake_pass_noun_keeps_required_relation() -> None:
-    pack = {
-        "version": "commentary-facts/3",
-        "required_facts": [
-            {
-                "id": "target:name",
-                "text": "He passes Wright and takes P16.",
-                "required_terms": ["Wright"],
-                "required_numbers": ["16"],
-                "relation": "hero_passed_target",
-            }
-        ],
-        "microplan": {"relation": "hero_passed_target", "actor_roles": []},
-        "beat": {"event": "OVERTAKE", "node": "overtake"},
-    }
-    assert (
-        fact_violation_codes(
-            "Richard passes Wright and takes P sixteen.",
-            "Richard just fired a blazing pass to Wright—now P16!",
-            driver_names=("Richard",),
-            fact_pack=pack,
-        )
-        == []
-    )
-
-
-def test_first_on_the_grid_is_invented_lead() -> None:
-    assert "invented_lead" in fact_violation_codes(
-        "Richard completes lap 1 in 1:37.774.",
-        "Richard blasts through lap 1 in 1:37.774—first on the grid, pure fire!",
-    )
-    assert "invented_lead" not in fact_violation_codes(
-        "The stream is live.",
-        "Richard rockets into the stream start—first to go, red lights flash.",
-    )
-
-
-def test_schema_hero_rewrite_and_vocative_position() -> None:
-    assert (
-        rewrite_schema_hero("Hero Richard is closing the gap on Page.", ("Richard", "Buchtanen"))
-        == "Buchtanen is closing the gap on Page."
-    )
-    assert (
-        rewrite_schema_hero("Richard's hero closing on Kearney.", ("Richard",))
-        == "Richard is closing on Kearney."
-    )
-    assert normalize_hero_vocative("Richard, P30. A solid finish.", ("Richard",)) == (
-        "Richard is P30. A solid finish."
-    )
-
-
-def test_skeleton_fallback_allowlist_requires_grounded_position() -> None:
-    settings = CommentarySettings()
-    assert (
-        skeleton_fallback_text(
-            "Richard passes Wright and takes P16.",
-            "OVERTAKE",
-            settings=settings,
-            driver_names=("Richard",),
-        )
-        == "Richard passes Wright and takes P16."
-    )
-    assert skeleton_fallback_text("bad skeleton", "OVERTAKE", settings=settings) is None
-    assert (
-        skeleton_fallback_text(
-            "Richard is moving on the track again after going off.",
-            "TRACK_EXCURSION",
-            settings=settings,
-        )
-        is None
-    )

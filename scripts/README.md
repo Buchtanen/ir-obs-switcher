@@ -2,16 +2,6 @@
 
 Tento adresář obsahuje pomocné skripty pro správu projektu.
 
-## Commentary dataset (private `ir-commentary-lora`)
-
-`push_tapes_to_lora_repo.ps1` zkopíruje `recordings/overlay-*.jsonl` do
-`../ir-commentary-lora/tapes/inbox/` (nebo `$env:IRSWITCH_LORA_REPO`).
-`-Clean` spustí `scripts/clean_tapes.py` v tom repu (bez modelu).
-
-```powershell
-.\scripts\push_tapes_to_lora_repo.ps1 -Clean
-```
-
 ## Verzování
 
 ### `check_release_please_lock.py`
@@ -25,6 +15,18 @@ python scripts/check_release_please_lock.py --github-event "$GITHUB_EVENT_PATH"
 ```
 
 **Status**: aktivní (CI job `version-lock` + Release Please tag guard).
+
+### `check_semver_label.py`
+
+Na PR do `master` vyžaduje přesně jeden `semver:*` (výjimka `autorelease: pending`).
+Na `opened`/`reopened` bez labelu znovu čte labely z API až ~60 s (race create_pr → label).
+
+```bash
+python scripts/check_semver_label.py --github-event "$GITHUB_EVENT_PATH"
+python scripts/check_semver_label.py --github-event event.json --no-fetch
+```
+
+**Status**: aktivní (CI job `semver-label`).
 
 ### `bump_version.py`
 

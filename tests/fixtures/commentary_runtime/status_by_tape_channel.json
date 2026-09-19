@@ -1,0 +1,10 @@
+{
+  "race.battle.closing": {
+    "kick": 3,
+    "accepted": 2,
+    "queued": 2,
+    "selected": 1,
+    "started": 1,
+    "expired": 1
+  }
+}

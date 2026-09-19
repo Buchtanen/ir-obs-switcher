@@ -1,0 +1,8 @@
+{
+  "beatId": "battle.approach",
+  "episodeRevision": 4,
+  "nowMs": 91000,
+  "deadlineMonoMs": 92500,
+  "expectOutcome": "succeeded",
+  "expectText": "Alex is closing on Morgan."
+}

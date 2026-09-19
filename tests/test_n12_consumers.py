@@ -3,17 +3,12 @@
 from __future__ import annotations
 
 import time
-from dataclasses import asdict
 
 import pytest
 
 from irswitch.commentary.consumer import CommentaryConsumer, _spoken_irating
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.graph import load_sequence_graph, parse_sequence_graph
-from irswitch.commentary.prepared_filler import (
-    PreparedFillerHealth,
-    build_prepared_filler_plans,
-)
 from irswitch.commentary.tts import NullTtsSink
 from irswitch.events.async_fanout import AsyncEventFanout
 from irswitch.events.envelope import make_envelope
@@ -27,16 +22,10 @@ from irswitch.events.stream import (
     freeze_accepted_event,
     freeze_config,
     freeze_context,
-    thaw_context,
 )
 from irswitch.overlay.bus import OverlayBus
 from irswitch.overlay.consumer import OverlayConsumer
-from irswitch.overlay.settings import (
-    CommentarySchedulerSettings,
-    CommentarySettings,
-    PreparedFillerSettings,
-)
-from irswitch.race.editorial_stage import EditorialStage, EditorialStageFeedback
+from irswitch.overlay.settings import CommentarySchedulerSettings, CommentarySettings
 from irswitch.race.ministory import MiniStoryRegistry
 
 
@@ -74,38 +63,6 @@ def _context(*, version: int = 1, session_id: str = "session") -> bytes:
             "bio": {"status": "connected", "connected": True, "hr_state": "focused"},
             "story": {"hero": {"speakable_names": ["Alex"]}},
             "situation": {},
-            "config": {},
-        }
-    )
-
-
-def _prepared_context(
-    *,
-    stage: str = "STREAM_LOBBY_INTRO",
-    holdover_stage: str | None = None,
-    holdover_stage_epoch: int = 1,
-) -> bytes:
-    editorial: dict[str, object] = {
-        "stage": stage,
-        "stage_epoch": 1,
-        "stream_epoch": 1,
-        "track_name": "Spa",
-    }
-    if holdover_stage is not None:
-        editorial["holdover_stage"] = holdover_stage
-        editorial["holdover_stage_epoch"] = holdover_stage_epoch
-    return freeze_context(
-        {
-            "schema_version": CONTEXT_SCHEMA_VERSION,
-            "version": 1,
-            "session_id": "session",
-            "captured_monotonic_ms": int(time.monotonic() * 1000),
-            "identity": {"overlay_mode": "RACE"},
-            "race": {},
-            "bio": {"status": "connected", "connected": True, "hr_state": "focused"},
-            "story": {},
-            "situation": {},
-            "editorial": editorial,
             "config": {},
         }
     )
@@ -259,13 +216,7 @@ async def test_source_exit_resolves_but_does_not_remove_building_story_lease() -
     await consumer.apply_story_transitions()
 
     resolved = {**story, "storyRevision": 2, "state": "resolved"}
-    exit_wire = {
-        **enter,
-        "eventId": "session:LAP_COMPLETE:2",
-        "sequence": 2,
-        "phase": "EXIT",
-        "metrics": {"lap": 4, "lapTime": 61.2},
-    }
+    exit_wire = {**enter, "phase": "EXIT", "metrics": {"lap": 4, "lapTime": 61.2}}
     await consumer.handle(
         _batch(
             stream_sequence=2,
@@ -278,8 +229,6 @@ async def test_source_exit_resolves_but_does_not_remove_building_story_lease() -
 
     assert bus.active_stories_v4[0]["phase"] == "RESULT"
     assert bus.active_stories_v4[0]["miniStory"] == {**resolved, "state": "resolved"}
-    assert bus.active_stories_v4[0]["sequence"] == 2
-    assert bus.active_stories_v4[0]["eventId"] == "session:LAP_COMPLETE:2"
 
 
 @pytest.mark.asyncio
@@ -328,424 +277,6 @@ async def test_commentary_consumer_thaws_and_speaks_without_overlay_bus() -> Non
 
     assert [item.text for item in sink.spoken] == ["A lap is complete."]
     assert director.hero_names() == ("Alex",)
-
-
-@pytest.mark.asyncio
-async def test_active_prepared_filler_reaches_tts_and_records_exposure() -> None:
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    subscription.replace_latest_context(_prepared_context())
-    sink = NullTtsSink()
-    settings = CommentarySettings(
-        enabled=True,
-        cooldown_s=0,
-        graph_runtime_mode="active",
-        prepared_filler=PreparedFillerSettings(mode="active"),
-    )
-    stages: list[EditorialStageFeedback] = []
-    director = CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=sink)
-    consumer = CommentaryConsumer(
-        subscription,
-        director,
-        lambda: (settings, "en"),
-        prepared_stage_hook=stages.append,
-    )
-    context = thaw_context(_prepared_context())
-    plan = build_prepared_filler_plans(context, "en")[0]
-    consumer.prepared_filler.buffer.reconcile([plan])
-    consumer.prepared_filler.buffer.merge(
-        plan,
-        [
-            "Spa hosts this race. The stream is ready.",
-            "This race comes from Spa. We are ready to go.",
-            "Welcome to Spa for the race. The broadcast is live.",
-        ],
-    )
-    consumer.graph_runtime.reset(
-        run_epoch=0, now=time.monotonic() - settings.scheduler.max_silence_s
-    )
-
-    envelope = consumer._request_filler(time.monotonic())
-    assert envelope is not None
-    utterance = director._utterance_from_formatter(envelope)
-    assert utterance is not None and utterance.prepared
-    sink.enqueue(utterance)
-    consumer._drain_prepared_lifecycle()
-
-    next_envelope = consumer._request_filler(time.monotonic())
-    assert next_envelope is not None
-    assert next_envelope.metrics["preparedVariantId"] != envelope.metrics["preparedVariantId"]
-    assert [item.stage for item in stages] == [EditorialStage.STREAM_LOBBY_INTRO]
-    assert stages[0].stream_epoch == 1
-    assert stages[0].stage_epoch == 1
-    assert consumer.take_filler_request() is None
-    await consumer.prepared_filler.close()
-
-
-@pytest.mark.asyncio
-async def test_active_prepared_filler_uses_existing_graph_runtime() -> None:
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    subscription.replace_latest_context(_prepared_context())
-    sink = NullTtsSink()
-    settings = CommentarySettings(
-        enabled=True,
-        cooldown_s=0,
-        graph_runtime_mode="active",
-        prepared_filler=PreparedFillerSettings(mode="active"),
-    )
-    director = CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=sink)
-    consumer = CommentaryConsumer(subscription, director, lambda: (settings, "en"))
-    plan = build_prepared_filler_plans(thaw_context(_prepared_context()), "en")[0]
-    consumer.prepared_filler.buffer.reconcile([plan])
-    consumer.prepared_filler.buffer.merge(
-        plan,
-        [
-            "Spa is our venue. The broadcast is live.",
-            "We are at Spa. The session is ready.",
-            "Welcome to Spa. We are set to begin.",
-        ],
-    )
-    now = time.monotonic()
-    consumer.graph_runtime.reset(run_epoch=0, now=now - settings.scheduler.max_silence_s)
-
-    utterance = director.tick(now)
-    assert utterance is not None
-    assert sink.spoken == [utterance]
-    assert utterance.node_id == "stream_intro_venue"
-    assert utterance.graph_candidate is not None
-    assert utterance.graph_candidate.node_id == "stream_intro_venue"
-    consumer._drain_graph_lifecycle()
-    consumer._drain_prepared_lifecycle()
-
-    assert consumer.graph_runtime.fatigue_counts()["semantic"] == 1
-    await consumer.prepared_filler.close()
-
-
-@pytest.mark.asyncio
-async def test_lobby_intro_speaks_as_soon_as_prepared() -> None:
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    subscription.replace_latest_context(_prepared_context())
-    sink = NullTtsSink()
-    settings = CommentarySettings(
-        enabled=True,
-        cooldown_s=0,
-        graph_runtime_mode="active",
-        prepared_filler=PreparedFillerSettings(mode="active"),
-    )
-    director = CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=sink)
-    consumer = CommentaryConsumer(subscription, director, lambda: (settings, "en"))
-    plan = build_prepared_filler_plans(thaw_context(_prepared_context()), "en")[0]
-    consumer.prepared_filler.buffer.reconcile([plan])
-    consumer.prepared_filler.buffer.merge(
-        plan,
-        [
-            "Spa is our venue. The broadcast is live.",
-            "We are at Spa. The session is ready.",
-            "Welcome to Spa. We are set to begin.",
-        ],
-    )
-    now = time.monotonic()
-    consumer.graph_runtime.reset(run_epoch=0, now=now)
-
-    assert not consumer.graph_runtime.filler_due(now)
-    assert consumer._lobby_intro_ready()
-    utterance = director.tick(now)
-    assert utterance is not None
-    assert utterance.node_id == "stream_intro_venue"
-    await consumer.prepared_filler.close()
-
-
-@pytest.mark.asyncio
-async def test_live_session_prepared_still_waits_for_silence() -> None:
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    subscription.replace_latest_context(_prepared_context(stage="LIVE_SESSION"))
-    sink = NullTtsSink()
-    settings = CommentarySettings(
-        enabled=True,
-        cooldown_s=0,
-        graph_runtime_mode="active",
-        prepared_filler=PreparedFillerSettings(mode="active"),
-    )
-    director = CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=sink)
-    consumer = CommentaryConsumer(subscription, director, lambda: (settings, "en"))
-    plan = build_prepared_filler_plans(thaw_context(_prepared_context(stage="LIVE_SESSION")), "en")[
-        0
-    ]
-    consumer.prepared_filler.buffer.reconcile([plan], current_stage="LIVE_SESSION")
-    consumer.prepared_filler.buffer.merge(
-        plan,
-        [
-            "We are now racing at Spa. The field is live.",
-            "The race is underway at Spa. Cars are circulating.",
-            "Live racing continues at Spa. The session is green.",
-        ],
-    )
-    now = time.monotonic()
-    consumer.graph_runtime.reset(run_epoch=0, now=now)
-
-    assert not consumer._lobby_intro_ready()
-    assert director.tick(now) is None
-    await consumer.prepared_filler.close()
-
-
-@pytest.mark.asyncio
-async def test_lobby_session_intro_speaks_as_soon_as_prepared() -> None:
-    context = freeze_context(
-        {
-            "schema_version": CONTEXT_SCHEMA_VERSION,
-            "version": 1,
-            "session_id": "session",
-            "captured_monotonic_ms": int(time.monotonic() * 1000),
-            "identity": {"overlay_mode": "PRACTICE"},
-            "race": {"class_field_size": 18},
-            "bio": {"status": "connected", "connected": True, "hr_state": "focused"},
-            "story": {},
-            "situation": {},
-            "editorial": {
-                "stage": "SESSION_EVENT_INTRO",
-                "handoff_overlay_mode": "QUALIFYING",
-                "stage_epoch": 4,
-                "stream_epoch": 1,
-                "track_name": "Spa",
-            },
-            "config": {},
-        }
-    )
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    subscription.replace_latest_context(context)
-    sink = NullTtsSink()
-    settings = CommentarySettings(
-        enabled=True,
-        cooldown_s=0,
-        graph_runtime_mode="active",
-        prepared_filler=PreparedFillerSettings(mode="active"),
-    )
-    director = CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=sink)
-    consumer = CommentaryConsumer(subscription, director, lambda: (settings, "en"))
-    plan = next(
-        item
-        for item in build_prepared_filler_plans(thaw_context(context), "en")
-        if item.node_id == "event_intro_qualifying"
-    )
-    consumer.prepared_filler.buffer.reconcile([plan], current_stage="SESSION_EVENT_INTRO")
-    consumer.prepared_filler.buffer.merge(
-        plan,
-        [
-            "Qualifying is next at Spa. Timed laps will set the grid.",
-            "This is qualifying at Spa. The field is about to run flying laps.",
-            "Welcome to qualifying at Spa. The session will decide the order.",
-        ],
-    )
-    now = time.monotonic()
-    consumer.graph_runtime.reset(run_epoch=0, now=now)
-
-    assert consumer._lobby_intro_ready()
-    utterance = director.tick(now)
-    assert utterance is not None
-    assert utterance.node_id == "event_intro_qualifying"
-    await consumer.prepared_filler.close()
-
-
-def test_missing_prepared_graph_contract_fails_soft_with_diagnostic() -> None:
-    settings = CommentarySettings(
-        enabled=True,
-        graph_runtime_mode="active",
-        prepared_filler=PreparedFillerSettings(mode="active"),
-    )
-    director = CommentaryDirector(
-        graph=load_sequence_graph(), settings=settings, sink=NullTtsSink()
-    )
-    envelope = make_envelope(
-        event_type="PREPARED_FILLER",
-        phase="RESULT",
-        mode="RACE",
-        metrics={"preparedText": "Grounded text.", "preparedNodeId": "missing_node"},
-    )
-
-    assert director.rank_prepared_fillers([envelope], now=time.monotonic()) is None
-    assert director.decisions(1)[0]["reason"] == "graph_contract_missing"
-    assert director.decisions(1)[0]["nodeId"] == "missing_node"
-
-
-def test_prepared_speak_path_uses_utterance_validator() -> None:
-    director = CommentaryDirector(
-        graph=load_sequence_graph(),
-        settings=CommentarySettings(enabled=True),
-        sink=NullTtsSink(),
-    )
-    node = director.graph.nodes["session_intro_race"]
-    good = make_envelope(
-        event_type="PREPARED_FILLER",
-        phase="RESULT",
-        mode="RACE",
-        metrics={
-            "preparedText": "Spa hosts this race. The stream is ready.",
-            "preparedNodeId": "session_intro_race",
-        },
-    )
-    assert director._utterance_from_formatter(good, node=node) is not None
-
-    bad = make_envelope(
-        event_type="PREPARED_FILLER",
-        phase="RESULT",
-        mode="RACE",
-        metrics={
-            "preparedText": "You are lining up at Spa. Get ready.",
-            "preparedNodeId": "session_intro_race",
-        },
-    )
-    assert director._utterance_from_formatter(bad, node=node) is None
-    assert (
-        director._consider(bad, "unknown", time.monotonic(), node_override=node, gates_checked=True)
-        is None
-    )
-    assert director.decisions(1)[0]["reason"] == "validator_reject"
-
-
-@pytest.mark.asyncio
-async def test_active_fatal_notice_stays_off_air() -> None:
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    subscription.replace_latest_context(_prepared_context())
-    sink = NullTtsSink()
-    settings = CommentarySettings(
-        enabled=True,
-        cooldown_s=0,
-        graph_runtime_mode="active",
-        prepared_filler=PreparedFillerSettings(mode="active"),
-    )
-    director = CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=sink)
-    consumer = CommentaryConsumer(subscription, director, lambda: (settings, "cs"))
-    consumer.prepared_filler.health = PreparedFillerHealth.FATAL
-    consumer.prepared_filler.fatal_episode = 1
-
-    assert consumer._request_filler(time.monotonic()) is None
-
-    now = time.monotonic()
-    consumer.graph_runtime.reset(run_epoch=0, now=now - settings.scheduler.max_silence_s)
-    assert director.tick(now) is None
-    assert sink.spoken == []
-    assert consumer.take_filler_request() is None
-    await consumer.prepared_filler.close()
-
-
-@pytest.mark.asyncio
-async def test_lobby_context_warms_tts_once() -> None:
-    class WarmSink(NullTtsSink):
-        def __init__(self) -> None:
-            super().__init__()
-            self.warm_calls = 0
-
-        def warm(self) -> None:
-            self.warm_calls += 1
-
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    subscription.replace_latest_context(_prepared_context())
-    sink = WarmSink()
-    settings = CommentarySettings(
-        enabled=True,
-        prepared_filler=PreparedFillerSettings(mode="active"),
-    )
-    director = CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=sink)
-    consumer = CommentaryConsumer(subscription, director, lambda: (settings, "en"))
-    consumer._idle_tick()
-    consumer._idle_tick()
-    assert sink.warm_calls == 1
-    await consumer.prepared_filler.close()
-
-
-@pytest.mark.asyncio
-async def test_prepared_tts_commit_rejects_stale_stage() -> None:
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    subscription.replace_latest_context(_prepared_context())
-    sink = NullTtsSink()
-    settings = CommentarySettings(
-        enabled=True,
-        prepared_filler=PreparedFillerSettings(mode="active"),
-    )
-    director = CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=sink)
-    consumer = CommentaryConsumer(subscription, director, lambda: (settings, "en"))
-    context = thaw_context(_prepared_context())
-    plan = build_prepared_filler_plans(context, "en")[0]
-    consumer.prepared_filler.buffer.reconcile([plan])
-    consumer.prepared_filler.buffer.merge(
-        plan,
-        [
-            "Spa is our venue. The broadcast is live.",
-            "We are at Spa. The session is ready.",
-            "Welcome to Spa. We are set to begin.",
-        ],
-    )
-    consumer.graph_runtime.reset(
-        run_epoch=0, now=time.monotonic() - settings.scheduler.max_silence_s
-    )
-    envelope = consumer._request_filler(time.monotonic())
-    assert envelope is not None
-    utterance = director._utterance_from_formatter(envelope)
-    assert utterance is not None
-
-    subscription.replace_latest_context(_prepared_context(stage="LIVE_SESSION"))
-    sink.enqueue(utterance)
-
-    assert sink.spoken == []
-    assert sink.dropped == [utterance]
-    await consumer.prepared_filler.close()
-
-
-@pytest.mark.asyncio
-async def test_prepared_tts_commit_keeps_holdover_intro_sentence() -> None:
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    subscription.replace_latest_context(_prepared_context())
-    sink = NullTtsSink()
-    settings = CommentarySettings(
-        enabled=True,
-        prepared_filler=PreparedFillerSettings(mode="active"),
-    )
-    director = CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=sink)
-    consumer = CommentaryConsumer(subscription, director, lambda: (settings, "en"))
-    context = thaw_context(_prepared_context())
-    plan = build_prepared_filler_plans(context, "en")[0]
-    consumer.prepared_filler.buffer.reconcile([plan], current_stage="STREAM_LOBBY_INTRO")
-    consumer.prepared_filler.buffer.merge(
-        plan,
-        [
-            "Spa is our venue. The broadcast is live.",
-            "We are at Spa. The session is ready.",
-            "Welcome to Spa. We are set to begin.",
-        ],
-    )
-    consumer.graph_runtime.reset(
-        run_epoch=0, now=time.monotonic() - settings.scheduler.max_silence_s
-    )
-    envelope = consumer._request_filler(time.monotonic())
-    assert envelope is not None
-    utterance = director._utterance_from_formatter(envelope)
-    assert utterance is not None
-
-    subscription.replace_latest_context(
-        _prepared_context(
-            stage="LIVE_SESSION",
-            holdover_stage="STREAM_LOBBY_INTRO",
-            holdover_stage_epoch=1,
-        )
-    )
-    consumer.prepared_filler.buffer.reconcile(
-        [plan],
-        current_stage="LIVE_SESSION",
-        holdover_stage="STREAM_LOBBY_INTRO",
-    )
-    sink.enqueue(utterance)
-
-    assert sink.spoken == [utterance]
-    assert sink.dropped == []
-    await consumer.prepared_filler.close()
 
 
 @pytest.mark.asyncio
@@ -901,7 +432,7 @@ async def test_commentary_consumer_adopts_producer_assigned_story_token() -> Non
     assert sink.spoken[0].story_token.story_id == "story:0:41"
 
 
-def test_shared_producer_order_revision_does_not_interrupt_commentary_consumer() -> None:
+def test_shared_producer_order_revision_still_interrupts_commentary_consumer() -> None:
     fanout = AsyncEventFanout()
     subscription = fanout.subscribe("commentary")
     subscription.replace_latest_context(_context())
@@ -920,7 +451,7 @@ def test_shared_producer_order_revision_does_not_interrupt_commentary_consumer()
 
     consumer._idle_tick()
 
-    assert sink.interrupted == 0
+    assert sink.interrupted == 1
 
 
 def test_context_bindings_require_exact_driver_identity_and_localize_situation() -> None:
@@ -929,7 +460,7 @@ def test_context_bindings_require_exact_driver_identity_and_localize_situation()
     settings = CommentarySettings(enabled=True)
     consumer = CommentaryConsumer(
         subscription,
-        CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=NullTtsSink()),
+        CommentaryDirector(graph=_graph(), settings=settings, sink=NullTtsSink()),
         lambda: (settings, "en"),
     )
     envelope = make_envelope(
@@ -996,9 +527,10 @@ async def test_config_update_uses_frozen_snapshot_not_live_runtime_lookup() -> N
             "generation": 2,
             "language": "cs",
             "commentary": {
-                **asdict(initial),
+                **initial.__dict__,
                 "enabled": True,
                 "cooldown_s": 1.5,
+                "scheduler": initial.scheduler.__dict__,
             },
         }
     )
@@ -1062,102 +594,15 @@ async def test_reset_clears_duplicate_ledger() -> None:
             batch.events,
         )
     )
-    assert sink.interrupted == 0
+
     assert len(sink.spoken) == 2
-
-
-@pytest.mark.asyncio
-async def test_session_reset_keeps_started_tts() -> None:
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    sink = NullTtsSink(force_busy=True)
-    settings = CommentarySettings(
-        enabled=True,
-        prepared_filler=PreparedFillerSettings(mode="active"),
-    )
-    consumer = CommentaryConsumer(
-        subscription,
-        CommentaryDirector(graph=_graph(), settings=settings, sink=sink),
-        lambda: (settings, "en"),
-    )
-
-    await consumer.handle(SessionReset("session", "session", "run_epoch_changed", 2))
-
-    assert sink.interrupted == 0
-    assert sink.force_busy is True
-    assert consumer.prepared_filler.buffer.desired == ()
-
-
-@pytest.mark.asyncio
-async def test_session_reset_keeps_held_stream_end_tts() -> None:
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    sink = NullTtsSink(force_busy=True)
-    settings = CommentarySettings(enabled=True)
-    consumer = CommentaryConsumer(
-        subscription,
-        CommentaryDirector(graph=_graph(), settings=settings, sink=sink),
-        lambda: (settings, "en"),
-    )
-    consumer.hold_current_tts()
-    await consumer.handle(SessionReset("session", "session", "session_changed", 2))
-    assert sink.interrupted == 0
-    assert sink.force_busy is True
-
-
-def test_prepared_shadow_records_reconstructable_legacy_comparison() -> None:
-    fanout = AsyncEventFanout()
-    subscription = fanout.subscribe("commentary")
-    subscription.replace_latest_context(_prepared_context())
-    rows: list[dict[str, object]] = []
-    settings = CommentarySettings(
-        enabled=True,
-        cooldown_s=0,
-        prepared_filler=PreparedFillerSettings(mode="shadow"),
-    )
-    consumer = CommentaryConsumer(
-        subscription,
-        CommentaryDirector(graph=load_sequence_graph(), settings=settings, sink=NullTtsSink()),
-        lambda: (settings, "en"),
-        decision_hook=lambda entry, _now: rows.append(entry),
-    )
-    context = thaw_context(_prepared_context())
-    plan = build_prepared_filler_plans(context, "en")[0]
-    consumer.prepared_filler.buffer.reconcile([plan], current_stage="STREAM_LOBBY_INTRO")
-    consumer.prepared_filler.buffer.merge(
-        plan,
-        [
-            "Spa hosts this race. The stream is ready.",
-            "This race comes from Spa. We are ready to go.",
-            "Welcome to Spa for the race. The broadcast is live.",
-        ],
-    )
-    consumer.graph_runtime.reset(
-        run_epoch=0, now=time.monotonic() - settings.scheduler.max_silence_s
-    )
-
-    assert consumer._request_filler(time.monotonic()) is None
-    request = consumer.take_filler_request()
-    assert request is not None
-    consumer.complete_filler(FillerResult(request.request_id, "no_fact"))
-    consumer._drain_filler_results(time.monotonic())
-
-    compared = next(row for row in rows if row.get("action") == "shadow_compared")
-    assert compared["semanticKey"] == plan.semantic_key
-    assert compared["legacySemanticKey"] is None
-    assert compared["divergence"] == "shadow_only"
-    assert compared["comparisonReason"] == "no_fact"
 
 
 def test_filler_request_is_bounded_and_completed_by_typed_result() -> None:
     fanout = AsyncEventFanout()
     subscription = fanout.subscribe("commentary")
     subscription.replace_latest_context(_context())
-    settings = CommentarySettings(
-        enabled=True,
-        graph_runtime_mode="legacy",
-        prepared_filler=PreparedFillerSettings(mode="legacy"),
-    )
+    settings = CommentarySettings(enabled=True)
     director = CommentaryDirector(graph=_graph(), settings=settings, sink=NullTtsSink())
     consumer = CommentaryConsumer(subscription, director, lambda: (settings, "en"))
 
@@ -1167,72 +612,3 @@ def test_filler_request_is_bounded_and_completed_by_typed_result() -> None:
     assert request is not None
     consumer.complete_filler(FillerResult(request.request_id, "no_fact"))
     assert consumer.status_snapshot()["fillerOutstanding"] is False
-
-
-@pytest.mark.asyncio
-async def test_battle_card_lease_expires_and_keeps_one_identity() -> None:
-    clock = {"t": 100.0}
-    bus = OverlayBus()
-    consumer = OverlayConsumer(
-        AsyncEventFanout().subscribe("overlay"),
-        bus,
-        battle_card_lease_s=4.0,
-        lease_clock=lambda: clock["t"],
-    )
-    page = {
-        "storyId": "story:hunt:page",
-        "storyRevision": 1,
-        "runEpoch": 0,
-        "heroOrderRevision": 0,
-        "correlationId": "battle:front:page",
-        "eventType": "HUNTING",
-        "state": "ready",
-    }
-    wright = {
-        **page,
-        "storyId": "story:hunt:wright",
-        "correlationId": "battle:front:wright",
-    }
-    page_wire = {
-        "type": "event",
-        "format": "v4",
-        "eventType": "HUNTING",
-        "phase": "ENTER",
-        "correlationId": "battle:front:page",
-        "metrics": {"gap": 0.78},
-    }
-    wright_wire = {
-        **page_wire,
-        "correlationId": "battle:front:wright",
-        "metrics": {"gap": 0.41},
-    }
-    await consumer.handle(_batch(overlay_wire=page_wire, story_payload=page, phase="ENTER"))
-    consumer.enqueue_story_transition({**page, "action": "speaking"})
-    await consumer.apply_story_transitions()
-    assert bus.active_stories_v4[0]["correlationId"] == "battle:front:page"
-
-    await consumer.handle(
-        _batch(
-            stream_sequence=2,
-            event_sequence=2,
-            overlay_wire=wright_wire,
-            story_payload=wright,
-            phase="ENTER",
-        )
-    )
-    consumer.enqueue_story_transition({**wright, "action": "speaking"})
-    await consumer.apply_story_transitions()
-    live = [story["correlationId"] for story in bus.active_stories_v4]
-    assert live == ["battle:front:wright"]
-
-    clock["t"] = 104.0
-    await consumer.apply_story_transitions()
-    assert bus.active_stories_v4 == []
-
-    consumer.enqueue_story_transition({**wright, "action": "speaking"})
-    await consumer.apply_story_transitions()
-    assert bus.active_stories_v4 == []
-
-    consumer.enqueue_story_transition({**wright, "storyRevision": 2, "action": "speaking"})
-    await consumer.apply_story_transitions()
-    assert bus.active_stories_v4[0]["miniStory"]["storyRevision"] == 2

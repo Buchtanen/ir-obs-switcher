@@ -61,45 +61,25 @@ def test_valid_config_loads(tmp_path: Path) -> None:
     assert config.stream_chapters.start_title == "Stream start"
     assert config.stream_chapters.end_title == "Stream end"
     assert config.stream_chapters.youtube_vod is False
-    assert config.overlay.commentary.graph_runtime_mode == "active"
-    assert config.overlay.commentary.prepared_filler.mode == "active"
-    assert config.overlay.commentary.llm_temperature == 0.4
-    assert config.overlay.commentary.llm_top_p == 0.85
-    assert config.overlay.commentary.llm_top_k == 30
-    assert config.overlay.commentary.llm_num_predict == 45
-    assert config.overlay.commentary.llm_num_ctx == 512
-    assert config.overlay.race_observer.scenario_mode == "active"
-    assert config.diagnostics.voice is False
-    assert config.diagnostics.cooldown_s == 4.0
-
-
-def test_diagnostics_voice_opt_in(tmp_path: Path) -> None:
-    path = _write_config(tmp_path)
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write("\n[diagnostics]\nvoice = true\ncooldown_s = 5.5\n")
-    config = AppConfig.from_file(path)
-    assert config.diagnostics.voice is True
-    assert config.diagnostics.cooldown_s == 5.5
-
-
-@pytest.mark.parametrize(
-    "mode, expected",
-    [("active", "active"), ("shadow", "shadow"), ("legacy", "legacy"), ("invalid", "legacy")],
-)
-def test_race_scenario_mode_config(tmp_path: Path, mode: str, expected: str) -> None:
-    path = _write_config(tmp_path)
-    with path.open("a", encoding="utf-8") as fh:
-        fh.write(f"\n[race_scenarios]\nmode = {mode}\n")
-    assert AppConfig.from_file(path).overlay.race_observer.scenario_mode == expected
+    assert config.overlay.commentary.graph_runtime_mode == "legacy"
+    assert config.commentary_v2 is not None
+    assert config.commentary_v2.valid is True
+    assert config.commentary_v2.snapshot is not None
+    assert config.commentary_v2.snapshot.values["commentary.enabled"] is False
 
 
 @pytest.mark.parametrize("mode", ["legacy", "shadow", "active"])
-def test_commentary_graph_runtime_mode_loads(tmp_path: Path, mode: str) -> None:
+def test_legacy_commentary_graph_runtime_never_selects_a_runtime(tmp_path: Path, mode: str) -> None:
     path = _write_config(tmp_path)
     with path.open("a", encoding="utf-8") as fh:
         fh.write(f"\n[commentary.graph_runtime]\nmode = {mode}\n")
     config = AppConfig.from_file(path)
-    assert config.overlay.commentary.graph_runtime_mode == mode
+    assert config.overlay.commentary.enabled is False
+    assert config.overlay.commentary.graph_runtime_mode == "legacy"
+    assert config.commentary_v2 is not None
+    assert config.commentary_v2.valid is False
+    assert config.commentary_v2.snapshot is None
+    assert config.commentary_v2.diagnostics[0].reason == "legacy_key"
 
 
 def test_invalid_commentary_graph_runtime_mode_falls_back_to_legacy(tmp_path: Path) -> None:
@@ -108,6 +88,55 @@ def test_invalid_commentary_graph_runtime_mode_falls_back_to_legacy(tmp_path: Pa
         fh.write("\n[commentary.graph_runtime]\nmode = surprising\n")
     config = AppConfig.from_file(path)
     assert config.overlay.commentary.graph_runtime_mode == "legacy"
+    assert config.commentary_v2 is not None
+    assert config.commentary_v2.valid is False
+
+
+def test_valid_v2_commentary_is_loaded_but_legacy_runtime_stays_disabled(
+    tmp_path: Path,
+) -> None:
+    path = _write_config(tmp_path)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(
+            "\n[commentary]\n"
+            "enabled = true\n"
+            "driver_name = Max Mustermann\n"
+            "\n[commentary.tts]\n"
+            "backend = espeak\n"
+        )
+
+    config = AppConfig.from_file(path)
+
+    assert config.commentary_v2 is not None
+    assert config.commentary_v2.valid is True
+    assert config.commentary_v2.snapshot is not None
+    assert config.commentary_v2.snapshot.values["commentary.enabled"] is True
+    assert config.commentary_v2.snapshot.values["commentary.tts.backend"] == "espeak"
+    assert config.overlay.commentary.enabled is False
+
+
+def test_invalid_v2_commentary_fails_soft_and_preserves_other_domains(tmp_path: Path) -> None:
+    path = _write_config(tmp_path)
+    with path.open("a", encoding="utf-8") as fh:
+        fh.write(
+            "\n[overlay]\n"
+            "theme = night_attack\n"
+            "\n[commentary]\n"
+            "enabled = true\n"
+            "max_utterance_s = not-a-number\n"
+        )
+
+    config = AppConfig.from_file(path)
+
+    assert config.overlay.theme == "night_attack"
+    assert config.overlay.commentary.enabled is False
+    assert config.commentary_v2 is not None
+    assert config.commentary_v2.valid is False
+    assert config.commentary_v2.snapshot is None
+    assert any(
+        diagnostic.source_key == "commentary.max_utterance_s"
+        for diagnostic in config.commentary_v2.diagnostics
+    )
 
 
 def test_stream_chapters_section_loads(tmp_path: Path) -> None:

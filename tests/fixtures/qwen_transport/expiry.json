@@ -1,0 +1,8 @@
+{
+  "beatId": "battle.approach",
+  "episodeRevision": 4,
+  "nowMs": 92500,
+  "deadlineMonoMs": 92500,
+  "expectOutcome": "failed",
+  "expectReason": "realization_timeout"
+}

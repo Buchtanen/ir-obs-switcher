@@ -1,0 +1,6 @@
+{
+  "nowMs": 10000,
+  "beatId": "battle.approach",
+  "candidateOrder": [40, 3],
+  "expectReason": "active_story_continuation"
+}

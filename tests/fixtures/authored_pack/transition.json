@@ -1,0 +1,9 @@
+{
+  "beatId": "stream.started",
+  "patternId": "stream.started:tight:1",
+  "nowMs": 10000,
+  "deadlineMonoMs": 20000,
+  "expectOutcome": "succeeded",
+  "expectText": "The stream is live.",
+  "expectReason": "succeeded"
+}

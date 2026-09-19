@@ -1,0 +1,7 @@
+{
+  "name": "counterfactual_identity",
+  "spokenIdentity": ["hero", "car.22", "lap"],
+  "otherIdentity": ["hero", "car.7", "lap"],
+  "spokenPattern": "timing.lap.completed:tight:1",
+  "otherPattern": "battle.pursuit:tight:1"
+}

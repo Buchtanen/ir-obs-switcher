@@ -34,8 +34,6 @@ _TIMING_SLOTS: Final[frozenset[str]] = frozenset(
         "projected_time",
         "delta",
         "gap",
-        "front_gap",
-        "rear_gap",
     }
 )
 
@@ -84,8 +82,6 @@ _FORMATTERS: Final[dict[str, SpeakFormatter]] = {
     "projected_time": speak_lap_time,
     "delta": speak_delta,
     "gap": speak_gap,
-    "front_gap": speak_gap,
-    "rear_gap": speak_gap,
 }
 
 

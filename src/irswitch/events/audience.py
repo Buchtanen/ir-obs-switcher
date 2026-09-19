@@ -17,19 +17,15 @@ COMMENTARY_ONLY_EVENTS = frozenset(
         "WEATHER_CHANGE",
         "FIELD_FACT",
         "INCIDENT_AFTERMATH",
-        "TRACK_EXCURSION",
         "BACK_UNDER_WAY",
         "SESSION_WRAP",
         "SESSION_PREVIEW",
         "SESSION_CHECKERED",
         "SESSION_FLAG",
         "STREAM_START",
-        "STREAM_END",
         "PACE_HUNT",
         "QUALI_RECAP",
         "PARADE_PAD",
-        "PREPARED_FILLER",
-        "PREPARED_FATAL",
     }
 )
 

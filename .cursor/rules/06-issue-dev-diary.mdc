@@ -10,6 +10,7 @@ Work happens in an **issue** (feature/fix/ci/docs). The issue is the “source o
 Required:
 - issue contains **AC + test plan + docs impact** (see `02-work-item-definition.mdc`)
 - development progress is tracked in **issue comments** (dev diary)
+- Prefer GitHub MCP when connected; otherwise `gh` / `gh api`. One `## Dev diary – YYYY-MM-DD` per issue per day (same-day = patch in place, do not duplicate).
 
 ### Dev diary comment template
 

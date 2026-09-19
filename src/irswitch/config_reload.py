@@ -6,9 +6,87 @@ API responses; other AppConfig fields are ignored for classification.
 
 from __future__ import annotations
 
+import threading
+
 from irswitch.config import AppConfig
+from irswitch.contracts.config import (
+    COMMENTARY_SPEECH_LANGUAGE,
+    CommentaryConfigCandidate,
+    ConfigDiagnostic,
+    ConfigInstallOutcome,
+    ConfigLedger,
+    default_commentary_snapshot,
+)
 from irswitch.models import DrivingMode
 from irswitch.overlay.schema import overlay_values
+
+
+class CommentaryConfigCoordinator:
+    """Long-lived owner of v2 reload state, independent of NarrativeRuntime."""
+
+    def __init__(
+        self,
+        ledger: ConfigLedger,
+        *,
+        automatic_enabled: bool,
+        diagnostics: tuple[ConfigDiagnostic, ...],
+    ) -> None:
+        self._lock = threading.Lock()
+        self.ledger = ledger
+        self._automatic_enabled = automatic_enabled
+        self._diagnostics = diagnostics
+
+    @classmethod
+    def bootstrap(
+        cls,
+        candidate: CommentaryConfigCandidate,
+        *,
+        ready_components: tuple[str, ...] = (),
+    ) -> CommentaryConfigCoordinator:
+        """Create generation zero from a valid startup candidate or safe defaults."""
+
+        snapshot = (
+            candidate.snapshot
+            if candidate.valid and candidate.snapshot is not None
+            else default_commentary_snapshot()
+        )
+        return cls(
+            ConfigLedger(snapshot, ready_components=ready_components),
+            automatic_enabled=bool(
+                candidate.valid
+                and candidate.snapshot is not None
+                and candidate.snapshot.values["commentary.enabled"]
+            ),
+            diagnostics=candidate.diagnostics,
+        )
+
+    @property
+    def automatic_enabled(self) -> bool:
+        with self._lock:
+            return self._automatic_enabled
+
+    @property
+    def diagnostics(self) -> tuple[ConfigDiagnostic, ...]:
+        with self._lock:
+            return self._diagnostics
+
+    @property
+    def speech_language(self) -> str:
+        """V2 speech locale is fixed and intentionally has no config key."""
+
+        return COMMENTARY_SPEECH_LANGUAGE
+
+    def install(self, candidate: CommentaryConfigCandidate) -> ConfigInstallOutcome:
+        """Install one reload candidate while retaining last-valid effective state."""
+
+        with self._lock:
+            outcome = self.ledger.install(candidate)
+            if outcome.installed:
+                self.ledger.apply_boundary("command")
+            self._automatic_enabled = outcome.automatic_enabled
+            self._diagnostics = outcome.diagnostics
+        return outcome
+
 
 # Keys that take effect after POST /config/reload without process restart.
 LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
@@ -35,78 +113,16 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "overlay.v4_assets",
         "overlay.v4_renderer",
         "overlay.session_tape",
-        "overlay.session_tape_llm",
-        "overlay.session_tape_field",
-        "overlay.battle_card_lease_s",
         "event_engine.v2_payload",
         "event_engine.practice",
         "event_engine.quali_projection",
         "event_engine.overtake_classifier",
         "event_engine.pit_story",
         "event_engine.hr_pressure",
-        "commentary.enabled",
-        "commentary.use_hr_emotion",
-        "commentary.cooldown_s",
-        "commentary.max_utterance_s",
-        "commentary.tts_backend",
-        "commentary.tts_voice",
-        "commentary.tts_rate",
-        "commentary.tts_steps",
-        "commentary.audio_device",
-        "commentary.duck_input",
-        "commentary.duck_ratio",
-        "commentary.duck_fade_ms",
-        "commentary.decision_log_size",
-        "commentary.sector_speak",
-        "commentary.sector_speak_max_per_lap",
-        "commentary.session_briefs",
-        "commentary.stream_start",
-        "commentary.gap_hunt_tts_in_practice",
-        "commentary.gap_hunt_tts_in_qualifying",
         "race_observer.leader_pace_cooldown_s",
         "race_observer.incident_classify",
         "race_observer.flags",
         "race_observer.grid_story",
-        "race_scenarios.mode",
-        "commentary.llm_polish",
-        "commentary.llm_base_url",
-        "commentary.llm_model",
-        "commentary.llm_timeout_s",
-        "commentary.llm_temperature",
-        "commentary.llm_top_p",
-        "commentary.llm_top_k",
-        "commentary.llm_num_predict",
-        "commentary.llm_num_ctx",
-        "commentary.llm_max_tokens",
-        "commentary.llm_max_attempts",
-        "commentary.polish_skeleton_fallback",
-        "commentary.driver_name",
-        "commentary.driver_nickname",
-        "commentary.graph_runtime.mode",
-        "commentary.prepared_filler.mode",
-        "commentary.prepared_filler.max_ready_plans",
-        "commentary.prepared_filler.reserved_current_stage",
-        "commentary.prepared_filler.reserved_next_stage",
-        "commentary.prepared_filler.max_inflight",
-        "commentary.prepared_filler.variants_min",
-        "commentary.prepared_filler.variants_max",
-        "commentary.prepared_filler.generation_timeout_s",
-        "commentary.prepared_filler.generation_max_attempts",
-        "commentary.prepared_filler.max_utterance_s",
-        "commentary.prepared_filler.youtube_history",
-        "commentary.prepared_filler.youtube_history_days",
-        "commentary.prepared_filler.youtube_history_max_items",
-        "commentary.prepared_filler.iracing_history",
-        "commentary.prepared_filler.system_filler",
-        "commentary.prepared_filler.speak_fatal_notice",
-        "commentary.scheduler.defer_enabled",
-        "commentary.scheduler.hard_interrupt",
-        "commentary.scheduler.max_deferred",
-        "commentary.scheduler.default_ttl_s",
-        "commentary.scheduler.incident_ttl_s",
-        "commentary.scheduler.dynamic_ttl_s",
-        "commentary.scheduler.max_silence_s",
-        "commentary.scheduler.llm_past_framing",
         "battle.hunting.enter_gap",
         "battle.hunting.exit_gap",
         "battle.hunting.min_closing_rate",
@@ -128,8 +144,6 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "battle.hunted.activation_delay",
         "battle.hunted.exit_delay",
         "battle.position_stable_seconds",
-        "battle.position_swing_debounce_s",
-        "battle.position_incident_window_s",
         "battle.gap_history_seconds",
         "battle.overtake.max_gap",
         "battle.overtake.min_closing_rate",
@@ -167,6 +181,7 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "dashboards.dashboard_gr_logo_obs",
         "dashboards.dashboard_gr_logo_iracing",
         "dashboards.dashboard_gr_logo_app",
+        "dashboards.dashboard_vr_icons_path",
         "dashboards.dashboard_event_log_size",
         "stream_chapters.enabled",
         "stream_chapters.start_title",
@@ -174,8 +189,6 @@ LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
         "stream_chapters.trigger_session_types",
         "stream_chapters.session_titles",
         "stream_chapters.youtube_vod",
-        "diagnostics.voice",
-        "diagnostics.cooldown_s",
         *(f"scenes.{mode.name}" for mode in DrivingMode),
     }
 )
@@ -230,6 +243,7 @@ def snapshot_tracked_keys(config: AppConfig) -> dict[str, object]:
         "dashboards.dashboard_gr_logo_obs": config.dashboard_gr_logo_obs,
         "dashboards.dashboard_gr_logo_iracing": config.dashboard_gr_logo_iracing,
         "dashboards.dashboard_gr_logo_app": config.dashboard_gr_logo_app,
+        "dashboards.dashboard_vr_icons_path": config.dashboard_vr_icons_path,
         "dashboards.dashboard_event_log_size": config.dashboard_event_log_size,
         "oauth.client_id": config.oauth_client_id,
         "oauth.client_secret": config.oauth_client_secret,
@@ -241,8 +255,6 @@ def snapshot_tracked_keys(config: AppConfig) -> dict[str, object]:
         ),
         "stream_chapters.session_titles": dict(config.stream_chapters.session_titles),
         "stream_chapters.youtube_vod": config.stream_chapters.youtube_vod,
-        "diagnostics.voice": config.diagnostics.voice,
-        "diagnostics.cooldown_s": config.diagnostics.cooldown_s,
     }
     values.update(overlay_values(config.overlay))
     for mode in DrivingMode:

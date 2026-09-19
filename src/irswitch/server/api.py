@@ -20,10 +20,11 @@ from irswitch.config import AppConfig
 from irswitch.logic.stream_chapters import StreamChaptersSettings, StreamChapterTracker
 from irswitch.logic.youtube_chapters import token_allows_video_update
 from irswitch.oauth import OAuthError, create_oauth_manager
-from irswitch.server.app_keys import APP_CONFIG, APP_CONFIG_PATH
+from irswitch.server.app_keys import APP_COMMENTARY_CONFIG, APP_CONFIG, APP_CONFIG_PATH
 from irswitch.server.dashboards import (
     handle_gr_status,
     handle_test_widget,
+    handle_vr_status,
 )
 from irswitch.server.event_log import get_event_log
 from irswitch.server.metrics import get_metrics
@@ -44,12 +45,6 @@ def set_app_config(config: AppConfig) -> None:
     """Set config in container and sync stream-chapters tracker settings."""
     _config_container[0] = config
     _sync_stream_chapters_settings(config.stream_chapters)
-    try:
-        from irswitch.util.diagnostic_voice import configure_diagnostic_voice
-
-        configure_diagnostic_voice(config.diagnostics)
-    except Exception:
-        logger.debug("diagnostic voice configure failed", exc_info=True)
 
 
 if TYPE_CHECKING:
@@ -632,11 +627,19 @@ async def handle_health(request: web.Request) -> web.Response:
     if not iracing_connected and not obs_connected:
         overall_status = "unhealthy"
 
+    # #273/#284 bounded commentary component — never flips overall health alone.
+    from irswitch.events.narrative_ingress import project_commentary_health_component
+    from irswitch.events.narrative_runtime_http import get_narrative_runtime
+
+    runtime = get_narrative_runtime()
+    commentary = project_commentary_health_component(None if runtime is None else runtime.status())
+
     return web.json_response(
         {
             "status": overall_status,
             "version": __version__,
             "checks": checks,
+            "commentary": commentary,
             "timestamp": int(time.time() * 1000),
         }
     )
@@ -654,7 +657,7 @@ async def handle_config_reload(request: web.Request) -> web.Response:
     import warnings
 
     from irswitch.config import AppConfig
-    from irswitch.config_reload import classify_reload_diff
+    from irswitch.config_reload import CommentaryConfigCoordinator, classify_reload_diff
 
     config_path = request.app.get(APP_CONFIG_PATH)
     if not config_path:
@@ -669,6 +672,16 @@ async def handle_config_reload(request: web.Request) -> web.Response:
         new_config = AppConfig.from_file(config_path)
         applied_live, needs_restart = classify_reload_diff(old_config, new_config)
 
+        commentary_candidate = new_config.commentary_v2
+        if commentary_candidate is None:
+            raise ValueError("v2 commentary candidate missing after config load")
+        commentary_coordinator = request.app.get(APP_COMMENTARY_CONFIG)
+        if commentary_coordinator is None:
+            commentary_coordinator = CommentaryConfigCoordinator.bootstrap(commentary_candidate)
+            commentary_outcome = None
+        else:
+            commentary_outcome = commentary_coordinator.install(commentary_candidate)
+
         # Shared runtime holder used by main_loop + API
         set_app_config(new_config)
 
@@ -676,6 +689,7 @@ async def handle_config_reload(request: web.Request) -> web.Response:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", DeprecationWarning)
             request.app[APP_CONFIG] = new_config
+            request.app[APP_COMMENTARY_CONFIG] = commentary_coordinator
 
         # Apply live switching settings into the running state machine / policy
         if _state_machine is not None:
@@ -699,6 +713,47 @@ async def handle_config_reload(request: web.Request) -> web.Response:
                 "message": "Config reloaded successfully",
                 "applied_live": applied_live,
                 "needs_restart": needs_restart,
+                "commentary_config": {
+                    "installed": (
+                        commentary_candidate.valid
+                        if commentary_outcome is None
+                        else commentary_outcome.installed
+                    ),
+                    "desired_generation": commentary_coordinator.ledger.desired_generation,
+                    "apply_sequence": commentary_coordinator.ledger.apply_sequence,
+                    "desired_hash": commentary_coordinator.ledger.desired_snapshot.config_hash,
+                    "effective_hash": commentary_coordinator.ledger.effective_snapshot.config_hash,
+                    "pending_changes": [
+                        {
+                            "key": item.key,
+                            "boundary": item.boundary,
+                            "desired_generation": item.desired_generation,
+                        }
+                        for item in commentary_coordinator.ledger.pending_changes
+                    ],
+                    "automatic_enabled": commentary_coordinator.automatic_enabled,
+                    "speech_language": commentary_coordinator.speech_language,
+                    "diagnostics": [
+                        {
+                            "reason": item.reason,
+                            "source_key": item.source_key,
+                            "replacement_keys": list(item.replacement_keys),
+                            "message": item.message,
+                        }
+                        for item in commentary_coordinator.diagnostics
+                    ],
+                    "preflights": (
+                        []
+                        if commentary_outcome is None
+                        else [
+                            {
+                                "component": item.component,
+                                "generation": item.generation,
+                            }
+                            for item in commentary_outcome.preflights
+                        ]
+                    ),
+                },
             }
         )
     except FileNotFoundError as e:
@@ -1319,6 +1374,7 @@ def create_app() -> web.Application:
     app.router.add_post("/reset", handle_reset)
     app.router.add_post("/stream/reinit", handle_stream_reinit)
     app.router.add_get("/gr-status", handle_gr_status)
+    app.router.add_get("/vr-status", handle_vr_status)
     app.router.add_get("/test", handle_test_widget)
     app.router.add_get("/ws", handle_websocket)
     app.router.add_get("/oauth/initiate", handle_oauth_initiate)

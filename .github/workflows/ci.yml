@@ -2,11 +2,59 @@ name: CI
 
 on:
   push:
-    branches: [ master, "feat/**", "feature/**", "fix/**", "chore/**", "ci/**" ]
+    branches: [ master, "codex/**", "feat/**", "feature/**", "fix/**", "chore/**", "ci/**" ]
   pull_request:
     branches: [ master ]
 
 jobs:
+  v2-contracts:
+    name: v2 frozen contracts
+    if: github.ref == 'refs/heads/codex/commentary-story-flow-spec' || github.head_ref == 'codex/commentary-story-flow-spec'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install package
+        run: |
+          python -m pip install --upgrade "pip" "setuptools>=78.1.1" "wheel"
+          pip install -e .
+
+      - name: Check v2 frozen contracts when present
+        shell: pwsh
+        run: |
+          $machine = "docs/v2.0.0/machine"
+          if (-not (Test-Path $machine)) {
+            Write-Host "v2 branch-only freeze artifacts are absent; nothing to check."
+            exit 0
+          }
+
+          $builders = @(
+            "build_freeze_registry.py",
+            "build_dto_schemas.py",
+            "build_beat_catalog.py",
+            "build_successor_graph.py",
+            "build_config_contract.py",
+            "build_api_contracts.py",
+            "build_actor_transition_model.py",
+            "build_detector_catalog.py",
+            "build_catalog_loader_contract.py",
+            "build_realization_contract.py",
+            "build_vertical_slice_fixtures.py"
+          )
+
+          foreach ($builder in $builders) {
+            python "$machine/$builder"
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+          }
+
   lint:
     name: Lint (ruff)
     uses: ./.github/workflows/lint.yml

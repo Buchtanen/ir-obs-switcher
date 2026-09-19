@@ -1,0 +1,67 @@
+{
+  "invalid": [
+    {
+      "errorContains": "item count out of range",
+      "id": "missing_beat",
+      "operation": "delete",
+      "path": ["beats", 63]
+    },
+    {
+      "errorContains": "unresolved claim",
+      "id": "unknown_predicate",
+      "operation": "set",
+      "path": ["beats", 0, "claims", "required", 0, "id"],
+      "value": "timing.not_registered"
+    },
+    {
+      "errorContains": "unknown realization family",
+      "id": "unknown_family",
+      "operation": "set",
+      "path": ["beats", 0, "realization", "family"],
+      "value": "timing.unknown"
+    },
+    {
+      "errorContains": "unknown tape channel",
+      "id": "unknown_tape_channel",
+      "operation": "set",
+      "path": ["beats", 0, "tapeChannel"],
+      "value": "race.unknown"
+    },
+    {
+      "errorContains": "invalid baseline backend",
+      "id": "unsafe_result_backend",
+      "operation": "set",
+      "path": ["beats", 0, "realization", "backend"],
+      "value": "qwen_compiled"
+    },
+    {
+      "errorContains": "stream.started cannot require a session stage",
+      "id": "stream_stage_leak",
+      "operation": "set",
+      "path": ["beats", 35, "hardContext", "stageAnyOf"],
+      "value": ["race"]
+    },
+    {
+      "errorContains": "missing required attributes",
+      "id": "missing_claim_attribute",
+      "operation": "set",
+      "path": ["beats", 0, "claims", "required", 0, "requiredAttributes"],
+      "value": []
+    },
+    {
+      "errorContains": "constraint value outside enum",
+      "id": "bad_claim_enum_constraint",
+      "operation": "set",
+      "path": ["beats", 29, "claims", "required", 0, "attributeEquals", "phase"],
+      "value": "teleport"
+    },
+    {
+      "errorContains": "trigger routing differs",
+      "id": "legacy_lifecycle_trigger",
+      "operation": "set",
+      "path": ["beats", 35, "triggers", 0, "id"],
+      "value": "STREAM_START"
+    }
+  ],
+  "schemaVersion": "beat-catalog-mutations/1"
+}

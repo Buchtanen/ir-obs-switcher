@@ -1,0 +1,6 @@
+{
+  "nowMs": 10000,
+  "tokenId": "commit:1",
+  "expectVerdict": "current",
+  "expectReason": "current"
+}

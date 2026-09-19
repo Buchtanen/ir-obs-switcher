@@ -5,9 +5,10 @@ from __future__ import annotations
 import configparser
 import logging
 from collections.abc import Mapping
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from pathlib import Path
 
+from irswitch.contracts.config import CommentaryConfigCandidate, parse_commentary_ini
 from irswitch.logic.stream_chapters import StreamChaptersSettings, load_stream_chapters_settings
 from irswitch.models import DrivingMode
 from irswitch.overlay.i18n import normalize_language as normalize_overlay_language
@@ -24,13 +25,11 @@ from irswitch.overlay.settings import (
     OverlayTapeSettings,
     OverlayV4Settings,
     OvertakeClassifierSettings,
-    PreparedFillerSettings,
     RaceObserverSettings,
     SamplingSettings,
     SystemInfoSettings,
 )
 from irswitch.sampling.scheduler import clamp_hz
-from irswitch.util.diagnostic_voice import DiagnosticVoiceSettings
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +86,7 @@ class AppConfig:
     dashboard_gr_logo_obs: str | None
     dashboard_gr_logo_iracing: str | None
     dashboard_gr_logo_app: str | None
+    dashboard_vr_icons_path: str | None
     dashboard_event_log_size: int
 
     # [oauth] - Optional OAuth credentials for YouTube API
@@ -99,8 +99,9 @@ class AppConfig:
     # Overlay / race pipeline (optional INI sections, defaults apply)
     overlay: OverlaySettings = field(default_factory=OverlaySettings)
 
-    # [diagnostics] operator ear lane. Missing section stays off.
-    diagnostics: DiagnosticVoiceSettings = field(default_factory=DiagnosticVoiceSettings)
+    # Strict v2 commentary desired candidate. Runtime ownership is introduced in #284;
+    # the legacy overlay commentary settings remain disabled until then.
+    commentary_v2: CommentaryConfigCandidate | None = None
 
     @classmethod
     def from_file(cls, path: Path | str) -> AppConfig:
@@ -214,6 +215,7 @@ class AppConfig:
         dashboard_gr_logo_obs: str | None = None
         dashboard_gr_logo_iracing: str | None = None
         dashboard_gr_logo_app: str | None = None
+        dashboard_vr_icons_path: str | None = None
         dashboard_event_log_size = 50
 
         if parser.has_section("dashboards"):
@@ -228,6 +230,7 @@ class AppConfig:
             dashboard_gr_logo_obs = dashboards_section.get("dashboard_gr_logo_obs") or None
             dashboard_gr_logo_iracing = dashboards_section.get("dashboard_gr_logo_iracing") or None
             dashboard_gr_logo_app = dashboards_section.get("dashboard_gr_logo_app") or None
+            dashboard_vr_icons_path = dashboards_section.get("dashboard_vr_icons_path") or None
 
             dashboard_event_log_size = parser.getint(
                 "dashboards", "dashboard_event_log_size", fallback=50
@@ -253,11 +256,26 @@ class AppConfig:
                     oauth_client_secret = None
 
         stream_chapters = load_stream_chapters_settings(parser)
-        overlay = _load_overlay_settings(parser)
-        diagnostics = DiagnosticVoiceSettings(
-            voice=_get_bool(parser, "diagnostics", "voice", False),
-            cooldown_s=max(0.0, _get_float(parser, "diagnostics", "cooldown_s", 4.0)),
+        application_root = Path.cwd().resolve(strict=False)
+        commentary_v2 = parse_commentary_ini(
+            parser,
+            repository_root=application_root,
+            working_directory=application_root,
+            detector_capture_preflight_ready=True,
         )
+        if not commentary_v2.valid:
+            for diagnostic in commentary_v2.diagnostics:
+                logger.warning(
+                    "v2 commentary config rejected (%s, %s): %s",
+                    diagnostic.reason,
+                    diagnostic.source_key,
+                    diagnostic.message,
+                )
+
+        # The v2 config must never select the removed legacy/shadow/public-family
+        # execution routes. Keep all non-commentary overlay domains loadable while
+        # the v2 runtime composition owner is added in #284.
+        overlay = _load_overlay_settings(_without_commentary_sections(parser))
 
         result = cls(
             http_host=http_host,
@@ -291,14 +309,30 @@ class AppConfig:
             dashboard_gr_logo_obs=dashboard_gr_logo_obs,
             dashboard_gr_logo_iracing=dashboard_gr_logo_iracing,
             dashboard_gr_logo_app=dashboard_gr_logo_app,
+            dashboard_vr_icons_path=dashboard_vr_icons_path,
             dashboard_event_log_size=dashboard_event_log_size,
             oauth_client_id=oauth_client_id,
             oauth_client_secret=oauth_client_secret,
             stream_chapters=stream_chapters,
             overlay=overlay,
-            diagnostics=diagnostics,
+            commentary_v2=commentary_v2,
         )
         return result
+
+
+def _without_commentary_sections(
+    parser: configparser.ConfigParser,
+) -> configparser.ConfigParser:
+    """Copy app config while excluding every legacy/v2 commentary section."""
+
+    filtered = configparser.ConfigParser(defaults=dict(parser.defaults()))
+    for section in parser.sections():
+        if section == "commentary" or section.startswith("commentary."):
+            continue
+        filtered.add_section(section)
+        for option, value in parser.items(section, raw=True):
+            filtered.set(section, option, value)
+    return filtered
 
 
 def _optional_float(parser: configparser.ConfigParser, section: str, key: str) -> float | None:
@@ -361,9 +395,6 @@ def _load_commentary_scheduler(
         incident_ttl_s=max(
             1.0, _get_float(parser, section, "incident_ttl_s", defaults.incident_ttl_s)
         ),
-        dynamic_ttl_s=max(
-            1.0, _get_float(parser, section, "dynamic_ttl_s", defaults.dynamic_ttl_s)
-        ),
         max_silence_s=max(
             5.0, _get_float(parser, section, "max_silence_s", defaults.max_silence_s)
         ),
@@ -379,106 +410,6 @@ def _load_commentary_graph_runtime(
     return raw if raw in {"legacy", "shadow", "active"} else "legacy"
 
 
-def _load_prepared_filler(
-    parser: configparser.ConfigParser,
-    defaults: PreparedFillerSettings,
-) -> PreparedFillerSettings:
-    section = "commentary.prepared_filler"
-    mode = _get_str(parser, section, "mode", defaults.mode).lower()
-    if mode not in {"legacy", "shadow", "active"}:
-        logger.warning("Invalid commentary.prepared_filler.mode=%r; using legacy", mode)
-        mode = "legacy"
-    capacity = max(
-        3, min(64, _get_int(parser, section, "max_ready_plans", defaults.max_ready_plans))
-    )
-    current = max(
-        0,
-        min(
-            capacity,
-            _get_int(parser, section, "reserved_current_stage", defaults.reserved_current_stage),
-        ),
-    )
-    next_stage = max(
-        0,
-        min(
-            capacity - current,
-            _get_int(parser, section, "reserved_next_stage", defaults.reserved_next_stage),
-        ),
-    )
-    minimum = max(3, min(5, _get_int(parser, section, "variants_min", defaults.variants_min)))
-    maximum = max(
-        minimum,
-        min(5, _get_int(parser, section, "variants_max", defaults.variants_max)),
-    )
-    return PreparedFillerSettings(
-        mode=mode,
-        max_ready_plans=capacity,
-        reserved_current_stage=current,
-        reserved_next_stage=next_stage,
-        max_inflight=max(
-            1, min(4, _get_int(parser, section, "max_inflight", defaults.max_inflight))
-        ),
-        variants_min=minimum,
-        variants_max=maximum,
-        generation_timeout_s=max(
-            2.0,
-            min(
-                120.0,
-                _get_float(parser, section, "generation_timeout_s", defaults.generation_timeout_s),
-            ),
-        ),
-        generation_max_attempts=max(
-            1,
-            min(
-                3,
-                _get_int(
-                    parser, section, "generation_max_attempts", defaults.generation_max_attempts
-                ),
-            ),
-        ),
-        max_utterance_s=max(
-            8.0,
-            min(
-                40.0,
-                _get_float(parser, section, "max_utterance_s", defaults.max_utterance_s),
-            ),
-        ),
-        youtube_history=_get_bool(parser, section, "youtube_history", defaults.youtube_history),
-        youtube_history_days=max(
-            7,
-            min(
-                365,
-                _get_int(parser, section, "youtube_history_days", defaults.youtube_history_days),
-            ),
-        ),
-        youtube_history_max_items=max(
-            10,
-            min(
-                500,
-                _get_int(
-                    parser,
-                    section,
-                    "youtube_history_max_items",
-                    defaults.youtube_history_max_items,
-                ),
-            ),
-        ),
-        iracing_history=_get_bool(parser, section, "iracing_history", defaults.iracing_history),
-        system_filler=_get_bool(parser, section, "system_filler", defaults.system_filler),
-        speak_fatal_notice=_get_bool(
-            parser, section, "speak_fatal_notice", defaults.speak_fatal_notice
-        ),
-    )
-
-
-def _load_scenario_mode(parser: configparser.ConfigParser, default: str) -> str:
-    raw = _get_str(parser, "race_scenarios", "mode", default).lower()
-    if raw not in {"legacy", "shadow", "active"}:
-        logger.warning("Invalid race_scenarios.mode=%r; using legacy", raw)
-        return "legacy"
-    return raw
-
-
 def _clamp_tts_rate(value: int) -> int:
     return max(-10, min(10, int(value)))
 
@@ -491,12 +422,8 @@ def _clamp_duck_fade_ms(value: int) -> int:
     return max(0, min(3000, int(value)))
 
 
-def _load_hunting(
-    parser: configparser.ConfigParser,
-    section: str,
-    defaults: HuntingSettings | None = None,
-) -> HuntingSettings:
-    defaults = defaults or HuntingSettings()
+def _load_hunting(parser: configparser.ConfigParser, section: str) -> HuntingSettings:
+    defaults = HuntingSettings()
     return HuntingSettings(
         enter_gap=_get_float(parser, section, "enter_gap", defaults.enter_gap),
         exit_gap=_get_float(parser, section, "exit_gap", defaults.exit_gap),
@@ -568,8 +495,6 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         directory=safe_tape_dir(
             _get_str(parser, "overlay", "session_tape_dir", defaults.tape.directory)
         ),
-        llm_rows=_get_bool(parser, "overlay", "session_tape_llm", defaults.tape.llm_rows),
-        field=_get_bool(parser, "overlay", "session_tape_field", defaults.tape.field),
     )
 
     ee_defaults = defaults.event_engine
@@ -679,36 +604,6 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
                 ),
             ),
         ),
-        llm_top_p=max(
-            0.0,
-            min(
-                1.0,
-                _get_float(parser, "commentary", "llm_top_p", commentary_defaults.llm_top_p),
-            ),
-        ),
-        llm_top_k=max(
-            1,
-            min(100, _get_int(parser, "commentary", "llm_top_k", commentary_defaults.llm_top_k)),
-        ),
-        llm_num_predict=max(
-            16,
-            min(
-                256,
-                _get_int(
-                    parser,
-                    "commentary",
-                    "llm_num_predict",
-                    commentary_defaults.llm_num_predict,
-                ),
-            ),
-        ),
-        llm_num_ctx=max(
-            256,
-            min(
-                8192,
-                _get_int(parser, "commentary", "llm_num_ctx", commentary_defaults.llm_num_ctx),
-            ),
-        ),
         llm_max_tokens=max(
             32,
             min(
@@ -730,27 +625,18 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
                 ),
             ),
         ),
-        polish_skeleton_fallback=_get_bool(
-            parser,
-            "commentary",
-            "polish_skeleton_fallback",
-            commentary_defaults.polish_skeleton_fallback,
-        ),
         driver_name=_get_str(parser, "commentary", "driver_name", commentary_defaults.driver_name),
         driver_nickname=_get_str(
             parser, "commentary", "driver_nickname", commentary_defaults.driver_nickname
         ),
         scheduler=_load_commentary_scheduler(parser, commentary_defaults.scheduler),
-        graph_runtime_mode=_load_commentary_graph_runtime(parser, "active"),
-        prepared_filler=_load_prepared_filler(
-            parser,
-            replace(commentary_defaults.prepared_filler, mode="active"),
+        graph_runtime_mode=_load_commentary_graph_runtime(
+            parser, commentary_defaults.graph_runtime_mode
         ),
     )
 
     ro_defaults = defaults.race_observer
     race_observer = RaceObserverSettings(
-        scenario_mode=_load_scenario_mode(parser, ro_defaults.scenario_mode),
         leader_pace_cooldown_s=max(
             0.0,
             min(
@@ -838,31 +724,15 @@ def _load_overlay_settings(parser: configparser.ConfigParser) -> OverlaySettings
         language=language,
         v4=v4,
         tape=tape,
-        battle_card_lease_s=max(
-            0.0,
-            _get_float(parser, "overlay", "battle_card_lease_s", defaults.battle_card_lease_s),
-        ),
         event_engine=event_engine,
         commentary=commentary,
         race_observer=race_observer,
         sampling=sampling,
         battle=BattleSettings(
             hunting=_load_hunting(parser, "battle.hunting"),
-            hunted=_load_hunting(parser, "battle.hunted", defaults.battle.hunted),
+            hunted=_load_hunting(parser, "battle.hunted"),
             position_stable_seconds=_get_float(
                 parser, "battle", "position_stable_seconds", defaults.battle.position_stable_seconds
-            ),
-            position_swing_debounce_s=_get_float(
-                parser,
-                "battle",
-                "position_swing_debounce_s",
-                defaults.battle.position_swing_debounce_s,
-            ),
-            position_incident_window_s=_get_float(
-                parser,
-                "battle",
-                "position_incident_window_s",
-                defaults.battle.position_incident_window_s,
             ),
             gap_history_seconds=_get_float(
                 parser, "battle", "gap_history_seconds", defaults.battle.gap_history_seconds

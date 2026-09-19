@@ -1,13 +1,16 @@
 # Stateful commentary sequence graph — specification and implementation plan
 
-**Status:** shipped on `master` (stateful graph + N12). Live OBS/Ollama listening still pending.
+**Status:** implementation complete through Phase 6 on `feat/stateful-commentary-sequence-graph`; Phase 7 live acceptance pending
 
-**Tracking:** [#210](https://github.com/Buchtanen/ir-obs-switcher/issues/210) (N12/#200 landed).
+**Base branch:** `refactor/200-n12-async-consumers`
 
-**Related:** [Commentary engine](../COMMENTARY_ENGINE.md), [domeny/commentary](dokumentace/domeny/commentary.md)
+**Baseline commit:** `8788f95`
 
-This document began as the design contract. Runtime default in `config.example.ini` is
-`[commentary.graph_runtime] mode=active`. `legacy` / `shadow` remain selectable.
+**Tracking:** [#210](https://github.com/Buchtanen/ir-obs-switcher/issues/210), based on the [#200](https://github.com/Buchtanen/ir-obs-switcher/issues/200) N12 consumer split
+
+**Related:** [Commentary engine](../COMMENTARY_ENGINE.md), [Test 6 analysis](overlay_commentary_test_6_analysis.md), [Test 6 fix plan](overlay_commentary_test_6_fix_implementation_plan.md), [Editorial MiniStory lifecycle](implementation_editorial_ministory.md)
+
+This document began as the design contract for a future commentary-policy change. It now also records the implemented feature-branch behavior and remaining rollout gates. The shipped configuration default is still `legacy`; `shadow` and `active` must be selected explicitly until live acceptance and release review are complete.
 
 ---
 
@@ -646,7 +649,7 @@ Full semantic keys and score breakdowns remain DEBUG/tape data, not a high-frequ
 
 ### Automated implementation status — 2026-09-02
 
-Phases 1–6 are shipped on `master` and covered by focused plus full regression tests. The checkboxes above remain the live OBS/Ollama listening gate (Phase 7), not a claim that the code is still on a feature branch.
+Phases 1–6 are implemented on the feature branch and covered by focused plus full regression tests. The checkboxes above remain release gates rather than being converted into claims before the manual Phase 7 review and PR classification are recorded.
 
 Current automated evidence:
 
@@ -692,7 +695,7 @@ Likely files:
 
 ### Phase 1 — Graph v2 schema and compatibility
 
-**Shipped on master:** immutable graph v2 editorial metadata, strict validation, complete node/edge migration, and inventory tests are delivered.
+**Implemented on feature branch:** immutable graph v2 editorial metadata, strict validation, complete node/edge migration, and inventory tests are delivered.
 
 **Purpose:** add static editorial policy without changing selection.
 
@@ -723,7 +726,7 @@ Likely files:
 
 ### Phase 2 — `SequenceGraphRuntime` core
 
-**Shipped on master:** bounded decaying fatigue, semantic/material identity, path scoring, critical floor, deterministic ranking, silence state, reset, and lifecycle behavior are covered by unit tests.
+**Implemented on feature branch:** bounded decaying fatigue, semantic/material identity, path scoring, critical floor, deterministic ranking, silence state, reset, and lifecycle behavior are covered by unit tests.
 
 **Purpose:** implement bounded state, semantic identity, fatigue, silence, and scoring in isolation.
 
@@ -752,7 +755,7 @@ Likely files:
 
 ### Phase 3 — Shadow-mode director integration
 
-**Shipped on master:** graph diagnostics, consumer-owned lifecycle mutation, compact status, and fail-soft legacy fallback are covered by automated tests.
+**Implemented on feature branch:** graph diagnostics, consumer-owned lifecycle mutation, compact status, and fail-soft legacy fallback are covered by automated tests.
 
 **Purpose:** observe the new graph without changing audible behavior.
 
@@ -789,7 +792,7 @@ Likely files:
 
 ### Phase 4 — Active selection for repeated live/context families
 
-**Shipped on master:** batch ranking, active-family cooldown replacement, graph-owned silence/backoff, and graph-score deferred replacement are covered by automated tests.
+**Implemented on feature branch:** batch ranking, active-family cooldown replacement, graph-owned silence/backoff, and graph-score deferred replacement are covered by automated tests.
 
 **Purpose:** limit first behavior change to the noisy families with the clearest benefit.
 
@@ -820,7 +823,7 @@ Acceptance gate:
 
 ### Phase 5 — Graph-ranked filler candidates
 
-**Shipped on master:** RaceObserver publishes a bounded factual candidate set in active mode; legacy rotation remains available only for rollback compatibility.
+**Implemented on feature branch:** RaceObserver publishes a bounded factual candidate set in active mode; legacy rotation remains available only for rollback compatibility.
 
 **Purpose:** remove fixed filler rotation as an editorial decision.
 
@@ -851,7 +854,7 @@ Likely files:
 
 ### Phase 6 — Full active cutover and policy deletion
 
-**Shipped on master:** every graph-covered family uses one active ranking path, critical and closure inventories are asserted, active cooldown ownership is removed, the global timer is only a technical audio gap, and legacy remains isolated as the compatibility rollback path.
+**Implemented on feature branch:** every graph-covered family uses one active ranking path, critical and closure inventories are asserted, active cooldown ownership is removed, the global timer is only a technical audio gap, and legacy remains isolated as the compatibility rollback path.
 
 **Purpose:** achieve architectural simplification after evidence, not before it.
 

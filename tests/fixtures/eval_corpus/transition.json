@@ -1,0 +1,7 @@
+{
+  "profile": "tight",
+  "modelVersion": "qwen3:4b-instruct-2507-q4_K_M",
+  "bundleHash": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+  "expectMaterialFalseAccepts": 0,
+  "expectGateEnabled": true
+}

@@ -1,0 +1,8 @@
+{
+  "beatId": "battle.approach",
+  "nowMs": 20000,
+  "deadlineMonoMs": 15000,
+  "expiresMonoMs": 18000,
+  "expectOutcome": "failed",
+  "expectReason": "realization_timeout"
+}

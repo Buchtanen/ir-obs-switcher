@@ -23,6 +23,8 @@ Každý PR do `master` musí mít **přesně jeden** z těchto labelů:
 
 > Výjimka: automaticky generovaný Release PR (má label `autorelease: pending`) semver label nepotřebuje.
 
+Check `semver-label` na `opened`/`reopened` **počká až ~60 s** a znovu čte labely z API (agent stihne nalepit `semver:*` po `create_pr`). Label pořád nastavuješ ty / agent — CI ho nepíše. Event `labeled` zůstává záloha; in-progress open run se při něm zruší (`concurrency`). Empty commit kvůli retriggeru nedělej.
+
 ### 2) PR title (doporučení)
 Doporučený styl je conventional (kvůli čitelným release notes):
 

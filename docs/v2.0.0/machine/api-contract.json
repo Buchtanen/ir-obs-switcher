@@ -1,0 +1,88 @@
+{
+  "errorStatus": {
+    "admission_timeout": 503,
+    "component_unavailable": 503,
+    "forbidden": 403,
+    "invalid_json": 400,
+    "invalid_request": 400,
+    "mailbox_overloaded": 503,
+    "not_found": 404,
+    "speech_busy": 409,
+    "validation_failed": 422
+  },
+  "healthAugmentation": {
+    "commentaryDegradationChangesOverallSuccess": false,
+    "field": "commentary",
+    "method": "GET",
+    "path": "/health",
+    "schema": "HealthCommentarySummary"
+  },
+  "privacy": {
+    "forbiddenResponseFields": [
+      "prompt",
+      "completion",
+      "endpoint",
+      "exception",
+      "absolutePath",
+      "dispatchToken",
+      "device"
+    ],
+    "tapePathForm": "relative_only"
+  },
+  "removedRoutes": [
+    {
+      "behavior": "generic_server_404_no_commentary_tombstone",
+      "method": "GET",
+      "path": "/api/commentary/assignments"
+    }
+  ],
+  "responseContentType": "application/json",
+  "routes": [
+    {
+      "method": "GET",
+      "path": "/api/commentary/status",
+      "requestSchema": null,
+      "responseSchema": "StatusResponse",
+      "successStatus": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/commentary/decisions",
+      "query": {
+        "behavior": "integer_then_clamp",
+        "limitDefault": 20,
+        "limitMaximum": 100,
+        "limitMinimum": 1
+      },
+      "requestSchema": null,
+      "responseSchema": "DecisionsResponse",
+      "successStatus": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/commentary/validate",
+      "requestSchema": "ValidateRequest",
+      "responseSchema": "ValidateResponse",
+      "successStatus": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/commentary/speak",
+      "requestSchema": "SpeakRequest",
+      "responseSchema": "SpeakAcceptedResponse",
+      "successStatus": 202
+    }
+  ],
+  "runtimeSchemaVersion": "commentary-runtime/2",
+  "schemaVersion": "commentary-api-contract/2",
+  "writeTransport": {
+    "admissionTimeoutMs": 1000,
+    "contentType": "application/json",
+    "csrfHeader": {
+      "name": "X-Requested-With",
+      "value": "irswitch"
+    },
+    "maximumBodyBytes": 65536,
+    "peerPolicy": "socket_peer_loopback_only_forwarded_headers_ignored"
+  }
+}

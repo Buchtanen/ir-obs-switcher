@@ -11,6 +11,7 @@ Do **not** start by grepping `src/` or inventing a module.
 2. Matching `docs/dokumentace/domeny/*.md`
 3. Open-PR-only work: `docs/dokumentace/inflight/README.md`
 4. INI → `CONFIG.md`. HTTP → `API.md`. V4 canvas → `assets/overlay/themes/docs/overlay_v4_layout_sizing_motion_spec.md`
+5. Agent `/flow` / Cloud vs repo → `jak-cist.md` + `.cursor/README.md` + `10-task-flow-defaults.mdc` (Cloud does not auto-run `/flow`)
 
 If the index cannot answer “where does this live?”, the index is wrong. Fix the page in the same change.
 

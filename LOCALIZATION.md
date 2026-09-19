@@ -78,6 +78,10 @@ Lokalizovány jsou všechny texty v:
   - Metriky (Scene Switches, Avg Latency, Uptime, atd.)
   - YouTube API zprávy
 
+- **VR Dashboard** (`/vr-status`):
+  - Název scény
+  - Status indikátory
+
 ### Event Log
 
 - Typy eventů (Application Started, Connection Lost, Scene Switched, atd.)

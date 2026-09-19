@@ -3,6 +3,12 @@ description: Branch naming convention for this repo
 alwaysApply: true
 ---
 
+## Default base
+
+Unless the issue, its issue-set/umbrella, or an explicit human prompt says otherwise, start from **`master`**. Topic branch names follow this file — not a platform `cursor/` prefix.
+
+The issue-set may pin a long-lived branch (no PR to `master` until that set says so). A human prompt may override.
+
 ## Branch naming convention
 
 Format:

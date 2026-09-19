@@ -4,18 +4,9 @@ import { fmtBpmDelta, fmtDelta, fmtGap, fmtLapTime, fmtRate } from "./timing-for
 
 const ASSET_BASE = "/overlay/web/";
 /** Bust browser cache for theme PNGs when wells/icons change. */
-const ASSET_CACHE = "1.2.22";
+const ASSET_CACHE = "1.2.19";
 const DEFAULT_HOLD_MS = 4000;
 const FAMILY_CAPS = { battle: 2, timing: 1, position: 1, exception: 1, pit: 1, bio: 1, session: 1 };
-const LIVE_STORY_LEASE = new Set(["building", "committed", "speaking"]);
-/** RESULT hold / EXIT / snapshot removal; same-or-older sequence must not revive the card. */
-const holdExpired = new Map();
-
-function expireHold(key, seq) {
-  const n = Number(seq) || 0;
-  const prev = holdExpired.get(key);
-  if (prev == null || n >= prev) holdExpired.set(key, n);
-}
 
 const ENTER_MOTIONS = ["enter_reveal", "theme_glitch"];
 const REDUCED_MOTION_SKIP = new Set([
@@ -361,12 +352,12 @@ function applyIconMode(iconEl) {
   iconEl.classList.toggle("mode-full-canvas", mode !== "glyph");
 }
 
-export function isStale(envelope, { snapshot = false } = {}) {
+function isStale(envelope) {
   const cid = envelope.correlationId || envelope.storyKey || envelope.eventId;
   if (!cid) return false;
   const seq = Number(envelope.sequence || 0);
   const prev = lastSequence.get(cid) || 0;
-  if ((seq < prev || (seq === prev && !snapshot)) && envelope.phase !== "EXIT") return true;
+  if (seq <= prev && envelope.phase !== "EXIT") return true;
   lastSequence.set(cid, Math.max(prev, seq));
   return false;
 }
@@ -1066,26 +1057,17 @@ function preemptStickyFamilyPeers(familyName, keepKey, phase) {
 }
 
 function scheduleHoldTimer(node, key, envelope, phase, golden) {
+  clearTimeout(node._exitTimer);
   if (golden || isGoldenLayout()) return;
-  if (node.dataset.storyLease === "true") {
-    clearTimeout(node._exitTimer);
-    node._exitTimer = undefined;
-    holdExpired.delete(key);
-    return;
-  }
+  if (node.dataset.storyLease === "true") return;
   if (phase === "RESULT") {
-    if (node._exitTimer) return;
     const hold = envelope.presentation?.minHoldMs || DEFAULT_HOLD_MS;
-    const seq = Number(envelope.sequence || node.dataset.sequence || 0);
-    node._exitTimer = setTimeout(() => {
-      expireHold(key, seq);
-      DisplayV4.hide(key);
-    }, hold);
+    node._exitTimer = setTimeout(() => DisplayV4.hide(key), hold);
     return;
   }
   if (phase === "ACTIVE" || phase === "ENTER") {
     const maxHold = Number(envelope.presentation?.maxHoldMs || 0);
-    if (maxHold > 0 && !node._exitTimer) {
+    if (maxHold > 0) {
       node._exitTimer = setTimeout(() => DisplayV4.hide(key), maxHold);
     }
   }
@@ -1178,26 +1160,16 @@ export const DisplayV4 = {
   show(envelope, options = {}) {
     if (!envelope || envelope.format !== "v4") return null;
     const golden = Boolean(options.golden || options.container);
-    if (!golden && isStale(envelope, { snapshot: Boolean(options.snapshot) })) return null;
+    if (!golden && isStale(envelope)) return null;
     const phase = String(envelope.phase || "RESULT").toUpperCase();
     if (phase === "EXIT") {
-      const exitKey = widgetKey(envelope, resolveStateKey(envelope), { golden });
-      expireHold(exitKey, envelope.sequence || 0);
-      this.hide(exitKey);
+      this.hide(widgetKey(envelope, resolveStateKey(envelope), { golden }));
       return null;
     }
     const stateKey = resolveStateKey(envelope);
     const familyName = familyForState(stateKey);
     if (!TRANSIENT_FAMILIES.has(familyName)) return null;
     const key = widgetKey(envelope, stateKey, { golden });
-    const storyState = String(envelope.miniStory?.state || "").toLowerCase();
-    const liveLease = LIVE_STORY_LEASE.has(storyState);
-    const seq = Number(envelope.sequence || 0);
-    const expiredSeq = holdExpired.get(key);
-    if (expiredSeq != null) {
-      if (seq <= expiredSeq) return null;
-      holdExpired.delete(key);
-    }
     let node = this.active.get(key);
     const created = !node;
     if (!node) {
@@ -1217,16 +1189,12 @@ export const DisplayV4 = {
     }
     node.dataset.state = stateKey;
     node.dataset.phase = phase;
-    node.dataset.sequence = String(seq);
     if (options.snapshot) node.dataset.snapshotManaged = "true";
-    if (liveLease) {
+    const storyState = String(envelope.miniStory?.state || "").toLowerCase();
+    if (["building", "committed", "speaking", "resolved"].includes(storyState)) {
       node.dataset.storyLease = "true";
       node.dataset.storyId = envelope.miniStory.storyId || "";
       node.dataset.storyRevision = String(envelope.miniStory.storyRevision || 0);
-    } else {
-      delete node.dataset.storyLease;
-      delete node.dataset.storyId;
-      delete node.dataset.storyRevision;
     }
     node.classList.toggle("phase-compact", phase === "COMPACT");
     const accent = envelope.presentation?.accent || manifest?.states?.[stateKey]?.tone || "primary";
@@ -1263,7 +1231,6 @@ export const DisplayV4 = {
   clear() {
     for (const key of [...this.active.keys()]) this.hide(key);
     lastSequence.clear();
-    holdExpired.clear();
   },
 
   applyStateSnapshot(stories) {
@@ -1275,13 +1242,7 @@ export const DisplayV4 = {
       this.show(envelope, { snapshot: true });
     });
     for (const [key, node] of [...this.active.entries()]) {
-      if (
-        !desired.has(key) &&
-        (node.dataset.snapshotManaged === "true" || node.dataset.storyLease === "true")
-      ) {
-        expireHold(key, node.dataset.sequence);
-        this.hide(key);
-      }
+      if (node.dataset.snapshotManaged === "true" && !desired.has(key)) this.hide(key);
     }
   },
 

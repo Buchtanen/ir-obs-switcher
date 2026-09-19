@@ -61,10 +61,10 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.package-data]
 irswitch = [
-    "web/**/*",
-    "commentary/data/**/*",
-    "commentary/*.ps1",
-    "events/scenarios/data/**/*",
+  "web/**/*",
+  "commentary/data/**/*",
+  "commentary/*.ps1",
+  "contracts/schemas/**/*.json",
 ]
 
 [tool.setuptools.packages.find]

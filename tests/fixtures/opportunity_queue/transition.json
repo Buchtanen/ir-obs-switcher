@@ -1,0 +1,9 @@
+{
+  "opportunityId": "opp:transition",
+  "eventId": "event:transition",
+  "createdMonoMs": 10000,
+  "candidateOrder": [4, 1],
+  "arbitrateAtMs": 10000,
+  "expectAdmit": "queued",
+  "expectDecision": "highest_valid_candidate"
+}

@@ -22,27 +22,22 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
   - [GET /api/events](#get-apievents)
   - [GET /api/admin/status](#get-apiadminstatus)
   - [GET /api/admin/activity](#get-apiadminactivity)
-  - [GET /oauth/initiate](#get-oauthinitiate)
-  - [GET /oauth/callback](#get-oauthcallback)
-  - [GET /oauth/status](#get-oauthstatus)
-  - [POST /oauth/revoke](#post-oauthrevoke)
 - [WebSocket Endpoint](#websocket-endpoint)
   - [WS /ws](#ws-ws)
 - [HTML Dashboardy](#html-dashboardy)
   - [GET /admin](#get-admin)
   - [GET /gr-status](#get-gr-status)
+  - [GET /vr-status](#get-vr-status)
   - [GET /test](#get-test)
   - [GET /overlay](#get-overlay)
   - [GET /overlay/debug](#get-overlaydebug)
   - [GET /overlay/demo](#get-overlaydemo)
-  - [GET /overlay/golden](#get-overlaygolden)
   - [GET /config](#get-config)
   - [GET /commentary](#get-commentary)
 - [Overlay API](#overlay-api)
   - [WS /ws/overlay](#ws-wsoverlay)
   - [V4 event envelopes (`v2_payload=true`)](#v4-event-envelopes-v2_payloadtrue)
   - [GET /api/overlay/snapshot](#get-apioverlaysnapshot)
-  - [GET /api/overlay/i18n](#get-apioverlayi18n)
   - [POST /overlay/debug/emit](#post-overlaydebugemit)
   - [GET /api/config](#get-apiconfig)
   - [PUT /api/config](#put-apiconfig)
@@ -264,6 +259,10 @@ Health check endpoint pro monitoring.
       "available": true
     }
   },
+  "commentary": {
+    "status": "disabled",
+    "reason": null
+  },
   "timestamp": 1704110400000
 }
 ```
@@ -272,6 +271,14 @@ Health check endpoint pro monitoring.
 - `healthy` - oba připojené (iRacing i OBS)
 - `degraded` - jeden připojený
 - `unhealthy` - žádný připojený
+
+**Commentary** (`#273` / `#284` bounded field via `project_commentary_health_component`):
+
+Frozen goldens: `tests/fixtures/commentary_runtime/health_commentary_*.json` (machine `health_ready` parity + HTTP isolation that commentary `disabled`/`degraded` never flips overall `/health` alone).
+- Top-level `{status, reason}` only — never flips overall `/health` alone.
+- Resolves process `get_narrative_runtime()` when attached; otherwise library disabled snapshot.
+- Full operator detail remains on `GET /api/commentary/runtime`.
+- `reason` is null when healthy/idle, otherwise the first freeze-registry actor/recovery or config/runtime health code from `RuntimeStatus.reason_codes` (closed enum in `api-contracts.schema.json` → `HealthCommentarySummary.reason`). Includes mailbox/tape codes such as `mailbox_recovery`, `mailbox_overloaded`, `mailbox_evicted_update`, `deadline_admission_skipped`, `capture_unavailable`, plus config/runtime codes (`component_unavailable`, `admission_timeout`, `history_incomplete`, …).
 
 **Použití**: Pro monitoring a health checks (např. Docker, Kubernetes, load balancery).
 
@@ -327,7 +334,25 @@ Přenačtení konfigurace ze souboru.
   "status": "success",
   "message": "Config reloaded successfully",
   "applied_live": ["switching.debounce_ms", "iracing.poll_hz"],
-  "needs_restart": ["app.http_port"]
+  "needs_restart": ["app.http_port"],
+  "commentary_config": {
+    "installed": true,
+    "desired_generation": 7,
+    "apply_sequence": 21,
+    "desired_hash": "sha256:...",
+    "effective_hash": "sha256:...",
+    "pending_changes": [
+      {
+        "key": "commentary.tts.voice",
+        "boundary": "next_utterance",
+        "desired_generation": 7
+      }
+    ],
+    "automatic_enabled": true,
+    "speech_language": "en",
+    "diagnostics": [],
+    "preflights": [{"component": "tts", "generation": 7}]
+  }
 }
 ```
 
@@ -335,8 +360,11 @@ Přenačtení konfigurace ze souboru.
 |-------|------|-------------|
 | `applied_live` | `string[]` | Changed keys that apply without process restart (diff old vs new; whitelist from `CONFIG.md`) |
 | `needs_restart` | `string[]` | Changed keys that still require a process restart |
+| `commentary_config` | `object` | Persistent v2 ConfigLedger projection for this reload |
 
 Prázdné seznamy = žádný tracked klíč se nezměnil, nebo nebylo s čím porovnat (chybí předchozí runtime config).
+
+`commentary_config.installed=false` znamená, že commentary kandidát byl odmítnut bez nové generace. HTTP odpověď přesto zůstává 200 a ostatní validní aplikační domény se reloadují. `diagnostics` obsahuje `reason`, `source_key`, případné `replacement_keys` a bezpečnou zprávu bez hodnoty. `pending_changes` zveřejňuje pouze klíč, přesnou apply boundary a desired generation, nikdy citlivou hodnotu. `command` boundary se aplikuje uvnitř reload coordinatoru; ostatní boundaries čekají na svého runtime ownera. `preflights` jsou generation-tagged požadavky pro změněné LLM/TTS komponenty a `speech_language` je vždy `en`.
 
 **Error Response** (400/500):
 ```json
@@ -624,26 +652,6 @@ Merged activity feed (newest-first): switcher EventLog + commentary decisions + 
 
 `occurredAt` = wall-clock UTC epoch seconds (všechny zdroje). `source`: `switcher` | `commentary` | `overlay`. Overlay items are **lifecycle history**, not a live `active_events` dump.
 
-### GET /oauth/initiate
-
-Start YouTube OAuth (stream title/description na GR). Scene switch **nepotřebuje** OAuth.
-
-**Response**: 200 `{authorizationUrl, state}` nebo 503 když `[oauth]` / env credentials chybí.
-
-### GET /oauth/callback
-
-Redirect z Google. Vymění `code` za token; uloží `data/youtube_oauth_token.json` (gitignored).
-
-### GET /oauth/status
-
-`{configured, authenticated}` — GR tlačítko „Fetch stream info“.
-
-### POST /oauth/revoke
-
-Smaže lokální token. Setup: [YOUTUBE_API_SETUP.md](YOUTUBE_API_SETUP.md), skill `youtube-oauth`.
-
-Žádný `/vr-status`.
-
 ---
 
 ## WebSocket Endpoint
@@ -766,6 +774,23 @@ Velký dashboard / switcher controls (legacy GR Dashboard).
 
 ---
 
+### GET /vr-status
+
+Minimalistický dashboard pro VR.
+
+**URL**: `http://127.0.0.1:17321/vr-status`
+
+**Method**: `GET`
+
+**Popis**: 
+- Minimalistický design, bílé písmo, větší fonty
+- Bez JavaScriptu (pro RaceLab VR)
+- ⚠️ **Omezení**: RaceLab VR widgety nepodporují auto-refresh - widget se neaktualizuje automaticky
+
+**Více informací**: Viz [VR_SUPPORT.md](VR_SUPPORT.md) a [RACELAB_VR_SETUP.md](RACELAB_VR_SETUP.md) pro detaily a alternativy.
+
+---
+
 ### GET /test
 
 Test widget pro ověření JavaScript funkcionality.
@@ -777,6 +802,8 @@ Test widget pro ověření JavaScript funkcionality.
 **Popis**: 
 - Jednoduchý widget pro testování JavaScript funkcionality v běžném webovém prohlížeči
 - Zobrazí "JS JEDE" pokud JavaScript funguje správně
+
+**Poznámka**: Tento widget **není určen pro RaceLab VR**, protože RaceLab VR widgety nepodporují JavaScript ani auto-refresh.
 
 ---
 
@@ -804,34 +831,364 @@ Ruční TEST eventy (HUNTING, LAP, …). Write volá `POST /overlay/debug/emit`.
 
 Suchý test HUD v prohlížeči. Tmavé jeviště + iframe `/overlay?demo=1&renderer=v4` (default), auto-scénář V4 (HUNTING → HUNTED → LAP COMPLETE → PB → POSITION → INCIDENT → HR → FINAL → FINISH) v ~28&nbsp;s loopu. Bez OBS a bez iRacing. Theme a renderer (v4 / legacy v3) se přepínají v UI.
 
-### GET /overlay/golden
-
-Statická golden gallery (`overlay/golden.html`). Není live OBS acceptance — viz [GOLDEN_V4.md](src/irswitch/web/overlay/GOLDEN_V4.md). Live freeze: `/overlay?demo=1&layout=golden`.
-
 ### GET /config
 
 Schema-driven editor overlay nastavení. Navigace je i na `/gr-status`.
 
 ### GET /commentary
 
-Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`).
+Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`) — `#273` cutover: page fetches **only** versioned `commentary-runtime/2` contracts.
 
 - **Mluvit v prohlížeči** — Web Speech API (Edge/Chrome), bez serverového enginu
-- **Mluvit na serveru** — `POST /api/commentary/speak` → SAPI / SuperTonic / espeak (jen `audio_device`) a duck OBS `duck_input` (fade `duck_fade_ms`; SuperTonic syntéza běží během fade-out, play až je duck dole)
-- **Proč ticho** — načítá `GET /api/commentary/decisions` (ring buffer z CommentaryDirector)
-- Nastavení se ukládá přes existující `PUT /api/config` (`commentary.*`, `commentary.graph_runtime.mode`, `overlay.language`). Polish sampling pole zahrnují `commentary.llm_temperature`, `llm_top_p`, `llm_top_k`, `llm_num_predict` a `llm_num_ctx`; všechna jsou hot-reloadovatelná.
+- **Mluvit na serveru** — `POST /api/commentary/speak` (`commentary-runtime/2` body) → NarrativeRuntime manual admit (alias of `/api/commentary/runtime/speak`)
+- **Offline validate** — `POST /api/commentary/validate` (`commentary-runtime/2` beat + bindings)
+- **Runtime status** — `GET /api/commentary/runtime` (not legacy `/api/commentary/status`)
+- **Channel cadence** — `byTapeChannel` on runtime status (kick/accepted/queued/selected/started/expired per catalog channel) rendered on this page; no event-name parsing / no global DEBUG (#273)
+- **Proč ticho** — `GET /api/commentary/runtime/decisions` (NarrativeRuntime decision ring; not legacy `/api/commentary/decisions`)
+- V2 commentary konfigurace se na této stránce neukládá. Upravuje se v `config.ini` a načítá přes `POST /config/reload`; legacy `commentary.*` ani `commentary.graph_runtime.mode` nejsou v `PUT /api/config` schématu.
 
 **API**
 
 | Method | URL | Poznámka |
 | --- | --- | --- |
-| `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, rollout nastavení, `preparedFiller` health/buffer/source stav a sample řádek, `audioHint` (VAD) |
-| `GET` | `/api/commentary/decisions?limit=20` | poslední speak/skip rozhodnutí; `{decisions, runtime}` |
-| `POST` | `/api/commentary/validate` | localhost + CSRF; `{text, nodeId}` |
-| `POST` | `/api/commentary/speak` | localhost + CSRF; `{text, nodeId, locale, voice, rate, backend}` |
-| `GET` | `/api/commentary/assignments` | markdown zadání pro textový model |
+| `GET` | `/api/commentary/status` | backend, hlasy, nody grafu, rollout nastavení a sample řádek, `audioHint` (VAD) |
+| `GET` | `/api/commentary/runtime` | `#284` commentary-runtime/2 subset from `project_runtime_status` (library/disabled when no provider; `APP_NARRATIVE_RUNTIME` or process-level `set_narrative_runtime`; does not start NarrativeRuntime) |
+| `GET` | `/api/commentary/runtime/decisions?limit=20` | `#284` / `#273` commentary-runtime/2 decisions ring from NarrativeRuntime (`limit` clamp 1–100; newest-first; capacity `DECISION_CAPACITY=128`; additive to legacy `/api/commentary/decisions`) |
+| `POST` | `/api/commentary/runtime/validate` | `#284` / `#273` offline validate against caller bindings (`commentary-runtime/2`; **200** even when `valid=false`; **400** malformed; no live runtime required) |
+| `POST` | `/api/commentary/runtime/speak` | `#284` / `#273` manual speak via `NarrativeRuntime.try_manual_speak` + `ManualAdmissionLatch` (**202** accepted / **409** `speech_busy` / **422** `validation_failed` / **503** `component_unavailable`\|`mailbox_overloaded`\|`admission_timeout`; alias of public `/api/commentary/speak`) |
+| `GET` | `/api/commentary/decisions?limit=20` | legacy speak/skip decisions; `{decisions, runtime}` |
+| `POST` | `/api/commentary/validate` | `#284` / `#273` cut over to NarrativeRuntime offline validate (`commentary-runtime/2`; same handler as `/api/commentary/runtime/validate`) |
+| `POST` | `/api/commentary/speak` | `#284` / `#273` cut over to NarrativeRuntime manual speak (`commentary-runtime/2`; same handler as `/api/commentary/runtime/speak`) |
 
-`speak` nejdřív pustí TTS validator. Neplatný řádek → 400, audio se nespustí.
+`GET /api/commentary/assignments` was removed in #273: the route is unregistered and returns the server's generic 404 (not a commentary-runtime JSON tombstone; `error_not_found.json` remains a reserved machine golden only). Offline `render_assignments()` in `commentary/assignments.py` remains for CLI/docs.
+
+`speak` nejdřív pustí TTS validator.
+
+### GET /api/commentary/runtime
+
+`#284` read-only mount of the `commentary-runtime/2` status subset produced by `project_runtime_status`.
+
+**URL**: `http://127.0.0.1:17321/api/commentary/runtime`
+
+**Behavior**
+- Additive to legacy `GET /api/commentary/status` (TTS test page); does not replace it.
+- Status provider resolution: `APP_NARRATIVE_RUNTIME` on the aiohttp app first, then process-level `set_narrative_runtime` / `get_narrative_runtime` (race shadow fanout cutover path). If neither is set, returns a **disabled** library snapshot (no actor loop).
+- Does **not** start `NarrativeRuntime.run()`, does **not** speak, and does **not** cut over live `CommentaryConsumer` EventSubscription.
+- `#273` identity subset on `timeline` + fixed `language=en` + full idle `speech` shape + bounded `components.{llm,tts,tape,detectors,facts}`: `broadcastEpoch`, `streamEpoch`, `narrativeRunActive`, `streamActive`, `streamState`, `historyComplete`, plus schema-required session identity fields **all-or-none**: `sessionPlan`, `sessionRef`, `occurrenceId`, `lineageId`, `stage`. **Idle / disabled / incomplete context** → all five `null` (feat `f58c992`). **After valid `APPLY_CONTEXT_BATCH`** → live values from context timeline via `_session_identity_from_timeline` on `RuntimeStatus`, projected by `_timeline_session_identity` (feat `ccd0697`; satisfies `session_identity_all_or_none`). `sessionPlan` from timeline `sessionPlan` when valid, else from `sessionPlanRevision` + stages through current `stage` (`practice`|`qualifying`|`race`). Incomplete or invalid identity clears the whole set (including previously live values).
+- `#273` catalog/config/episodes/byTapeChannel on `GET /api/commentary/runtime` (stub slice feat `03c34b2`; live wiring feat `bdb9633`; bounded projection feat `466c2f3`; pending-boundary lock feat — this PR): fixed `language: "en"`; `catalog` — packaged `narrative-catalog/2` hash via `load_narrative_catalog().require_catalog().catalog_hash` (fail-soft unloaded digest); const `eventIdentifierCount: 60`, `beatCount: 64`. `config` — live CONFIG_UPDATE ledger from cached `RuntimeStatus.config_ledger` (`desiredGeneration`, `desiredHash`, `effectiveHash`, `applySequence`, `pendingChanges`); invalid or cleared ledger → unloaded zeros. `pendingChanges` is value-free `{key,boundary,desiredGeneration}` only, sorted by `key`, capped at **128**; any malformed pending row fails closed to the unloaded config block. `episodes` — live counts from injected `EpisodeRegistry.status_counts()` via `RuntimeStatus.episode_counts` (`active`, `candidate`, `suspended`, `resolved` + `retainedCurrentCapacity`/`resolvedCapacity`); no registry → empty counts. `byTapeChannel` — live per-channel counters from injected `OpportunityQueue.tape_channel_status_counts()` via `RuntimeStatus.by_tape_channel` and shared `project_by_tape_channel_status` (`events/opportunity_queue.py`; also used by `_by_tape_channel_projection` in `events/narrative_ingress.py`): each row has all six keys `kick`, `accepted`, `queued`, `selected`, `started`, `expired` (internal `ChannelCounters` maps `spoken→accepted`, `consumed→started`); **projection bounds** — omit channels whose six counters are all zero, sort remaining channel IDs lexicographically, cap at **128** entries (`BY_TAPE_CHANNEL_STATUS_CAP`);  no queue or empty counters → `{}`. `queues.opportunities` — live `{depth,capacity,expired,evicted}` from `OpportunityQueue.queue_status_counts()` via `RuntimeStatus.opportunity_queue_counts` (feat decisions/queue-age slice); no queue → zeros with capacity 128. **Cohort funnel rates** are **not** JSON fields on `StatusResponse`; offline/tuning code uses pure helper `cohort_funnel_rates(counters)` in `events/opportunity_queue.py` — `kickToAccepted` = `accepted/kick` when `kick>0`, else `null`; `acceptedToQueued` = `queued/accepted` only when `accepted>0` and the speakable downstream signal `queued+selected+started+expired>0` (visual-only cohorts that end after `accepted` → `null`, not `0.0`); `selectedToStarted` = `started/selected` when `selected>0`, else `null`. `queues.opportunities` (depth 0, capacity 128).
+
+The operator page at `/commentary` surfaces `byTapeChannel` cadence (kick/accepted/queued/selected/started/expired per catalog channel) from this status payload — no event-name parsing and no global DEBUG required (#273).
+
+- `#273` `components.detectors` / `components.facts` (disabled-library zeros feat `03c34b2`; live projection feat `d13d6bd`; fact capacity health feat — branch `cursor/fact-health-273-cad3`, SHA pending): **`components.facts`** — live `viewRevision`, `active` (`len(facts[])`), `historicalSummaries` (`len(compactedSummaryRefs[])`), `historyComplete` from cached `RuntimeStatus` after planning `APPLY_CONTEXT_BATCH` (`fact_view_revision`, `fact_active_count`, `fact_historical_summary_count`, shared `history_complete`); zeros/`historyComplete: true` until first context. **Fact capacity health / recovery** (matches frozen `public-contracts.md`): `status`/`reason` are `ready`/`null` | `degraded`/`fact_capacity_evicted` | `unavailable`/`fact_capacity_exhausted`. **`historyComplete=false`** on FactView latches eviction for the rest of the narrative run (`fact_capacity_evicted`); projected `components.facts.historyComplete` is forced `false` while eviction is latched. Exhaustion (`fact_capacity_exhausted`) is latched via library hook `NarrativeRuntime.note_fact_capacity(...)` — FactView cannot carry diagnostics (frozen field set); upstream FactLedger wiring calls this when capacity is exhausted. A publishable FactView (non-empty `facts[]`) clears exhaustion only (moves `unavailable`→`degraded` if eviction still latched); eviction stays latched until recovery. Latches survive run close; **`narrative_run_opened`** clears both latches before ingesting that batch's FactView (which may immediately re-latch). **`ready`/`null`** restores only on a new lossless run (new narrative run open + lossless FactView with `historyComplete=true`). **`components.detectors`** — `status=ready`, `reason=null`; `disabled` is sorted `{id, reason}` rows from optional injected `DetectorBank.disabled_for_status()` via `NarrativeRuntime(detector_bank=...)` (reasons from `disable_for_run`); without bank → `disabled: []`.
+- `#273` `components.llm` / `components.tts` (schema stubs feat `3670502`; live llm/tts residency projection feat `60565ae`; live tts `voice` + `quarantinedGeneration` (when set, `components.tts.reason` is `tts_start_timeout`|`tts_stop_timeout` and status is unavailable until a newer backend generation clears quarantine; `components.tape.enabled` reflects live writer attachment; `components.tape` with drops>0 projects `status=degraded` + `reason=tape_queue_drop`) feat `17a84eb`): `_llm_component_projection` / `_tts_component_projection` in `project_runtime_status`. **Without attached `LlmComponent`:** prior stub defaults — llm `generation=0`, `model="unconfigured"`, `residencyEvidence="not_requested"`, `lastAttempt=null`; tts `backend=null` (or speech backend when in `{sapi,espeak,supertonic}`), `backendGeneration` from speech lane or `0`, `quarantinedGeneration=null`, `voice=null`; both read `configGeneration` from CONFIG_UPDATE ledger `desiredGeneration` when present (else `0`). **With attached warmed `LlmComponent`** (`NarrativeRuntime(llm_component=...)`; race passes post-`warmup_qwen_component` instance): llm `generation=applied_generation`, `model` from component (set in warmup), `residencyEvidence` only public enum `warmup_succeeded`|`not_requested` (failed warmup → `not_requested`, `status=unavailable`, `reason=component_unavailable`); tts still speech-lane `backend`/`backendGeneration`; `configGeneration` from ledger for both. **`components.tts.voice`** (feat `17a84eb`): best-effort from cached CONFIG_UPDATE ledger bags — checks `effectiveValues` then `desiredValues` for `voice` or `commentary.tts.voice`; absent/empty → `null`. **`components.tts.quarantinedGeneration`** (feat `17a84eb`): mirrors `RuntimeStatus.speech_quarantined_generation` after speech **stop-deadline** timeout (`tts_backend_quarantined`); `null` when not quarantined. Cleared only when `COMPONENT_HEALTH_CHANGED` for `tts` arrives with `status=ready` and `generation > quarantinedGeneration` (`tts_quarantine_cleared`); equal/lower generation keeps `tts` `unavailable` (`tts_quarantine_held`). `lastAttempt` is `null` until the first **admitted** Qwen request completes (feat `19887aa`); warmup and authored backend do not set it. When set: `{requestId, outcome, ttfbMs, ttftMs, totalMs, reducerLagMs, terminalReason}` with outcome `succeeded|failed|cancelled|timed_out|stale` (`realization_timeout` → `timed_out`). Recorded by `RealizerService` via `record_qwen_last_attempt` / `build_last_attempt` in `qwen_transport.py`; projected via `RuntimeStatus.llm_last_attempt`.
+- `#284` actor loop heartbeats on `GET /api/commentary/runtime`: additive `loop` object — `active` (true only while `NarrativeRuntime.run()` owns the actor; library enable-without-run stays `false`; feat `c2e02d4`), `lastReduceMonoMs` (`null` until first `reduce_next`; monotonic ms; feat `952cc1d`), `reduceCount` (monotonic reduce count; feat `952cc1d`), `supervisors` (camelCase map of attached `WorkerSupervisor.status_snapshot` payloads — `{running, restarts, lastError}`; race attaches `narrativeRuntime` + `narrativeShadow` via `NarrativeRuntime.attach_supervisor_heartbeat`; library without attach → `{}`; feat `952cc1d`).
+- `#273` decisions ring at `GET /api/commentary/runtime/decisions`; validate/speak at `POST /api/commentary/runtime/validate|speak` (thin slice landed; `ManualAdmissionLatch` rendezvous at feat `ca0f2f6`; public `/api/commentary/validate|speak` cut over to NarrativeRuntime handlers). Tape/`capture_unavailable` + detectors `disabled[]` health projection freeze (#273 goldens `status_component_tape_capture_unavailable.json`, `status_component_detectors_disabled.json`, `status_health_projections_library.json`). Live detectors/facts status projection landed feat `d13d6bd`. **#284 remainder:** master cutover only (human kick).
+
+**Example (disabled / no provider)**
+
+```json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "status": "disabled",
+  "reason": null,
+  "language": "en",
+  "catalog": {
+    "schemaVersion": "narrative-catalog/2",
+    "hash": "sha256:c2841ece4a985cb99de18f635ab4d891e28c331637584c266fd97dadcb93e58b",
+    "eventIdentifierCount": 60,
+    "beatCount": 64
+  },
+  "config": {
+    "schemaVersion": "commentary-config/2",
+    "desiredGeneration": 0,
+    "desiredHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "effectiveHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "applySequence": 0,
+    "pendingChanges": []
+  },
+  "episodes": {
+    "active": 0,
+    "candidate": 0,
+    "suspended": 0,
+    "retainedCurrentCapacity": 64,
+    "resolved": 0,
+    "resolvedCapacity": 256
+  },
+  "byTapeChannel": {},
+  "speech": {
+    "state": "idle",
+    "sourceKind": null,
+    "utteranceId": null,
+    "beatId": null,
+    "opportunityId": null,
+    "backend": null,
+    "backendGeneration": null,
+    "dispatchedAtMonoMs": null,
+    "acceptedAtMonoMs": null,
+    "lastTerminal": null
+  },
+  "components": {
+    "llm": {
+      "status": "ready",
+      "reason": null,
+      "generation": 0,
+      "configGeneration": 0,
+      "model": "unconfigured",
+      "residencyEvidence": "not_requested",
+      "lastAttempt": null
+    },
+    "tts": {
+      "status": "ready",
+      "reason": null,
+      "backend": null,
+      "backendGeneration": 0,
+      "configGeneration": 0,
+      "quarantinedGeneration": null,
+      "voice": null
+    },
+    "tape": {
+      "status": "disabled",
+      "reason": null,
+      "path": null,
+      "size": 0,
+      "drops": 0,
+      "dropsByPriority": { "sample": 0, "normal": 0, "critical": 0 },
+      "purposeCounts": []
+    },
+    "detectors": { "status": "ready", "reason": null, "disabled": [] },
+    "facts": {
+      "status": "ready",
+      "reason": null,
+      "viewRevision": 0,
+      "active": 0,
+      "historicalSummaries": 0,
+      "historyComplete": true
+    }
+  },
+  "queues": {
+    "mailbox": { "depth": 0, "capacity": 64, "overflows": 0 },
+    "opportunities": { "depth": 0, "capacity": 128, "expired": 0, "evicted": 0 }
+  },
+  "timeline": {
+    "broadcastEpoch": 0,
+    "streamEpoch": 0,
+    "narrativeRunActive": false,
+    "streamActive": null,
+    "streamState": "unknown",
+    "sessionPlan": null,
+    "sessionRef": null,
+    "occurrenceId": null,
+    "lineageId": null,
+    "stage": null,
+    "historyComplete": true
+  },
+  "recovery": {
+    "count": 0,
+    "lossFirst": null,
+    "lossLast": null,
+    "safetyEffectCount": 0,
+    "cancelledLane": null
+  },
+  "diagnostics": {
+    "lastAdmissionReason": null,
+    "admissionDiagnostics": [],
+    "reasonCodes": []
+  },
+  "loop": {
+    "active": false,
+    "lastReduceMonoMs": null,
+    "reduceCount": 0,
+    "supervisors": {}
+  }
+}
+```
+
+**Diagnostics (`#284` actor/recovery reason codes):**
+- `lastAdmissionReason` — latest mailbox `AdmissionResult.reason` (`accepted`, `coalesced`, `mailbox_evicted_update`, `mailbox_overloaded`, `deadline_admission_skipped`, `mailbox_recovery`, …).
+- `admissionDiagnostics` — bounded unique admit-reason ring (overflow/coalesce/recovery visibility).
+- `reasonCodes` — closed freeze-registry health set projected by `NarrativeRuntime` for operator/API: `history_incomplete`, `mailbox_history_incomplete`, `mailbox_recovery`, `mailbox_overloaded`, `mailbox_evicted_update`, `deadline_admission_skipped`, `capture_unavailable`, `component_unavailable`, `admission_timeout`, …. Same universe as `/health` `commentary.reason` (schema `HealthCommentarySummary`).
+- Mailbox capacity is fixed at **64** (56 ordinary + 7 protected + 1 emergency); overflow surfaces as `mailbox_overloaded` / `mailbox_evicted_update` reason codes — there is no public capacity override INI key.
+
+
+Golden subset lock: `tests/fixtures/commentary_runtime/status_ready_library.json` (catalog/config/episodes/byTapeChannel/opportunities/detectors/facts disabled-library zeros; feat `03c34b2`); `tests/fixtures/commentary_runtime/status_by_tape_channel.json` (live `byTapeChannel` row shape; feat `466c2f3`; listed in `tests/test_commentary_runtime_goldens.py` `REQUIRED_FIXTURES`); `tests/fixtures/commentary_runtime/status_components_llm_tts.json` (llm/tts schema-complete stubs without attached component; feat `3670502`); live llm warmup/residency rows in `tests/test_narrative_ingress.py` (feat `60565ae`); lastAttempt projection rows (feat `19887aa`); live facts/detectors projection rows (feat `d13d6bd`); `status_speech_idle.json` llm/tts shapes updated in feat `3670502`; `tests/fixtures/commentary_runtime/status_timeline_session_null.json` (timeline session identity all-or-none nulls when idle; feat `f58c992`); `tests/fixtures/commentary_runtime/status_identity_disabled.json` (disabled null session fields); `tests/fixtures/commentary_runtime/status_identity_after_context.json` (live session identity after valid APPLY_CONTEXT; feat `ccd0697`); `tests/fixtures/commentary_runtime/status_config_pending_boundaries.json` (fixed `language=en`, packaged catalog hash, value-free sorted/capped `config.pendingChanges`).
+
+**Example (ready / after APPLY_CONTEXT — timeline session identity subset)**
+
+Golden lock: `tests/fixtures/commentary_runtime/status_identity_after_context.json`.
+
+```json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "status": "ready",
+  "timeline": {
+    "broadcastEpoch": 4,
+    "streamEpoch": 1,
+    "narrativeRunActive": true,
+    "streamActive": true,
+    "streamState": "active",
+    "sessionPlan": {
+      "revision": 1,
+      "valid": true,
+      "reason": null,
+      "stages": ["practice", "qualifying", "race"]
+    },
+    "sessionRef": {
+      "subSessionId": "42",
+      "sessionNum": 2
+    },
+    "occurrenceId": "1:race:0",
+    "lineageId": "1:race:0",
+    "stage": "race",
+    "historyComplete": true
+  }
+}
+```
+
+### GET /api/commentary/runtime/decisions
+
+`#284` / `#273` read-only mount of the `commentary-runtime/2` decisions ring recorded by `NarrativeRuntime` on each StoryDirector consult (`selected` / `silence` / `replaced`) and on opportunity TTL expiry (`expired` + `terminalReason`, e.g. `expired_ttl`). `candidateSource` includes `event_opportunity` and `story_successor` (plus `episode_beat` / `filler` when seeded).
+
+**URL**: `http://127.0.0.1:17321/api/commentary/runtime/decisions?limit=20`
+
+**Behavior**
+- Additive to legacy `GET /api/commentary/decisions` (CommentaryDirector speak/skip log); does not replace it.
+- Provider resolution matches `GET /api/commentary/runtime` (`APP_NARRATIVE_RUNTIME` then process-level `set_narrative_runtime`). No provider → `{schemaVersion, runtime:false, decisions:[]}`.
+- `limit` defaults to 20 and clamps to 1–100; rows are newest-first; ring capacity is `DECISION_CAPACITY` (128).
+- Does **not** start the actor loop. Rows are projected by `build_runtime_decision_entry` / `build_terminal_decision_entry` / `project_runtime_decisions`.
+- Goldens: `decisions_selected.json`, `decisions_story_successor.json`, `decisions_expired_ttl.json`.
+
+**Example (selected)**
+
+```json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "runtime": true,
+  "decisions": [
+    {
+      "reducerSequence": 418,
+      "atMonoMs": 90231,
+      "decision": "selected",
+      "reason": "highest_valid_candidate",
+      "beatId": "battle.approach",
+      "episodeId": "battle-ahead:3:17:22:4",
+      "opportunityId": "opp:401",
+      "tapeChannel": "race.battle.closing",
+      "candidateSource": "event_opportunity",
+      "candidateOrder": {"reducerSequence": 417, "sourceOrdinal": 0},
+      "relation": "updates_active_episode",
+      "urgency": "story",
+      "score": 68.5,
+      "threshold": 35.0,
+      "runnerUp": {"beatId": "battle.pursuit", "score": 56.0},
+      "terminalReason": null
+    }
+  ]
+}
+```
+
+Invalid `limit` query values fall back to the default **20** (clamped to 1–100); the handler does not return 400.
+
+### POST /api/commentary/runtime/validate
+
+`#284` / `#273` offline validate: projects caller-supplied EN text against one `beatId` and immutable `actorBindings` / `factBindings` via `project_validate_response` (`events/narrative_validate_projection.py`).
+
+**URL**: `http://127.0.0.1:17321/api/commentary/runtime/validate`
+
+**Method**: `POST`
+
+**Content-Type**: `application/json`
+
+**Behavior**
+- Write transport: direct loopback peer + exact `X-Requested-With: irswitch` (else **403** `forbidden`); `Content-Type: application/json` and body ≤64 KiB (else **400** `invalid_request`).
+- Public `POST /api/commentary/validate` is cut over to this handler; `/api/commentary/runtime/validate` remains an alias.
+- **Offline** — does not read live `NarrativeRuntime` state, roster, or Qwen; no provider required.
+- Syntactically valid requests always return **200** with a `ValidateResponse` body; `valid` is `false` when any issue has severity `error`.
+- Malformed requests (schema/ binding violations) return **400** with `commentary-runtime/2` error envelope `{schemaVersion, error: {code, fields, message}}` (`code`: `invalid_json` | `invalid_request`).
+
+**Request** (`commentary-runtime/2`): exact keys only — `schemaVersion`, `text` (1–512 chars, no control chars), `beatId`, `evaluationAtMonoMs`, `actorBindings` (0–16 actors, 1–8 aliases each), `factBindings` (1–32 full `atomic-fact/2` `AtomicFact` rows validated via `AtomicFact.from_dict` + FactRegistry; actors must cover fact subjects/objects exactly). Unknown top-level fields, incomplete/unknown AtomicFact fields, or unregistered predicates → **400** `invalid_request`.
+
+**Example (supported)** — golden `tests/fixtures/commentary_runtime/validate_supported.json`:
+
+```json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "valid": true,
+  "beatId": "battle.approach",
+  "issues": [],
+  "claims": [
+    {
+      "predicate": "battle.approaching",
+      "subjectId": "hero",
+      "objectId": "car:22",
+      "verdict": "supported"
+    }
+  ]
+}
+```
+
+**Example (rejected, actor reversed)** — golden `tests/fixtures/commentary_runtime/validate_rejected.json`: `valid: false`, issue `actor_reversed`.
+
+### POST /api/commentary/runtime/speak
+
+`#284` / `#273` manual EN speak: admits one utterance through `NarrativeRuntime.try_manual_speak` with a one-shot `ManualAdmissionLatch` (`events/narrative_manual_latch.py`; default `ADMISSION_TIMEOUT_S=1.0`).
+
+**URL**: `http://127.0.0.1:17321/api/commentary/runtime/speak`
+
+**Method**: `POST`
+
+**Content-Type**: `application/json`
+
+**Behavior**
+- Public `POST /api/commentary/speak` is cut over to this handler; `/api/commentary/runtime/speak` remains an alias.
+- Provider resolution matches status mount (`APP_NARRATIVE_RUNTIME` then `get_narrative_runtime()`). Provider must expose `try_manual_speak`.
+- Requires `schemaVersion: commentary-runtime/2` and `language: en`. Does **not** use legacy CSRF middleware (same as public cut-over path).
+- Allocates a latch per `requestId`, nonblocking-admits `MANUAL_SPEAK_REQUEST`, then awaits actor resolution (default 1s). `_on_manual` claims the latch before lane mutation and resolves `accepted` / `speech_busy` / `component_unavailable`. On timeout the caller abandons the latch and returns `admission_timeout`; the abandoned latch stays registered so a later reduce cannot speak (`ignored_stale_or_inapplicable` / `manual_abandoned`).
+- When the actor loop is **not** running, `try_manual_speak` reduces inline (`reduce_inline` default) so library/HTTP tests stay deterministic; when the actor loop **is** running, admission waits on the latch instead of inline reduce.
+- Does **not** start the actor loop by itself (do not call `try_manual_speak` concurrently with `run()` in library tests).
+
+**Request** (`commentary-runtime/2`): exact keys `schemaVersion`, `text`, `language` only (`language` must be `en`; `text` is normalized Unicode length 1–400 with no control characters). Unknown fields (e.g. `force`, backend/voice overrides) → **400** `invalid_request`. `admittedState` on **202** is exactly `committed` after atomic dispatch.
+
+**Responses**
+
+| Status | Body | When |
+| --- | --- | --- |
+| **202** | `{schemaVersion, accepted: true, requestId, admittedState}` | Manual speak admitted (`admittedState` exactly `committed`) |
+| **409** | `{schemaVersion, error: {code: speech_busy, …}}` | Speech lane busy |
+| **422** | `{schemaVersion, error: {code: validation_failed, …}}` | Missing/invalid `text` or command construction failed |
+| **503** | `{schemaVersion, error: {code: component_unavailable\|mailbox_overloaded\|admission_timeout, …}}` | No provider / no `try_manual_speak` / mailbox full / reduce miss / latch await timed out |
+| **400** | `{schemaVersion, error: {code: invalid_json\|invalid_request, …}}` | Bad JSON or wrong `schemaVersion` / `language` |
+
+**Example (accepted)** — shape from golden `tests/fixtures/commentary_runtime/speak_accepted.json` (`requestId` is server-generated, e.g. `manual:7f5b`):
+
+```json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "accepted": true,
+  "requestId": "manual:7f5b",
+  "admittedState": "committed"
+}
+```
+
+**Example (mailbox overloaded)** — golden `tests/fixtures/commentary_runtime/error_mailbox_overloaded.json` (and siblings `error_speech_busy.json`, `error_component_unavailable.json`, …) are frozen against `docs/v2.0.0/machine/api-goldens.json` via `tests/test_commentary_runtime_goldens.py`.
+
+**Example (admission timeout)** — golden `tests/fixtures/commentary_runtime/error_admission_timeout.json`:
+
+```json
+{
+  "schemaVersion": "commentary-runtime/2",
+  "error": {
+    "code": "admission_timeout",
+    "fields": {},
+    "message": "Bounded public detail."
+  }
+}
+```
+
+### GET /api/commentary/decisions (legacy)
+
+Legacy CommentaryDirector speak/skip log (`{decisions, runtime}`). Unrelated to the NarrativeRuntime ring above.
+
+ Neplatný řádek → 400, audio se nespustí.
 
 **Decision reason codes** (`action` = `spoken` \| `skipped`):
 
@@ -848,22 +1205,8 @@ Testovací stránka komentáře / TTS (`src/irswitch/web/commentary/index.html`)
 | `no_variant` | prázdný emotion bucket |
 | `slot_unbound` | žádný řádek bez nevyplněných `{slot}` |
 | `validator_reject` | `validate_utterance` odmítl |
-| `graph_contract_missing` | prepared plán odkazuje na chybějící uzel nebo uzel bez prepared kontraktu; plán se bezpečně přeskočí |
 
 Config: `commentary.decision_log_size` (default 32). Live readiness matrix: [docs/commentary_live_node_matrix.md](docs/commentary_live_node_matrix.md).
-
-`runtime.preparedFiller` obsahuje `mode`, `health`, aktuální `stage`/`stageEpoch`, hash
-`contextRevision`, počty `readyPlans`/`queuedPlans`/`inflight`/`generated`/`rejected`/
-`staleDropped`, `readyCurrentStage`/`readyNextStage`, stav fatal epizody a `sources`. YouTube zdroj reportuje jen stav a počet položek;
-OAuth tokeny, celé prompty ani názvy historie se přes status nevracejí. iRacing zdroj je bez
-samostatného OAuth `not_configured`. Tape řádky `shadow_compared` nesou legacy node/semantic a
-klasifikaci divergence. Přijaté varianty jsou v `acceptedTexts` pouze při runtime DEBUG pro ruční
-faktický audit; při INFO je pole odstraněno a prompty/OAuth materiál se nezapisují nikdy.
-
-Prepared diagnostika používá konkrétní `nodeId`/`semanticKey` z připraveného grafu, nikoli obecný
-`prepared_filler`. Frozen N12 context může obsahovat sekci `prepared` s nullable normalizovanými
-fakty pro okruh, počasí, roster/AI, startovní proceduru a držené přechodové důkazy. Chybějící nebo
-neověřená položka se vynechá; raw SessionInfo ani OAuth materiál se do statusu nepřenáší.
 
 ### WS /ws/overlay
 
@@ -934,19 +1277,6 @@ Schéma definuje také `COMPACT`, `SUSPEND`, `RESUME`; v1 je většinou neposíl
 
 Event, který může sdílet commentary a overlay lifecycle, nese objekt `miniStory`:
 
-Vývojová cesta #216 navíc publikuje interní přijaté události `TRACK_EXCURSION` s audience
-`commentary` (bez nové HUD karty). Uvnitř `metrics` nesou `scenarioId`, `scenarioVersion`,
-`episodeId`, `parentStoryId`, `beatId`, `beatRole`, `primaryRelation`, `cause`, `outcome`,
-`evidenceLevel`, `runEpoch`, `heroCarIdx`, `reason` a čas/důkazy. Identita přijaté události
-zůstává standardní; correlation se liší pro každý beat, rodič zůstává společný.
-`cause` a `damage` jsou v současném subsetu `unknown`. Typy `motion_restored` a
-`pit_return_observed` nepotvrzují kontrolu, normální tempo, opravu ani ESC.
-V session tape mají sparse detekce typ `race_scenario`; související `commentary` řádky
-přidávají `parentStoryId`, `correlationId`, `beatId`. Nejde o nový HTTP endpoint.
-Podrobný [kontrakt a logování](docs/track_excursion_live_test.md).
-
-Příklad objektu `miniStory`:
-
 ```json
 {
   "storyId": "story:1:42",
@@ -961,7 +1291,7 @@ Příklad objektu `miniStory`:
 
 `state` je `ready`, `building`, `committed`, `speaking`, `resolved`, `completed`, `interrupted` nebo `invalidated`. Vyšší `storyRevision` je autoritativní; opožděný nižší stav se ignoruje.
 
-**`STATE_SNAPSHOT`** — vždy druhá zpráva po reconnectu; dále při změně autoritativního seznamu. Seznam slučuje živý source snapshot s kartami, které drží MiniStory presentation lease. Běžný source `EXIT` leased kartu přepne na `RESULT`. Live lease platí jen pro `building` / `committed` / `speaking`; `resolved` už lease nedrží a RESULT drží jen `minHoldMs`. TTS `completed`/`interrupted`/`invalidated`, prázdný snapshot, hold timer nebo reset kartu odstraní. Poslední odstranění a session reset posílají `activeStories: []`. Nezměněný seznam se znovu neposílá:
+**`STATE_SNAPSHOT`** — vždy druhá zpráva po reconnectu; dále při změně autoritativního seznamu. Seznam slučuje živý source snapshot s kartami, které drží MiniStory presentation lease. Běžný source `EXIT` leased kartu přepne na `RESULT`, ale odstraní ji až TTS `completed`/`interrupted`/`invalidated` nebo reset. Poslední odstranění a session reset posílají `activeStories: []`. Nezměněný seznam se znovu neposílá:
 
 ```json
 {
@@ -977,7 +1307,7 @@ Příklad objektu `miniStory`:
 }
 ```
 
-Frontend (`overlay.js`) snapshoty inkrementálně reconciliuje. Autoritativní snapshot smí převzít už vykreslenou kartu se stejným `correlationId` a stejnou `sequence`; rovná sekvence proto není pro snapshot považována za stale. Převzatá karta se odstraní, jakmile v dalším snapshotu chybí. Leased `EXIT` se publikuje jako `RESULT` s identitou, sekvencí a časy právě přijatého EXIT eventu. Leased karta nepoužívá běžný `minHoldMs`/`maxHoldMs` timer; po zániku lease neleased eventy zůstávají kompatibilní se starým chováním. Když `race.connected` je false, frontend přidá `html.overlay-idle` a karty + SYSINFO schová.
+Frontend (`overlay.js`) snapshoty inkrementálně reconciliuje. Leased karta nepoužívá běžný `minHoldMs`/`maxHoldMs` timer; neleased eventy zůstávají kompatibilní se starým chováním. Když `race.connected` je false, frontend přidá `html.overlay-idle` a karty + SYSINFO schová.
 
 ### Overlay session tape (JSONL)
 
@@ -995,15 +1325,14 @@ Každý řádek má hodiny v sekundách:
 
 Každý řádek navíc nese `run_epoch`. Potvrzený restart závodu ve stejné session zachová soubor, `t_mono` i `t_stream`, zapíše řádek `run_reset` a vynuluje pouze původ `t_green` pro nový run.
 
-`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `run_reset`, `stream_origin`, `commentary`, `prepared_filler`, `llm_polish`, `field`. `--replay` skipne diagnostické řádky včetně `commentary`/`prepared_filler`/`llm_polish`/`field`.
+`type`: `header`, `event` (WS obálka), `decision`, `stories`, `scene`, `green`, `run_reset`, `stream_origin`, `commentary`, `llm_polish`. Telemetry ticky se nezapisují. `--replay` skipne `header`/`decision`/`commentary`/`llm_polish`/`scene`/`green`/`run_reset`.
 
-Řádky `commentary` (speak/skip) se zapisují **jen při runtime DEBUG**. Řádky `llm_polish` se zapisují při otevřeném tape a `overlay.session_tape_llm=true` (default) **i na INFO** — páry pro privátní dataset repo. `session_tape_llm=false` vrátí DEBUG-only. Replay je nezapisuje. `field` se vypíná zvlášť `[overlay] session_tape_field = false`.
+Řádky `commentary` a `llm_polish` se zapisují **jen při runtime DEBUG** (`GET/POST /logging/level` → `DEBUG`) — pro offline vyhodnocení speak/skip a LLM request/response bez spamu na disk. Ostatní tape typy (`event`, `decision`, …) zůstávají pod `[overlay] session_tape`.
 
 | Typ | Obsah |
 |-----|--------|
 | `commentary` | enqueue/speak/skip a MiniStory lifecycle (`action`, `reason`, `eventType`, `nodeId`, `text`, `storyId`, `storyRevision`, `runEpoch`, `heroOrderRevision`, …) |
 | `llm_polish` | jeden polish pokus (`outcome`, `skeleton`, `spoken`, `request`, `response`, `latencyMs`, …) |
-| `field` | per-tick field dump: `positionSource` (`live`/`official`/`grid`), `officialPosition` / `livePosition` (a class varianty), `cars[]` s `lap`, `lapDone`, `pct`, `offP`/`offCP`, `liveP`/`liveCP`, `cls`, `pit`, `surf`, `est`, `f2`, `paceLine`, `paceRow`. V Race po green je HUD place live running order, ne F3 `CarIdxPosition`. |
 
 **Event catalog**
 
@@ -1020,10 +1349,6 @@ Související flagy: viz [CONFIG.md](CONFIG.md) — `[event_engine]` (`v2_payloa
 
 JSON snapshot + `theme` + `assets` (stejný payload jako první WS zpráva). Chybějící soubor je `null`, overlay spadne na CSS desku.
 
-### GET /api/overlay/i18n
-
-HUD copy catalog pro aktuální `overlay.language` (+ EN fallback). `{language, copyCatalog}`. Ne dashboard `i18n.py`.
-
 ### POST /overlay/debug/emit
 
 Body: `{ "name": "hunting" }`. Povolené názvy: `GET /api/overlay/debug/events`.
@@ -1037,5 +1362,7 @@ Vrací `schema`, `overlay` hodnoty a redacted `switcher` (OBS password je `***`)
 ### PUT /api/config
 
 Body: `{ "values": { "sampling.default_hz": 6 } }`. Atomický zápis INI + `.bak`. Response: `applied`, `applied_live`, `needs_restart`.
+
+Legacy `commentary.*` klíče nejsou součástí tohoto schema-driven endpointu a vrací chybu neznámého klíče. V2 commentary se zapisuje do přesných INI sekcí z `CONFIG.md` a aktivuje přes `POST /config/reload`, který vlastní ConfigLedger generace.
 
 Security: localhost + CSRF header. Neznámé klíče a path traversal se odmítnou.

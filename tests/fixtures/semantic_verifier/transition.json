@@ -1,0 +1,9 @@
+{
+  "family": "battle.closing",
+  "text": "Alex is closing on Morgan.",
+  "subjectSurface": "Alex",
+  "requiredClaimSurface": "is closing on Morgan",
+  "expectAccepted": true,
+  "expectReasons": [],
+  "expectClaims": ["required-frame:battle.closing"]
+}

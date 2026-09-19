@@ -1,0 +1,22 @@
+{
+  "name": "counterfactual-identity",
+  "lane": "idle",
+  "planningCycleId": "cycle-identity",
+  "steps": [
+    {
+      "episodeRevision": 1,
+      "sourceRefs": ["event:a"],
+      "expect": "planned"
+    },
+    {
+      "episodeRevision": 2,
+      "sourceRefs": ["event:b"],
+      "expect": "planned"
+    },
+    {
+      "episodeRevision": 1,
+      "sourceRefs": ["event:a", "event:c"],
+      "expect": "deduped"
+    }
+  ]
+}

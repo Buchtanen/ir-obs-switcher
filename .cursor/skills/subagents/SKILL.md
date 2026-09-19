@@ -1,12 +1,13 @@
 ---
 name: subagents
-description: Decides when to launch Task subagents vs doing the work in the parent agent. Use when considering parallel agents, worktrees, explore, generalPurpose, verifier, docs-keeper, issue-steward, /parallel-plan, /flow, /hotfix, or spawning more than one agent.
+description: Decides when to launch Task subagents, how to isolate ownership, and how to leave durable handover state. Use for parallel agents, worktrees, verifier/docs/issue roles, handover, checkpoint, recovery, resume, /parallel-plan, /flow, or /hotfix.
 ---
 
 # Subagenti (irswitch)
 
-Parent dělá práci sám u 1–3 konkrétních souborů nebo pár kroků.
-Subagent jen když se vyplatí izolace, paralelismus, nebo specializovaný typ.
+`/flow` **vždy** spustí `issue-steward`, `docs-keeper` a `verifier` — i když parent mění 1–3 soubory. Parent implementuje; ty tři role auditují. Přeskočit je smí jen `/hotfix` nebo výslovný lidský bypass.
+
+Ostatní subagenty jen když se vyplatí izolace, paralelismus, nebo specializovaný typ.
 
 Projektoví agenti jsou v `.cursor/agents/` (`issue-steward`, `docs-keeper`, `verifier`).
 Paralelní **upravující** agenti jen po `/parallel-plan` **a** schválení uživatele.
@@ -17,7 +18,7 @@ Paralelní **upravující** agenti jen po `/parallel-plan` **a** schválení už
 |-----|-----|
 | `explore` | Neznámé místo v kódu, víc cest/jmen, „jak to funguje“ |
 | `generalPurpose` | Složitý výzkum / multi-step bez vlastního typu |
-| `docs-keeper` | Po změně chování/config/CI — **udržuje** `docs/dokumentace/` + kontrakty (`/flow`, `/docs-impact`, skill `dokumentace`) |
+| `docs-keeper` | Po změně chování/config/CI — docs contract (`/flow`, `/docs-impact`) |
 | `issue-steward` | Issue + dev diary přes GitHub MCP (`/flow`, `/ensure-issue`) |
 | `verifier` | Po úpravách kódu/doků/CI — lint/test report (`/qa`) |
 | `ci-investigator` | Jeden padající PR check |
@@ -31,14 +32,14 @@ Paralelní **upravující** agenti jen po `/parallel-plan` **a** schválení už
 - Překryv souborů, zvlášť `logic/` + `iracing/` + API v jednom burstu
 - Overlay HUD cluster v jednom burstu: `display-v4.js`, `overlay.js`, `src/irswitch/overlay/i18n.py`, `web/overlay/index.html` (plus navázané CSS). Paralelně max commentary **graph** vs `iracing/` extract, ne vs HUD.
 - Společný state machine / API kontrakt
-- Změna kódu bez schválení
-- Commit / push / PR z subagenta bez výslovného „commit/push/PR“
+- Přeskočit `issue-steward` / `docs-keeper` / `verifier` uvnitř `/flow` „protože je to malý slice“
+- Commit / push / PR z subagenta bez výslovného „commit/push/PR“ (parent smí po `/flow` auth, viz `10-task-flow-defaults.mdc`)
 - `bugbot` / `security-review` „pro jistotu“
 
 ## Paralelní worktrees
 
 Každý nezávislý úkol: vlastní větev + vlastní issue + jeden worktree. Nikdy commit na `master`.
-Po dokončení vrať diff + evidence. Push/PR jen po schválení.
+Po dokončení vrať diff + evidence a aktualizuj handover (`09-agent-handover.mdc` / v2 `implementation-handover.md`). PR do `master` je default close `/flow` mimo issue-set; merge jen když to člověk chce.
 
 Překryv → sekvenčně. Stopnuté agenty a stash ping-pong = mělo to jít za sebou.
 
@@ -50,6 +51,7 @@ Než spustíš víc upravujících agentů: `/parallel-plan`, počkej na OK.
 - Prompt musí obsahovat celý kontext (subagent nevidí historii parenta)
 - `run_in_background: true` v Multitask Mode
 - Po kódu z subagenta: parent zkontroluje diff, nespouští overlapping agenty
+- Před close slice: `/handover`; defaultně PR do `master` jen když issue-set/human neřekne jinak
 
 ## Výstup (vyžaduj od subagenta)
 

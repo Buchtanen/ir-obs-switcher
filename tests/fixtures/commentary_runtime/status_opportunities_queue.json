@@ -1,0 +1,6 @@
+{
+  "depth": 2,
+  "capacity": 128,
+  "expired": 4,
+  "evicted": 1
+}

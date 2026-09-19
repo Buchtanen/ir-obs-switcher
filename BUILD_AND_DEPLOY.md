@@ -65,8 +65,7 @@ Adresář `src/irswitch/web/themes-v4/` přidá do distribuce přibližně **5.8
 |------|---------|--------|
 | `overlay.v4_assets` | `false` | Snapshot / WS `assets` mapuje cesty pod `themes-v4/`; bez flagu V4 soubory nejsou v payloadu |
 | `overlay.v4_renderer` | `false` | Transientní HUD + sysinfo používají V4 layer renderer (`display-v4.js`) |
-| `overlay.session_tape` | `true` | Session JSONL tape (eventy/decision/widgety/field) do `session_tape_dir` |
-| `overlay.session_tape_field` | `true` | Per-tick official vs live place dump on the session tape |
+| `overlay.session_tape` | `true` | Session JSONL tape (eventy/decision/widgety) do `session_tape_dir` |
 
 Oba flagy jsou **runtime** — build může V4 pack zahrnout, ale klient ho načte jen při `v4_assets=true`. Doporučený „full V4 demo“ blok je v [CONFIG.md](CONFIG.md).
 
@@ -370,6 +369,7 @@ nssm status irswitchd
   ```ini
   log_file = logs/irswitch.log              # → C:\irswitch\dist\logs\irswitch.log
   dashboard_gr_background_image = bg.png    # → C:\irswitch\dist\bg.png
+  dashboard_vr_icons_path = icons/          # → C:\irswitch\dist\icons\
   ```
 
 - Pokud chceš absolutní cesty, použij plnou cestu:

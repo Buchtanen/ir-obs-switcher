@@ -1,11 +1,12 @@
 # Commentary product suite
 
-**Status:** living product suite on `master` (graph + N12 consumers + director). Open work: [inflight commentary architecture](dokumentace/inflight/commentary-architecture.md).
-**Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), [commentary_content_db_plan.md](commentary_content_db_plan.md), [domeny/commentary](dokumentace/domeny/commentary.md)
-**Audience:** stream viewers (broadcast voice).
-**Composer:** grounded authored-anchor + `commentary-facts/2` planner in [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md).
-**Coverage inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)
-**Runtime architecture:** [docs/dokumentace/architektura.md](dokumentace/architektura.md) — one race producer, independent overlay/commentary consumers (`events/async_fanout.py`). Next spec (not runtime): [live_data_channels_sampling_spec.md](live_data_channels_sampling_spec.md).
+**Status:** active prep (build gradually on content branch)  
+**Depends on:** [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md), [commentary_content_db_plan.md](commentary_content_db_plan.md), PR #120 (engine) + this content PR  
+**Audience:** stream viewers (broadcast voice).  
+**Composer:** grounded authored-anchor + `commentary-facts/2` planner in [COMMENTARY_ENGINE.md](../COMMENTARY_ENGINE.md); the [skeleton PoC](commentary_llm_skeleton_poc.md) is historical. Live Windows/Ollama `qwen3:4b-instruct-2507-q4_K_M` listen pending.
+**Coverage inventory:** [scenario_coverage_matrix.md](scenario_coverage_matrix.md)  
+**Active architecture:** [observers_decoupling_plan.md](observers_decoupling_plan.md) — P0–P5 plus implemented V2 / [N12](tasks/n12_async_consumers.md): one RaceObserver producer and independent overlay/commentary async consumers. Evidence: [N12 implementation report](tasks/n12_implementation_report.md).
+**Product expansion:** [narrative_observers_epic.md](narrative_observers_epic.md) — stream welcome, incident kinds, flags, finish≠checkered, P/Q hunt-by-time.
 
 ## 0. How we test (your order — source of truth)
 
@@ -39,18 +40,16 @@
 P4 does **not** replace VAD and is **not required** for the mock→content SAPI test.  
 P4 later only adds observability / optional alternate sinks.
 
-Document under P4: “Recommended stream PC: set `commentary.audio_device` so commentary SAPI/SuperTonic hits Virtual Audio Driver (CABLE); leave headphones as the Windows default endpoint.”
-
-Operator diagnostics (`[diagnostics] voice`) always use that **default** endpoint, not CABLE. They are not a commentary sink and are outside the VAD path on purpose. Desktop-audio bleed into the VOD is accepted.
+Document under P4: “Recommended stream PC: set the process/default playback device so SAPI hits Virtual Audio Driver; leave headphones on a different endpoint.”
 
 ---
 
-## 2. P6 — prune, not densify
+## 2. P6 — deferred
 
-P6 was extra density. That direction is closed: authored hot cells are pruned to 6–8
-structurally distinct frames with unique filler tails. Session-brief proposals stay at 10.
+P6 was optional **content polish** (W7 edge wording, Czech gender for past tense, extra density).  
 
-**Do not densify further.** Revisit only if live listening finds a weak node or Czech gender becomes a product ask.
+**Not needed now.** Content is already viewer-facing + ~4 lines/cell.  
+Revisit only if live listening finds weak nodes or gender becomes a product ask.
 
 ---
 
@@ -65,7 +64,7 @@ structurally distinct frames with unique filler tails. Session-brief proposals s
 | **P3** | Stream start line | Later | Go-live beat |
 | **P4** | Sink status / docs (VAD note) | Later / light | Does not block T0–T1 |
 | **P5** | Voice budget gate | Later | Anti-chatter under race load |
-| **P6** | Content prune / distinct frames | **Done on this branch** | — |
+| **P6** | Content polish | **Deferred** | — |
 
 ### T0 / T1 checklist (manual)
 
@@ -98,7 +97,7 @@ Codes: `disabled`, `busy`, `global_cooldown`, `node_cooldown`, `no_node`, `hr_ga
 
 Typed `stream_start` node + OBS or HTTP trigger; viewer voice; fail-soft.
 
-**Plan:** N8 stream-start TTS is on `master` (`commentary/stream_context.py`). N9 overlay cover remains CUT. Open work: [inflight/commentary-architecture](dokumentace/inflight/commentary-architecture.md).
+**Plan:** [narrative_observers_epic.md](narrative_observers_epic.md) task **N8** (TTS) + optional **N9** (overlay cover). Do not implement ad-hoc in this suite doc.
 
 ### P4 — Sink productization (later, light)
 
@@ -128,9 +127,9 @@ Docs + status only first. **VAD remains OS routing.** No new dep unless approved
 | P1 live node matrix | Done — matrix + adapters for incident/final_lap/finish + rival_threat gap/label |
 | P2 decision log | Done — director ring + `/api/commentary/decisions` + `/commentary` panel |
 | P3–P5 | Queued |
-| P6 | Authored prune to 6–8 distinct frames; session briefs unchanged |
-| N12 V2a async isolation | Shipped on `master`; Windows/OBS live listening still pending |
-| #195 graph-path composer | Shipped on `master`; 54 nodes / 24 edges covered (includes `leader_change`) |
+| P6 | Deferred |
+| N12 V2a async isolation | Implemented on integration branch; Windows/OBS live validation pending |
+| #195 graph-path composer | Implemented on the N12 integration branch; 54 nodes / 24 edges covered (includes `leader_change`) |
 
 ---
 

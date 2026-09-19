@@ -6,13 +6,13 @@ description: "Mandatory semver label on every PR to master for ir-obs-switcher. 
 # PR SemVer Label (required)
 
 **Every PR to `master` must have exactly one semver label before CI can pass.**  
-Workflow: `PR Policy (semver labels)` — first push without label fails; retry passes after label is added.
+Workflow: `PR Policy (semver labels)` — on `opened`/`reopened` the check **waits up to ~60s** and refetches labels from the API, so adding the label right after `create_pr` should pass without a failed first run. `labeled` still re-runs (and cancels an in-flight open run). Do not empty-commit to retrigger.
 
 ## When to apply
 
 - **Immediately after** `ManagePullRequest` `create_pr` (same turn, before ending).
 - After opening a PR for a subagent branch you orchestrate.
-- When user says a PR was created without label — add label and note CI will retry or re-run.
+- When user says a PR was created without label — add label; CI should pick it up via wait or `labeled`. Re-run the job only if the wait already timed out.
 
 ## How to apply
 
@@ -51,12 +51,12 @@ A manual Release PR (last resort) must bump **pyproject + manifest + CHANGELOG**
 2. `ManagePullRequest` `create_pr`
 3. **`EditPullRequestLabels`** — pick label from table (align with PR title prefix)
 4. If label add fails (404/race): wait a few seconds, retry **label only**
-5. If CI already failed on missing label: `gh run rerun <id>` (or re-run the semver-label job). **Do not** empty-commit to retrigger.
+5. If the wait already timed out and CI is red: `gh run rerun <id>` (or re-run the semver-label job). **Do not** empty-commit to retrigger.
 6. Optionally `update_pr` `draft: false` when CI green
 
 ## Common mistakes
 
-- Creating PR and forgetting label → **semver-label CI failure** (known race on first run)
+- Creating PR and forgetting the label for >60s → `semver-label` still fails (policy). Add the label; `labeled` re-runs.
 - Empty commit “to retrigger CI” after the label is already correct
 - Labeling only at end of turn after user notification
 - Using `semver:patch` for `feat:` PRs without reason (allowed but prefer alignment)
@@ -68,3 +68,4 @@ A manual Release PR (last resort) must bump **pyproject + manifest + CHANGELOG**
 - [RELEASE_POLICY.md](../../RELEASE_POLICY.md)
 - [release-please-manifest](../release-please-manifest/SKILL.md)
 - [.github/workflows/pr-policy.yml](../../.github/workflows/pr-policy.yml)
+- [scripts/check_semver_label.py](../../scripts/check_semver_label.py)

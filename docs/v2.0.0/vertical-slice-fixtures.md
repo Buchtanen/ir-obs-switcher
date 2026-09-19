@@ -1,0 +1,480 @@
+# v2.0.0 branch-only vertical-slice decision fixtures
+
+**Status:** all F01–F44 scenarios machine-frozen for issues #235 and #278
+
+These fixtures choose expected decisions before runtime implementation. Times are monotonic milliseconds within one process. Unless overridden: selection threshold 35, switch margin 8, global interval already satisfied, no fatigue/channel pressure, current facts have confidence 1, Qwen is warm, TTS is available and catalog/config hashes are fixed.
+
+## F01 — stream starts before iRacing session
+
+Input: `STREAM_STARTED(epoch=1,startReason=attached_live)` with no SessionRef.
+
+Expected:
+
+- create stream-scope fact/episode/opportunity; occurrence and lineage remain null;
+- select authored `stream.started`, policy critical, base score 90;
+- no session intro is invented;
+- playback acceptance consumes the opportunity and starts the silence clock only after terminal speech.
+
+## F02 — canonical stage progression with inheritance
+
+Input sequence: Practice occurrence P0 produces a best-lap downstream fact; P0 ends; Qualifying Q0 starts/ends with class-position fact; Race R0 starts.
+
+Expected:
+
+- lineage at R0 is `P0>Q0>R0`;
+- current facts are R0 only; P0/Q0 are speakable only through explicitly selected historical/recap claims;
+- `session.intro.race` can mention a Q0 result only when that optional past-marked claim is selected;
+- no absent stage is inserted.
+
+## F03 — rewind Race to Qualifying
+
+Input: active lineage P0>Q0>R0, then a coherent different/older qualifying SessionRef Q1.
+
+Expected:
+
+- ordered R0 end/supersede then Q1 start; no `SESSION_REWOUND` command;
+- new lineage P0>Q1; Q0/R0 remain historical/superseded and cannot supply current claims;
+- P0 downstream facts remain eligible; building/committed R0 speech is cancelled;
+- subsequent Race R1 lineage becomes P0>Q1>R1.
+
+## F04 — same-session confirmed restart
+
+Input: same SessionRef, SessionTime drops more than 5 seconds and remains coherent for at least 100 ms.
+
+Expected:
+
+- one `SESSION_RESTARTED`, new occurrence revision and `session.restart` opportunity;
+- prior occurrence facts archive by scope, exposures/history remain;
+- pending/reserved old-occurrence opportunities become `invalidated_occurrence`;
+- a single rewind sample that is not confirmed creates no restart.
+
+## F05 — first pursuit and controlled score
+
+Input: valid `battle.pursuit` opportunity with policy live_story and material band `material`.
+
+Expected score: `64 base + 6 material = 70`. It passes threshold and opens the correlated episode. No V4 wire priority/severity term appears in the breakdown.
+
+## F06 — related continuation beats unrelated context
+
+Prior accepted beat: `battle.pursuit`. Candidates:
+
+- related `battle.approach`, deduplicated from event+preferred successor, effective score `58 continuation base + 6 continuity + 6 preferred edge + 6 material = 76`;
+- independent `session.weather_change`, context urgency and effective score 52.
+
+Expected: select `battle.approach` as `related_event_update`. The lower-urgency weather opportunity remains pending only to its TTL.
+
+## F07 — equal-urgency story switch uses margin
+
+Focused successor score is 76. Independent story candidate A scores 82; candidate B later scores 84.
+
+Expected:
+
+- A is not admitted because `82 < 76 + 8` and remains pending;
+- B is admitted exactly at the inclusive margin and wins if no higher-urgency candidate exists;
+- tape records `switch_margin_met`, both breakdowns and the focused relation.
+
+## F08 — event during speech, no prepared queue
+
+While `battle.approach` is speaking, a correlated `position.pass` critical opportunity arrives and its result facts resolve the episode.
+
+Expected:
+
+- current playback is not interrupted; no text/prompt/BeatPlan for pass exists yet;
+- opportunity/episode meaning updates immediately;
+- on speech terminal, still-live pass scores from current outcome facts and wins by higher urgency;
+- if its 45-second TTL had expired, no late pass utterance is generated merely from old history.
+
+## F09 — invalid Qwen output chooses a different beat
+
+Qwen output for `battle.pursuit` reverses actors. Verifier returns `actor_reversed`. A separate valid context beat scores 46.
+
+Expected:
+
+- suppress `(battle.pursuit, revision)`; release its opportunity reservation; no repair/retry/authored fallback/exposure;
+- in the same `planningCycleId`, dispatch the distinct context beat as `cycleAttemptOrdinal=2` if all hard/source guards pass;
+- if that alternative also fails, record `planning_cycle_exhausted`; without a distinct candidate, choose SILENCE and wait for a material accepted revision, new accepted/lifecycle event or silence impulse.
+
+## F10 — long silence filler threshold
+
+At exactly `long_silence_s`, `LONG_SILENCE_ELAPSED` finds a valid out-lap fact and no higher candidate.
+
+Expected score: `24 base + 12 silence pressure = 36`; select `filler.out_lap`. If required fact is missing, record SILENCE/source guard and rearm exactly `now + long_silence_s`, not a short retry.
+
+## F11 — Qwen cold/unavailable
+
+Warm-up fails. One Qwen-backed beat and one authored eligible beat exist.
+
+Expected:
+
+- Qwen component is unavailable; Qwen-backed candidate is hard-ineligible without spending per-beat cold timeout;
+- the distinct authored beat may win normally;
+- backend mode of the Qwen beat is never changed to authored as fallback.
+
+## F12 — manual speech while automatic commentary disabled
+
+Input: valid localhost/CSRF/versioned manual request, idle lane, TTS available, `commentary.enabled=false`.
+
+Expected: API returns 202 with `admittedState=committed` only after nonblocking dispatch to the effective preflighted TTS generation. No event, fact, BeatPlan, opportunity, exposure, fatigue or successor is created. A second manual request receives busy; race events update truth but do not interrupt the test or create a prepared waiter.
+
+## F13 — protected mailbox overflow
+
+Fill 56 ordinary and 7 protected reservations, then admit another protected reset while the actor is stalled.
+
+Expected:
+
+- ordinary eviction is attempted first; if no ordinary item remains, emergency `MAILBOX_RECOVERY` captures the latest coherent projections, loss range, worker snapshot and reset safety effect;
+- actor cancels uncommitted work, sets history incomplete and creates no opportunities for lost results;
+- producer does not block or raise into the race loop.
+
+## F14 — playback acknowledgement races reset
+
+TTS is dispatched for old occurrence. Test both recorded orders:
+
+1. reset reducer sequence precedes `PLAYBACK_ACCEPTED`: cancellation keeps opportunity unconsumed; stale acceptance token is audited/ignored;
+2. `PLAYBACK_ACCEPTED` precedes reset: opportunity is consumed/exposed, then reset requests interruption and terminal reason is `interrupted_occurrence_reset`.
+
+Replay must reproduce each outcome from reducer sequence; equal OS timestamps do not collapse the cases.
+
+## F15 — fact-only invalidation is not a speech trigger
+
+Input: a `battle_ahead` episode is focused and an ordinary coherent context batch contains no NarrativeEvent, but its newer FactView expires `battle.closing(hero→target)`.
+
+Expected:
+
+- atomically apply the FactView, close/invalidate the episode and cancel a building or committed plan whose claim is now false;
+- create no episode, opportunity or material speakable revision and run no director pass from this batch alone;
+- the next accepted/lifecycle/silence event or speech terminal pass sees the episode already closed and cannot continue it.
+
+## F16 — disable and re-enable within one OBS broadcast
+
+Input: automatic commentary run `streamEpoch=3` is active under `broadcastEpoch=2`; commentary is disabled and later re-enabled while OBS remains confirmed active.
+
+Expected:
+
+- disable closes all run-3 episodes/opportunities with `commentary_disabled`, cancels narrative speech according to the lane table, writes a complete run-3 tape trailer and leaves `broadcastEpoch=2` unchanged;
+- manual speech remains independent while disabled and creates no narrative state;
+- re-enable allocates `streamEpoch=4`, creates a new occurrence projection for the still-current SessionRef with `historyComplete=false`, opens a new tape manifest and emits exactly one `STREAM_STARTED(startReason=enabled_mid_stream)`;
+- no run-3 opportunity, exposure, attempt suppression, episode or historical claim becomes live in run 4; stale run-3 worker tokens are ignored.
+
+## F17 — pre-session lobby filler uses stream facts only
+
+Input: active narrative run and normalized `broadcast.context(lobby)`, but no coherent SessionRef/occurrence. After `long_silence_s`, a fresh stream-scope `context.track_identity` exists.
+
+Expected:
+
+- route `filler.lobby` to a stream-scope `filler_single` episode/opportunity with null occurrence/lineage and bind exactly lobby context plus track identity;
+- no stage, current session progress, weather, gap or on-track action may be claimed;
+- without track identity, the same silence impulse records `source_guard_failed`, creates no BeatPlan and rearms the normal silence deadline.
+
+## F18 — context batch is a coherent fact/event cut
+
+Input: `APPLY_CONTEXT_BATCH` contains timeline revision 31 and FactView revision 88, but one accepted NarrativeEvent names `factViewRevision=87`; its fact ID exists only in the older view. A later batch contains revision 89 and an event correctly naming 89.
+
+Expected:
+
+- apply the coherent revision-88 timeline/FactView so it may close or invalidate old state, but reject/audit the mismatched event and create no episode/opportunity or planning impulse from it;
+- never resolve the event against a cached older view and never merge either context batch with another revision;
+- apply revision 89 independently; only its coherent event may open/revise speakable state and trigger one director pass.
+
+## F19 — refreshed recovery barrier jumps over stale queued context
+
+Input: mailbox pressure evicts context revisions 101–104 and creates a recovery barrier at mailbox sequence 20. Before dequeue, later pressure refreshes that same barrier with coherent timeline/FactView revision 110 and expanded loss range. Context commands with revisions 105–109 remain physically behind sequence 20; revision 111 arrives after it.
+
+Expected:
+
+- reducing the barrier cancels uncommitted work, applies revision 110, marks history incomplete and records the full loss range without inventing opportunities for revisions 101–110;
+- subsequently dequeued revisions 105–109 and their worker tokens are stale audited no-ops even though their mailbox sequence is later;
+- revision 111 applies normally; tape replay over the same reducer sequence and barrier payload produces the same state.
+
+## F20 — manual admission timeout cannot produce delayed audio
+
+Input: a valid manual request enters the mailbox while the actor is stalled. Exercise both one-shot latch orders around the fixed 1,000 ms deadline.
+
+Expected:
+
+1. adapter changes `pending → caller_abandoned` first: return `admission_timeout`/503; later actor dequeue treats the request as stale and does not mutate the lane or call TTS;
+2. actor changes `pending → actor_claimed` first: in the same synchronous turn it either dispatches the current preflighted TTS generation, enters `committed` and resolves 202, or keeps idle and resolves 409/503; the timeout callback cannot replace that result;
+3. neither order creates a narrative opportunity, exposure, second queue or prepared waiter, and tape contains only the request ID plus terminal admission decision.
+4. manual acceptance pauses the audience silence deadline and terminal rearms it, but neither starts a director pass; backend/voice/rate override fields are rejected as unknown.
+
+## F21 — oversized accepted publication is losslessly partitioned
+
+Input: one upstream publication contains 130 accepted events in known external order over one coherent TimelineSnapshot/FactView revision. Events 64 and 129 are `phase=result`; all others are ordinary updates.
+
+Expected:
+
+- adapter emits three nonempty context batches containing 64, 64 and 2 events with consecutive external orders, identical projection revision and no loss/reordering/coalescing;
+- the first two batches are protected because each contains a derived protected result; the last is ordinary;
+- equal timeline/FactView revisions apply idempotently, while every batch remains an independent planning impulse and event opportunities preserve original source order.
+
+## F22 — stream-run start reasons are exclusive
+
+Exercise four fresh allocations and one resume: a known inactive→active OBS edge; first same-process NarrativeRuntime attachment to an already known active epoch; fresh process startup finding OBS active; re-enable after a closed narrative run while its broadcast remains active; and unknown→active recovery of a run that was never closed.
+
+Expected:
+
+- allocate exactly one run with `normal/broadcast_started/complete`, `attached_live/attached_live/incomplete`, `process_recovery/process_recovery/incomplete`, and `enabled_mid_stream/narrative_enabled/incomplete` respectively;
+- the unknown→active resume retains both existing epochs, emits no `STREAM_STARTED`, and uses `broadcast_resumed` only as the timeline transition;
+- no allocation carries multiple start reasons or imports history from before an incomplete boundary.
+
+## F23 — scoring decay, order and story cap use one formula
+
+Input: one semantic exposure of weight 1 is exactly 90 seconds old, one pattern exposure is exactly 180 seconds old, and two otherwise equal story candidates have candidate orders `(40,3)` and `(40,4)`. Public consecutive limit is 3, the focused `timing_attempt` StoryDefinition limit is 2, and two beats of that episode have been playback-accepted consecutively.
+
+Expected:
+
+- semantic and pattern fatigue values are each exactly 0.5 before their named score coefficients; no `exp(-1)` alternative or hidden family/role penalty is applied;
+- `(40,3)` wins the stable age tie-break, independent of timestamps or V4 sequence;
+- effective consecutive limit is 2, so another non-closing successor is hard-ineligible, while a fact-supported closure/outcome or critical event remains eligible.
+
+## F24 — validity deadline expires a building beat without fallback
+
+Input: an event opportunity and its building BeatPlan both have `expiresMonoMs=50_000`. No race/lifecycle input arrives; the matching validity deadline is reduced at exactly 50,000. Also exercise a full ordinary mailbox where the timer admission is skipped but its already queued head command reduces at 50,001.
+
+Expected:
+
+- the half-open boundary makes both objects invalid at exactly 50,000; cancel the generation token, terminalize the opportunity `expired_ttl`, and ignore a later worker completion;
+- run no director pass and do not spend cycle attempt 2—the runtime waits for a later accepted/lifecycle/silence or speech-terminal impulse;
+- in the full-mailbox order, record `deadline_admission_skipped`; the next command's mandatory pre-reduction sweep produces the same terminal truth at 50,001 without a recovery barrier or invented opportunity.
+
+## F25 — simultaneous timeline boundaries retain every effect
+
+Input: first observe an enabled normal broadcast start with a coherent Race SessionRef in the same upstream observation. Separately, transition from active Qualifying Q0 to Race R0 in one observation.
+
+Expected:
+
+- the first snapshot carries ordered `transitionReasons=[broadcast_started,session_started]`, allocates the run before the occurrence and emits both matching lifecycle events exactly once;
+- the second carries `[session_ended,session_started]`, closes Q0 before opening R0 and builds lineage through Q0;
+- duplicate, reversed, over-eight or mutually exclusive transition reason lists fail schema validation rather than silently dropping a boundary.
+
+## F26 — unresponsive TTS cannot strand or overlap the lane
+
+Input: separately stall a TTS token before playback acceptance, after acceptance, and after a cancellation request. Let start/playback/stop watchdogs fire in token order; then deliver stale callbacks and finally a successful preflight for a higher backend generation.
+
+Expected:
+
+- start timeout releases the unconsumed reservation through bounded cancellation; playback watchdog keeps an already consumed opportunity/exposure and requests interruption;
+- stop timeout invalidates/quarantines the token, records the corresponding terminal reason, marks TTS unavailable and prevents all automatic/manual speech despite late acceptance/completion callbacks;
+- only `COMPONENT_HEALTH_CHANGED(ready)` for a strictly higher backend generation restores admission; no polling retry, second lane or main-loop exception occurs.
+
+## F27 — tape overload has deterministic loss accounting
+
+Input: fill the tape writer queue first with sample+normal records, then with only critical records. Submit a normal record, a critical speech terminal and a required-detector critical window while storage is stalled.
+
+Expected:
+
+- normal/critical arrivals evict oldest lower classes in exact sample-then-normal order; equal classes retain FIFO;
+- all-critical overflow never blocks the producer: the bounded loss accumulator records type/priority/reason and first/last time/reducer ranges, later emits `drop_notice`, and the trailer contains the same counters even if no queue slot opened;
+- losing the required window posts protected `capture_unavailable` and disables only its experimental detector; world/narrative truth and the main loop continue unchanged.
+
+## F28 — feature ordering and bucket coverage are upstream-owned
+
+Input: deliver relation FeatureFrames with sequences 10, 12, then duplicate/older 12 and 11. In a 1-second bucket provide one valid sample at its start but no following coverage; separately provide regularly spaced samples covering at least 80% of six or more buckets.
+
+Expected:
+
+- detector reduces only frames 10 then 12; duplicate/older frames are audited no-ops and narrative reducer order is never consulted;
+- the lone sample contributes at most `sample_interval_s` coverage and cannot make its bucket/window valid;
+- the covered window can compute median buckets, OLS slope and net closing only with at least three valid buckets and matching stream/occurrence/lineage/relation identity.
+
+## F29 — offline validation has a self-contained actor lexicon
+
+Input: validate a directional hero→car:22 beat whose text uses “Morgan”. Test a complete binding (`hero→he`, `car:22→Morgan`), a missing target binding, an unused third actor and the same case-folded alias assigned to both actors.
+
+Expected:
+
+- only the complete collision-free binding reaches semantic parsing and can accept the ordered claim;
+- missing, unused or colliding bindings return `invalid_request`/400 before parsing, with no live roster/config/fact read and no Qwen call;
+- reversing the two valid aliases remains `actor_reversed`, proving that caller-supplied display strings do not weaken direction.
+
+## F30 — TTS auto resolution never retries an utterance
+
+Input: with both SAPI and eSpeak available, admit one `backend=auto` utterance and force its resolved SAPI generation to fail or time out after dispatch. Separately configure explicit SuperTonic.
+
+Expected:
+
+- auto snapshots SAPI and its generation into the utterance; failure follows normal terminal/quarantine behavior and never submits the same text to eSpeak;
+- a future explicit config rebuild may choose another backend only for later utterances and uses a higher generation;
+- SuperTonic is selected only when explicitly configured, never merely because auto probes find it installed.
+
+## F31 — session plan is explicit, ordered and stable
+
+Input: build coherent SessionInfo plans for each nonempty supported subset P, Q, R, P→Q, P→R, Q→R and P→Q→R. Separately provide no supported stage, duplicate, decreasing-rank and incomplete SubSessionID/supported-row identity, then a temporarily unavailable partial snapshot. Include 18 unsupported rows. Finally freeze P→Q while Q is current, then test adding future R versus removing/retyping P or Q.
+
+Expected:
+
+- all seven subsets produce valid plans in exact increasing `sessionNum`/stage-rank order without inventing a missing stage, and every later TimelineSnapshot carries the matching `sessionPlanRevision` even before a supported session becomes current;
+- coherent empty-supported, duplicate, decreasing or incomplete-identity input produces a serializable invalid empty plan with `session_plan_conflict`, no occurrence/lineage allocation and no session-scoped speech; unavailable/partial input publishes no plan and follows connection suspend instead of latching conflict;
+- exact repetition keeps the revision; appending previously unseen future R advances it without changing P/Q identity, while insertion, removal, reordering, retyping or identity replacement latches the conflict and suspends new session-scoped state until a new broadcast/run;
+- the first 16 unsupported rows remain source-ordered audit metadata, overflow count is 2, and none becomes a supported stage or lineage node.
+
+## F32 — bounded facts and episodes fail unknown, never false
+
+Input: fill active facts to 512 and current episodes to their configured capacity. Admit an updated semantic-key fact, then a new unpinned occurrence fact, then force a pinned-only fact set. Separately fill episodes with evictable suspended/candidate/active instances and finally with only instances owning reserved or in-flight speech.
+
+Expected:
+
+- an updated semantic key supersedes its old revision without growing storage; ordinary overflow evicts the oldest unpinned eligible fact deterministically, records `fact_capacity_evicted`, marks history incomplete and treats the missing claim as unknown;
+- newest stream/downstream active-lineage keys are the only upstream-pinned facts; FactLedger never reads BeatPlan/Episode/speech state, and eviction of a BeatPlan-required occurrence fact makes the downstream actor cancel that pre-accept work as unknown;
+- upstream-pinned-only overflow publishes no partial FactView, reports `fact_capacity_exhausted` and pauses new planning without blocking producers or the main loop;
+- a later complete bounded view resumes planning but remains `fact_capacity_evicted`/history-incomplete for that run; only a fresh lossless run reports facts ready/complete;
+- episode pressure evicts in suspended→candidate→lowest-priority-active order with stable ties, terminal reason `capacity_evicted`, opportunity invalidation and retained summary/tape evidence;
+- when all episodes are pinned, the accepted event and fact truth remain recorded but no episode/opportunity is created, with `episode_capacity_rejected`; no second speech lane, false fact or silent overwrite appears.
+
+## F33 — prompt freedom is a deterministic safety clamp
+
+Input: enumerate every PromptOptions field combination around tight/balanced/loose. Then request loose globally for: a family promoted only to tight, a critical/outcome beat, incomplete history, confidence 0.89, and a promoted noncritical context family with two enabled audited cards. Exercise repetition pressure and a failed realization.
+
+Expected:
+
+- only the closed profile tuples validate; tight cannot carry optional claims, reorder or two sentences, and a family pool with fewer than two enabled cards is ineligible;
+- config, beat maximum, family promotion/preference and runtime safety caps combine only by taking the least permissive result; the first production catalog therefore always compiles tight;
+- a later fully promoted, complete-history, confidence-at-least-0.90 noncritical context beat may compile its catalog-preferred wider tuple; the canonical material `{"beatId":"battle.approach","cycleAttemptOrdinal":1,"episodeId":"battle-ahead:3:17:22:4","episodeRevision":4,"opportunityId":"opp:401","streamEpoch":3}` hashes to seed `16041955996680716084`;
+- repetition pressure chooses among eligible cards or leaves the candidate fatigued, while failure discards that beat revision; neither widens or mutates PromptOptions.
+
+## F34 — detector tuning windows are fully replay-addressable
+
+Input: record one required detector transition whose inclusive pre/post window is FeatureFrame sequence 200–214 and whose manifest parameter snapshot is `params:battle_ahead_v1:7`. Rotate the tape during the range, then separately lose frame 209. Repeat with optional capture.
+
+Expected:
+
+- both files repeat the identical bounded parameter-snapshot array and chained manifest identity; each frame is a typed `feature_frame` record and the observation resolves the exact detector/config hash, inclusive range and completed post-window;
+- rotation does not create a new parameter snapshot or break the logical frame range, and replay reconstructs frames 200–214 in sequence without consulting current config;
+- loss of required frame 209 is represented by drop accounting, makes the range incomplete and emits protected capture-unavailable behavior for only that experimental detector;
+- optional loss remains explicitly incomplete/degraded but does not disable the production detector or fabricate/interpolate the frame; no unversioned input-sample side schema exists.
+
+## F35 — a real new event replaces into a new planning cycle
+
+Input: while cycle 70 attempt 1 is building a context beat, accept a new critical pass event whose candidate clears replacement cost and hard gates. Separately deliver a lower-scoring event. Fail the replacement candidate's verifier once.
+
+Expected:
+
+- the critical event cancels/releases the old token as `replaced_precommit` without suppression and closes cycle 70; its pass BeatPlan is attempt 1 of a new cycle 71, not attempt 2 of cycle 70;
+- verifier failure may select one distinct still-valid beat as cycle 71 attempt 2; a second failure exhausts only cycle 71 and never retries either failed beat revision;
+- the lower-scoring event is retained only through its opportunity TTL, does not cancel the current build and does not change that build's cycle/ordinal;
+- every replacement is attributable to a recorded accepted-event impulse; pure facts, manual terminal and timer expiry can never reset the attempt budget or create a replacement loop.
+
+## F36 — mixed-boundary config is explicit and replayable
+
+Input: during an active race and while one BeatPlan from desired generation 6 is building, accept valid full config generation 7 changing `director.selection_threshold` (next director pass), `max_utterance_s` (next BeatPlan or manual admission), `tts.backend` plus a synthetic sensitive `tts.voice` (one next-utterance group with one replacing preflight), `detector.battle_ahead_v1.max_closing_slope` (next stream) and `tape.detail` (next record). Hold the generation-7 TTS preflight pending, cross each available boundary, rotate the tape, then accept generation 8 reverting the still-pending detector value. Separately submit one invalid reload.
+
+Expected:
+
+- generation 7 immediately becomes desired, while the existing BeatPlan and its worker token retain generation-6 values/hash; status exposes distinct desired/effective hashes and only bounded sorted pending keys, never values or a fake service-restart requirement;
+- `next_record`, `next_director_pass` and `next_plan_or_manual` each apply exactly their own sorted group and emit `config_applied` payloads with strictly increasing apply sequence, generation 7, old/new effective hashes and exact typed replay-safe patches; no boundary drains another group and sensitive local/name/device/path values use only the frozen redaction marker;
+- the first new TTS admission applies the generation-7 utterance group but returns component unavailable while its matching preflight is pending; it never dispatches through generation 6. A stale preflight completion is ignored, and a current successful completion only enables a later normal admission impulse;
+- the rotated file manifest snapshots the then-current desired/effective hashes and apply sequence; ConfigLedger's reserved recorder barrier places every transition after all old-snapshot records and before new-snapshot records, while detector parameter snapshots remain unchanged within the active run;
+- with the barrier deliberately saturated, the config/lifecycle boundary still completes without blocking, the loss accumulator retains the missing sequence and hashes as `config_transition_lost`, later records expose the apply-sequence gap and replay is explicitly incomplete rather than silently using an old config;
+- accepting generation 8 recomputes the entire pending set, so the reverted detector key disappears instead of applying generation 7 at the next stream; every remaining pending row is tagged 8;
+- invalid input creates no desired generation or hash; the config coordinator atomically orders its `CONFIG_UPDATE` immediately before the coherent disable batch, which closes automatic narration as `disabled_invalid_config` while preserving the last valid ready effective backend only for manual TTS/diagnostics. No unrelated command may interleave, and a later valid enabled update is required to start another incomplete run.
+
+## F37 — switch policy cannot be undone by urgency sort or filler
+
+Input: a valid focused story continuation P has story urgency and score 76. In separate passes add: independent story A score 84; independent context B score 90; critical C score 36; and filler F score 100. Then, while an independent story BeatPlan with planned score 70 is building, accept a new context event whose raw score 90 becomes 78 after replacement cost.
+
+Expected:
+
+- A reaches the inclusive `76+8` margin and switches; B has lower urgency but also clears the margin and switches when no higher-urgency challenger exists, proving that a later global urgency sort cannot silently restore P;
+- C switches by higher urgency despite its lower score, and if C and a margin-qualified challenger coexist the higher-urgency set is selected first;
+- F never competes while P or any other story/event/episode candidate is selectable; it may be selected only in the fallback tier after that tier is empty;
+- the building context challenger reaches exactly `70+8` after replacement cost and may replace as a new accepted-event planning cycle; the same candidate at 77 cannot replace, and no successor/filler/pure-fact/timer input can invoke this precommit replacement path;
+- every result records the compared incumbent/challenger scores, urgency ranks, relation, margin, replacement cost and stable-tail inputs.
+
+## F38 — realization input is frozen and freshness compares exact facts
+
+Input: plan `battle.approach` from FactView 90 using relation fact R and gap fact G=1.4 seconds. In the same reducer turn compile its RealizationBundle, then let the live FactView advance while Qwen runs. Exercise separately: unrelated fact change; canonical-equal R/G copies retained; G superseded by G2=1.1; G evicted to unknown; actor alias changed in the live roster; and a malformed compiler output missing G's SurfaceValueSet.
+
+Expected:
+
+- bundle fact IDs equal sorted `selectedFactIds`; fact copies, collision-free actor bindings, exact finite EN surfaces, lexicon hash and bundle hash are frozen before worker dispatch, and Qwen/verifier receive no live state handle;
+- an unrelated change or a new FactView retaining canonical-equal current R/G passes freshness and verifies against the original 1.4-second surfaces; a later roster alias cannot alter or invalidate the frozen bundle;
+- superseded/different G2 and missing/evicted G both return `freshness_stale` before semantic parsing, release/suppress by the normal attempt rule and never rebuild the bundle around 1.1 seconds;
+- malformed/missing surface data fails closed as `realization_input_invalid` before worker dispatch, consumes only that cycle attempt and is unreachable after catalog/registry schema validation;
+- tape carries plan, bundle, fact and lexicon hashes plus captured content according to explicit redaction policy, sufficient to prove which immutable input produced the recorded completion/verdict.
+
+## F39 — TTS request and callback protocol is one-shot and ordered
+
+Input: dispatch one narrative `tts-utterance/2` through concrete backend generation 4 with ducking configured. Exercise separately: normal accepted→completed callbacks; `failed` before acceptance; completion before acceptance; duplicate acceptance; reset before acceptance followed by late acceptance/completion; acceptance before reset followed by interruption; actor stop timeout followed by a late terminal; and OBS duck failure. Also submit a later manual utterance after the first token is terminal.
+
+Expected:
+
+- utterance ordinal/ID, source identities, exact EN text hash, resolved backend/generation, effective config identity, voice/device/duck snapshot, deadline and request hash remain immutable after dispatch; narrative and manual nullable identity rules differ exactly as specified;
+- worker callbacks carry the same dispatch identity with sequence 1 acceptance and sequence 2 terminal, or one sequence-1 pre-acceptance failure; reducer dequeue order owns state, while observed timestamps are latency metadata only;
+- normal acceptance consumes the narrative opportunity once and completion writes one terminal exposure; pre-acceptance failure leaves it unconsumed and follows the bounded alternative-beat rule;
+- completion before acceptance and duplicate acceptance produce `tts_protocol_violation`, immediately quarantine the exact backend generation and start bounded cleanup; they never manufacture consumption or a second terminal;
+- reset before acceptance makes late callbacks no-ops and leaves the opportunity unconsumed; reset after acceptance retains consumed exposure. Lifecycle/reset/shutdown cancellation never launches a director pass from its terminal callback;
+- ducking is attempted before acceptance and gets exactly one idempotent best-effort restore operation on every terminal/cancel/watchdog path. `duck_unavailable`/`restore_unconfirmed` state is recorded honestly, does not crash the loop and does not change acceptance semantics;
+- after terminalization, every duplicate/late callback is audited without state mutation. The later manual request receives a new ordinal/dispatch generation, creates no narrative exposure and proves that an old token cannot affect it.
+
+## F40 — Qwen request, streaming result and deadline have one authority
+
+Input: compile a tight Qwen request from one valid RealizationBundle. Exercise golden request bytes, normal split-SSE success, server usage, role-only leading frames, response without content, `finish_reason=length`, malformed/multiple/tool-call frames, output over 2,048 bytes, worker transport failure, actor deadline versus result in both mailbox orders, accepted-event replacement during inference, cancellation result after invalidation, duplicate result ID with same/different content, disabled warm-up and successful/failed warm-up. Saturate ordinary mailbox capacity while the request deadline fires.
+
+Expected:
+
+- CompiledPrompt contains only the literal versioned base/output blocks, one family/pattern selection and canonical bundle projection; system/user byte bounds and hashes are exact, and strings inside DATA cannot add instructions or bypass the verifier;
+- one request snapshots prompt/bundle/config/component identity and emits the exact OpenAI-compatible SSE body with `n=1`, `stream=true`, `think=false`, `reasoning_effort=none` and PromptOptions sampling; redirects/proxies and unregistered fields are absent;
+- the worker emits no chunk commands and at most one terminal RealizationResult. Only one choice/content stream ending in `stop` succeeds; malformed, multiple, tool, truncated and oversized responses fail with their exact reason and never create a TTS request;
+- result-first cancels the actor deadline; deadline-first records `realization_timeout`, cancels/detaches the transport, releases/suppresses the attempt and makes the result stale. Protected deadline admission or its recovery safety effect prevents a permanently building lane under mailbox pressure;
+- replacement/invalidation cancellation does not suppress the replaced beat and its cancelled/late result cannot consume attempt 2. A cycle alternative starts only through immediate atomic `try_start`; there is no realizer request queue;
+- canonical-identical duplicate results are no-ops, while changed content under the same result ID is `realization_protocol_violation` and degrades the component generation;
+- warm-up records `warmup_succeeded|not_requested`; failed warm-up makes only Qwen-backed beats unavailable. No periodic retry or old-generation fallback occurs;
+- tape/status derive admission, TTFB, TTFT, generation, total, reducer lag and plan-to-result from exact monotonic milestones. Missing milestones remain null, server token usage is never guessed, and warm/not-proven samples are reported separately.
+
+## F41 — every TTS backend acknowledges one auditable software boundary
+
+Input: run the same immutable utterance separately through SAPI default, SAPI selected waveOut, eSpeak and SuperTonic adapters. For each, exercise success, failure immediately before its frozen acceptance boundary, cancellation crossing that boundary, duplicate adapter frames and zero-exit without acceptance. Make the actor start watchdog race the valid acknowledgement in both mailbox orders.
+
+Expected:
+
+- SAPI default accepts only after asynchronous `Speak` returns its positive stream number; selected waveOut only after successful `waveOutWrite`; eSpeak only after owned spawn plus immediate non-failing probe; SuperTonic only after `sounddevice.play` returns;
+- synthesis, duck completion, worker entry and dispatch admission never consume the opportunity; one valid acceptance does so exactly once and precedes at most one terminal callback;
+- a pre-boundary error emits the sole `failed` callback, while confirmed post-boundary completion/cancellation emits sequence 2 `completed|interrupted`; physical speaker output is never claimed;
+- duplicate/conflicting/missing framed protocol quarantines only that backend generation; timeout-first makes a later acknowledgement stale, acknowledgement-first cancels the start watchdog, and no path dispatches the text through another backend.
+
+## F42 — silence has one origin across opening, busy and inactive states
+
+Input: begin an active broadcast with no session and arm 33 seconds while `stream.started` is building. Exercise playback acceptance at 20 seconds; build still pending at 33; committed without acknowledgement at 33; no eligible filler; OBS unknown then active; commentary disable with manual speech terminal; re-enable mid-stream; a simultaneous terminal and elapsed token; and a config change from 33 to 45 seconds while armed.
+
+Expected:
+
+- the initial origin is the narrative-run admission reduction after lifecycle candidates, not session arrival or planning; only valid narrative/manual playback acceptance cancels it;
+- firing while any speech lane is non-idle selects no filler and rearms once from reduction time; no eligible filler behaves identically, without a short retry;
+- OBS unknown/inactive, disable, stream end and shutdown cancel with no elapsed credit. Resume/re-enable starts a full new interval only when the exact audience-window predicate becomes true; a manual terminal outside it cannot arm automatic silence;
+- token generations make the later half of a simultaneous terminal/elapsed race stale, and the 45-second config applies only on the next arm rather than moving the existing deadline.
+
+## F43 — tape-channel funnel preserves identity and valid denominators
+
+Input: submit one detector candidate accepted into a speakable opportunity and started utterance; one detector candidate rejected by cooldown; one direct visual-only candidate accepted; one materially revised opportunity that expires; one alternative BeatPlan; one natural successor; and one long-silence filler. Repeat one canonical candidate and inject a changed payload under its candidate ID. Disable tape while retaining live status counters, then replay a tape with a declared gap.
+
+Expected:
+
+- the pre-arbitration tap records each unique candidate and its exact EventManager outcome without changing arbitration; canonical duplicate is a no-op and changed identity content is `event_candidate_protocol_violation`;
+- immutable funnel links preserve tape channel and the available candidate, observation, event, opportunity, plan and utterance IDs; increments occur once at their frozen authoritative transitions;
+- visual-only ends at accepted, rejected ends at kick, successor begins at selected, filler begins at queued, alternative plans each count selected, and started occurs only on valid playback acceptance;
+- live per-channel counters work with recording disabled; replay across loss is incomplete, and ratios never count a non-applicable upstream stage as a zero-valued failure.
+
+## F44 — required capture loss disables upstream truth coherently
+
+Input: enumerate every production/calibration and none/optional/required policy row. In calibration start an allowlisted experimental required detector after successful preflight, then lose separately a required frame, queue record, write, rotation and flush. Saturate both the tape record queue and NarrativeMailbox, send duplicate/stale health notices, repair the recorder mid-run and begin a later stream.
+
+Expected:
+
+- production rejects enabled required policy and released nonexperimental required is invalid everywhere; none/optional remain operational on tape loss, with optional evidence explicitly incomplete;
+- every required loss reaches the out-of-queue composition health latch, disables only named experimental detectors through DetectorBank and closes their FSM/facts/candidates as `required_capture_lost`;
+- `TAPE_HEALTH_CHANGED` and its coherent context batch are adjacent or represented together by mailbox recovery, so the actor cannot plan once from stale detector truth; TapeWriter and NarrativeRuntime never call each other or mutate DetectorBank;
+- duplicate/older notices are idempotent, recorder repair cannot re-enable in the same run, and only successful preflight plus the next-stream boundary admits the detector again.
+
+## Required tape assertions per fixture
+
+Each implementation fixture asserts the ordered subset that applies:
+
+```text
+context_applied → narrative_event → fact/episode/opportunity change
+→ director_decision(score breakdown/reason)
+→ llm_attempt? → PLAYBACK_ACCEPTED? → speech_exposure terminal
+```
+
+Every row carries catalog/config/policy hashes, source refs and the expected `tapeChannel`. Rejected candidates include hard/source gate or arbitration reason. Tests compare structured records, not prose logs.
+
+The branch-only executable projection is `machine/vertical-slice-fixtures.json`, generated and checked by `machine/build_vertical_slice_fixtures.py`. Every F01–F44 row has explicit input symbols, expected invariant IDs, known tape channels, ordered tape stages and hashes of seven owning contracts. All 248 expected invariants are emitted by explicit rules whose `whenAll` precondition is the complete input scenario; the checker executes those rules, requires exact ordered equality with the expected output and rejects unreachable, duplicate, missing or altered outputs. Fourteen additional boundary calculations execute the frozen scoring, inclusive margin, publication partition, half-life, half-open expiry, session-plan subset and deterministic seed equations; sixteen mutations prove missing coverage, stale hashes, rule/output drift, order drift and changed boundary math fail closed. Runtime pytest fixtures must consume this projection rather than reinterpret the prose.

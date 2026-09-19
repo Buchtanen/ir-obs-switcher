@@ -1,0 +1,30 @@
+---
+description: Durable handover after /flow so the next agent can resume without chat history
+alwaysApply: true
+---
+
+## Agent handover and recovery
+
+`/handover` runs **after** `/flow` issue + diary + docs-keeper + verifier. It does not replace those steps.
+
+Before handing work to another agent, ending a meaningful checkpoint, or approaching a context/quota interruption, leave enough durable state to resume without reconstructing the conversation.
+
+Required handover evidence:
+
+- exact repository/worktree path, branch and remote;
+- current issue and dependency gate;
+- last pushed implementation/evidence SHA;
+- working-tree state, including every uncommitted file and its owner;
+- current TDD phase (`RED`, `GREEN`, `REFACTOR`, or `N/A`) and the last relevant command/result;
+- exact next action, expected files and known blockers/risks;
+- dev-diary link or an explicit note that it still must be published.
+
+The receiving agent must verify `pwd`, `git status --short --branch`, `git rev-parse HEAD` and the latest issue diary before editing. If the path, branch, SHA or dirty-file ownership differs from the handover, stop and reconcile it; never discard or absorb unexplained changes.
+
+One file cluster has one editing owner at a time. A verifier is read-only.
+
+Quota/model failover is not assumed. Durability comes from small pushed checkpoints, issue diary evidence and this recovery record; an in-memory agent message alone is not a handover.
+
+For the v2 narrative issue-set, maintain `docs/v2.0.0/implementation-handover.md` as the branch-local recovery record. Update it before every meaningful push, ownership transfer, long pause, or planned agent replacement. The GitHub issue/dev diary remains authoritative for accepted progress and immutable pushed SHAs. See also `.cursor/rules/09-agent-handover.mdc`.
+
+Default close after a successful handover: PR to `master` (`10-task-flow-defaults.mdc`), unless the issue-set or a human prompt says otherwise. On `codex/commentary-story-flow-spec` do not open a `master` PR until the cutover issue says so.

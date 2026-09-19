@@ -8,7 +8,6 @@ import logging
 import signal
 import sys
 import threading
-import time
 import webbrowser
 
 import aiohttp
@@ -16,6 +15,7 @@ from aiohttp import web
 
 from irswitch.commentary.duck import restore_shared_ducker
 from irswitch.config import AppConfig
+from irswitch.config_reload import CommentaryConfigCoordinator
 from irswitch.i18n import set_language
 from irswitch.iracing.extractors import (
     extract_session_fields,
@@ -29,11 +29,12 @@ from irswitch.models import DrivingMode, SwitchState
 from irswitch.oauth import OAuthManager, create_oauth_manager
 from irswitch.obs.client import ObsClient
 from irswitch.obs.stream_status_refresh import (
-    StreamEdgeDebouncer,
+    classify_streaming_edge,
     refresh_stream_status,
     schedule_post_stop_status_refresh,
 )
 from irswitch.server.api import (
+    APP_COMMENTARY_CONFIG,
     APP_CONFIG,
     APP_CONFIG_PATH,
     create_app,
@@ -54,12 +55,6 @@ from irswitch.server.event_log import EventLog, get_event_log, set_event_log
 from irswitch.server.metrics import get_metrics
 from irswitch.server.task_registry import TaskRegistry
 from irswitch.util.clock import now_ms
-from irswitch.util.diagnostic_voice import (
-    announce_diagnostic,
-    announce_fatal_blocking,
-    close_diagnostic_voice,
-    configure_diagnostic_voice,
-)
 from irswitch.util.hotkeys import (
     is_hotkey_pressed,
     start_listener,
@@ -68,7 +63,6 @@ from irswitch.util.hotkeys import (
 )
 from irswitch.util.loading_tracker import (
     LoadingTimeTracker,
-    auto_start_delay_seconds,
     decide_process_loading_clock,
     should_start_process_loading_clock,
 )
@@ -269,7 +263,7 @@ async def main_loop(
         3  # Need 3 consecutive same readings to confirm change
     )
     # OBS streaming edge → refresh YouTube liveBroadcast status (title/status/privacy)
-    stream_edge_debouncer = StreamEdgeDebouncer()
+    last_obs_streaming: bool | None = None
     loop_background_tasks = TaskRegistry()
 
     event_log = get_event_log()
@@ -450,14 +444,6 @@ async def main_loop(
                     quit_detected_ts = now_ms()
                     stream_stopped_after_quit = False
                     logger.debug("QUIT detected, starting reset timer")
-                    try:
-                        from irswitch.overlay.http import get_overlay_runtime
-
-                        runtime = get_overlay_runtime()
-                        if runtime is not None:
-                            runtime.notify_sim_quit(time.monotonic())
-                    except Exception:
-                        logger.warning("STREAM_END after QUIT failed", exc_info=True)
 
                 elapsed_ms = now_ms() - quit_detected_ts
                 quit_reset_seconds = 15  # Always reset QUIT after 15 seconds
@@ -636,29 +622,18 @@ async def main_loop(
                 if auto_start_scheduled_ts is None:
                     # Calculate when to start broadcast
                     avg_loading = loading_tracker.get_average_loading_time()
-                    has_history = len(loading_tracker.history) > 0
-                    delay_s = auto_start_delay_seconds(
-                        average_s=avg_loading,
-                        percent=config.auto_start_at_percent,
-                        has_history=has_history,
-                        default_s=config.default_loading_time_seconds,
-                    )
-                    if not has_history:
+                    use_default = len(loading_tracker.history) == 0
+                    if use_default:
                         logger.info(
-                            f"No loading history available, using hard fallback: {delay_s:.2f}s"
+                            f"No loading history available, using default: "
+                            f"{config.default_loading_time_seconds}s"
                         )
-                    start_delay_ms = int(delay_s * 1000)
+
+                    start_delay_ms = int(avg_loading * config.auto_start_at_percent / 100.0 * 1000)
                     auto_start_scheduled_ts = loading_start_ts + start_delay_ms
                     logger.debug(
                         f"Auto-start broadcast scheduled at {start_delay_ms}ms "
-                        + (
-                            f"(hard fallback {delay_s:.2f}s)"
-                            if not has_history
-                            else (
-                                f"({config.auto_start_at_percent}% of "
-                                f"{avg_loading:.2f}s average)"
-                            )
-                        )
+                        f"({config.auto_start_at_percent}% of {avg_loading:.2f}s average)"
                     )
 
                 current_ts = now_ms()
@@ -869,13 +844,11 @@ async def main_loop(
                 if not is_quit_or_restart or connected_iracing:
                     if connected_iracing:
                         log_connection_restored(logger, "iRacing")
-                        announce_diagnostic("iracing_connected")
                         await event_log.add_event(
                             "connection_restored", "iRacing connection restored"
                         )
                     else:
                         log_connection_lost(logger, "iRacing")
-                        announce_diagnostic("iracing_disconnected")
                         await event_log.add_event("connection_lost", "iRacing connection lost")
 
             if connected_obs != current_state.connected_obs:
@@ -933,7 +906,7 @@ async def main_loop(
                     last_stream_title = None
                     last_broadcast_id = None
                     last_stream_selected = False
-                    stream_edge_debouncer.reset()
+                    last_obs_streaming = None
                     loop_background_tasks.cancel("youtube_post_stop_status_refresh")
                     # Reconnect is owned solely by background_obs_connect task
             # When OBS is down, background_obs_connect owns reconnect (avoid dual connect races)
@@ -944,17 +917,11 @@ async def main_loop(
             # Check stream selection status (without periodic title fetching)
             if connected_obs and obs_client.is_connected():
                 try:
-                    is_streaming, stream_duration_ms = await obs_client.get_stream_status()
+                    is_streaming, _ = await obs_client.get_stream_status()
 
                     # Auto-refresh YouTube video/broadcast status on OBS start/stop
-                    stream_edge = stream_edge_debouncer.observe(
-                        is_streaming,
-                        known=obs_client.stream_status_known,
-                        duration_ms=stream_duration_ms,
-                        now=time.monotonic(),
-                    )
+                    stream_edge = classify_streaming_edge(last_obs_streaming, is_streaming)
                     if stream_edge == "obs_stream_started":
-                        announce_diagnostic("stream_started")
                         loop_background_tasks.cancel("youtube_post_stop_status_refresh")
                         title, _ = await refresh_stream_status(
                             obs_client, event_log, "obs_stream_started"
@@ -973,15 +940,6 @@ async def main_loop(
                         if state_now is not None:
                             set_current_state(state_now)
                     elif stream_edge == "obs_stream_stopped":
-                        announce_diagnostic("stream_stopped")
-                        try:
-                            from irswitch.commentary.stream_context import (
-                                notify_overlay_stream_stopped,
-                            )
-
-                            notify_overlay_stream_stopped()
-                        except Exception:
-                            logger.debug("stream-stop commentary hook failed", exc_info=True)
 
                         async def _rebroadcast() -> None:
                             state_now = get_current_state()
@@ -1004,6 +962,8 @@ async def main_loop(
                             ),
                             on_done=_rebroadcast,
                         )
+                    last_obs_streaming = is_streaming
+
                     is_selected, is_ready_selected = await obs_client.is_stream_selected()
 
                     # Update cache timestamp for auto-start logic
@@ -1275,7 +1235,6 @@ async def main_loop(
             break
         except Exception as e:
             logger.error(f"Error in main loop: {e}", exc_info=True)
-            announce_diagnostic("switcher_fatal")
             # Continue loop even on error
             await asyncio.sleep(poll_interval)
 
@@ -1532,6 +1491,8 @@ async def run_service(
         app = create_app()
         app[APP_CONFIG] = config  # Store config in app for dashboard access
         app[APP_CONFIG_PATH] = config_path  # type: ignore[misc]  # Store config path for hot reload
+        if config.commentary_v2 is not None:
+            app[APP_COMMENTARY_CONFIG] = CommentaryConfigCoordinator.bootstrap(config.commentary_v2)
 
         # Also set config in API module's container for backward compatibility
         set_app_config(config)
@@ -1603,7 +1564,6 @@ async def run_service(
             bus,
             mode=resolved_mode,
             replay_path=replay_path,
-            youtube_oauth_manager=oauth_manager,
         )
         set_overlay_runtime(overlay_runtime)
         overlay_task = asyncio.create_task(overlay_runtime.run(), name="overlay_runtime")
@@ -1725,7 +1685,6 @@ async def run_service(
 
         # Restore ducked OBS volume before dropping the websocket.
         restore_shared_ducker()
-        close_diagnostic_voice()
         stop_listener()  # Stop hotkey listener
         await obs_client.disconnect()
         await runner.cleanup()
@@ -1742,7 +1701,6 @@ def main() -> int:
     except Exception as e:
         print(f"Error loading config: {e}", file=sys.stderr)
         return 1
-    configure_diagnostic_voice(config.diagnostics)
 
     overlay_input = "live"
     if args.mock:
@@ -1767,7 +1725,6 @@ def main() -> int:
         return 0
     except Exception as e:
         logger.error(f"Fatal error: {e}", exc_info=True)
-        announce_fatal_blocking()
         return 1
 
 

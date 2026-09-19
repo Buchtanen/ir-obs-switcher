@@ -105,7 +105,7 @@ pit_story = true
     assert cfg.overlay.commentary.enabled is False
 
 
-def test_commentary_section_loads_from_ini(tmp_path: Path) -> None:
+def test_legacy_commentary_section_disables_only_commentary(tmp_path: Path) -> None:
     path = _minimal_ini(tmp_path)
     with path.open("a", encoding="utf-8") as handle:
         handle.write("""
@@ -129,29 +129,20 @@ flags = true
 grid_story = true
 """)
     cfg = AppConfig.from_file(path)
-    assert cfg.overlay.commentary.enabled is True
-    assert cfg.overlay.commentary.use_hr_emotion is False
-    assert cfg.overlay.commentary.cooldown_s == 2.5
-    assert cfg.overlay.commentary.max_utterance_s == 5.0
-    assert cfg.overlay.commentary.tts_backend == "espeak"
-    assert cfg.overlay.commentary.tts_steps == 6
-    assert cfg.overlay.commentary.llm_max_attempts == 2
-    assert cfg.overlay.commentary.tts_rate == -3
-    assert cfg.overlay.commentary.audio_device == "CABLE Input"
-    assert cfg.overlay.commentary.duck_input == "Zvuk plochy"
-    assert cfg.overlay.commentary.duck_ratio == 0.25
-    assert cfg.overlay.commentary.duck_fade_ms == 400
-    assert cfg.overlay.commentary.gap_hunt_tts_in_practice is True
+    assert cfg.overlay.commentary.enabled is False
+    assert cfg.commentary_v2 is not None
+    assert cfg.commentary_v2.valid is False
+    assert cfg.commentary_v2.snapshot is None
+    assert "legacy_key" in {item.reason for item in cfg.commentary_v2.diagnostics}
+    assert all(
+        item.reason in {"legacy_key", "invalid_config"} for item in cfg.commentary_v2.diagnostics
+    )
     assert cfg.overlay.race_observer.leader_pace_cooldown_s == 120.0
     assert cfg.overlay.race_observer.incident_classify is True
     assert cfg.overlay.race_observer.flags is True
     assert cfg.overlay.race_observer.grid_story is True
     values = overlay_values(cfg.overlay)
-    assert values["commentary.enabled"] is True
-    assert values["commentary.audio_device"] == "CABLE Input"
-    assert values["commentary.duck_input"] == "Zvuk plochy"
-    assert values["commentary.duck_ratio"] == 0.25
-    assert values["commentary.duck_fade_ms"] == 400
+    assert all(not key.startswith("commentary.") for key in values)
     assert values["race_observer.incident_classify"] is True
     assert values["race_observer.flags"] is True
     assert values["race_observer.grid_story"] is True
@@ -161,12 +152,6 @@ def test_session_tape_defaults_on(tmp_path: Path) -> None:
     cfg = AppConfig.from_file(_minimal_ini(tmp_path))
     assert cfg.overlay.tape.enabled is True
     assert cfg.overlay.tape.directory == "recordings"
-    assert cfg.overlay.tape.llm_rows is True
-    assert cfg.overlay.tape.field is True
-    assert cfg.overlay.battle_card_lease_s == 4.0
-    assert cfg.overlay.commentary.llm_timeout_s == 4.0
-    assert cfg.overlay.commentary.scheduler.dynamic_ttl_s == 4.0
-    assert cfg.overlay.commentary.polish_skeleton_fallback is True
 
 
 def test_unknown_language_falls_back_to_en(tmp_path: Path) -> None:
@@ -200,70 +185,20 @@ def test_feature_flag_put_roundtrip(tmp_path: Path) -> None:
     assert values["event_engine.overtake_classifier"] is True
 
 
-def test_commentary_graph_runtime_mode_put_roundtrip(tmp_path: Path) -> None:
+def test_legacy_commentary_controls_are_absent_from_public_config_api(tmp_path: Path) -> None:
     path = _minimal_ini(tmp_path)
 
-    applied = apply_overlay_values(path, {"commentary.graph_runtime.mode": "shadow"})
+    with pytest.raises(ValueError, match="Unknown config keys"):
+        apply_overlay_values(path, {"commentary.graph_runtime.mode": "shadow"})
 
-    assert applied == ["commentary.graph_runtime.mode"]
-    cfg = AppConfig.from_file(path)
-    assert cfg.overlay.commentary.graph_runtime_mode == "shadow"
-    assert overlay_values(cfg.overlay)["commentary.graph_runtime.mode"] == "shadow"
-    spec = field_by_key("commentary.graph_runtime.mode")
-    assert spec is not None
-    assert spec.default == "active"
-    assert spec.choices == ("legacy", "shadow", "active")
-    with pytest.raises(ValueError):
-        coerce_value(spec, "experimental")
-
-
-def test_prepared_filler_put_roundtrip(tmp_path: Path) -> None:
-    path = _minimal_ini(tmp_path)
-
-    applied = apply_overlay_values(
-        path,
-        {
-            "commentary.prepared_filler.mode": "active",
-            "commentary.prepared_filler.max_inflight": 3,
-            "commentary.prepared_filler.youtube_history": True,
-        },
+    assert field_by_key("commentary.graph_runtime.mode") is None
+    assert field_by_key("commentary.enabled") is None
+    assert all(not spec.key.startswith("commentary.") for spec in OVERLAY_FIELDS)
+    assert all(
+        not key.startswith("commentary.")
+        for key in overlay_values(AppConfig.from_file(path).overlay)
     )
-
-    assert applied == [
-        "commentary.prepared_filler.max_inflight",
-        "commentary.prepared_filler.mode",
-        "commentary.prepared_filler.youtube_history",
-    ]
-    prepared = AppConfig.from_file(path).overlay.commentary.prepared_filler
-    assert prepared.mode == "active"
-    assert prepared.max_inflight == 3
-    assert prepared.youtube_history is True
-    spec = field_by_key("commentary.prepared_filler.mode")
-    assert spec is not None
-    assert spec.default == "active"
-
-
-def test_llm_polish_sampling_put_roundtrip(tmp_path: Path) -> None:
-    path = _minimal_ini(tmp_path)
-    values = {
-        "commentary.llm_temperature": 0.4,
-        "commentary.llm_top_p": 0.85,
-        "commentary.llm_top_k": 30,
-        "commentary.llm_num_predict": 45,
-        "commentary.llm_num_ctx": 512,
-    }
-
-    assert apply_overlay_values(path, values) == sorted(values)
-    settings = AppConfig.from_file(path).overlay.commentary
-    assert settings.llm_temperature == 0.4
-    assert settings.llm_top_p == 0.85
-    assert settings.llm_top_k == 30
-    assert settings.llm_num_predict == 45
-    assert settings.llm_num_ctx == 512
-    for key, expected in values.items():
-        spec = field_by_key(key)
-        assert spec is not None
-        assert spec.default == expected
+    assert all(not key.startswith("commentary.") for key in LIVE_CONFIG_KEYS)
 
 
 def test_live_overlay_fields_are_hot_reloadable() -> None:

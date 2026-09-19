@@ -1,0 +1,6 @@
+{
+  "nowMs": 21000,
+  "deadlineMonoMs": 20000,
+  "expectOutcome": "failed",
+  "expectReason": "realization_timeout"
+}

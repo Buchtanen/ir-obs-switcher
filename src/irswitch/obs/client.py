@@ -43,8 +43,6 @@ class ObsClient:
         self._client: Any = None
         self._connected = False
         self._stream_status_known = False
-        self._last_stream_active: bool | None = None
-        self._last_stream_duration_ms: int | None = None
         # Cache for current scene (updated only when needed)
         self._current_scene_cache: str | None = None
         self._current_scene_cache_ts: float | None = None
@@ -571,15 +569,15 @@ class ObsClient:
 
         Returns:
             Tuple of (is_streaming: bool, stream_duration_ms: Optional[int])
-            Unknown / error holds the last known sample (not a confirmed stop).
+            Returns (False, None) if not connected or error occurs
         """
         self._stream_status_known = False
         if not self.is_connected() or self._client is None:
-            return self._held_stream_status()
+            return (False, None)
 
         try:
 
-            def _get_stream_status() -> tuple[bool, int | None] | None:
+            def _get_stream_status() -> tuple[bool, int | None]:
                 # Try different methods to get stream status
                 response = None
 
@@ -599,23 +597,21 @@ class ObsClient:
                         pass
 
                 if response is None:
-                    return None
+                    return (False, None)
+
+                self._stream_status_known = True
 
                 # Extract streaming state and duration
                 is_streaming = False
                 duration_ms: int | None = None
-                have_active = False
 
                 # Try different response formats
                 if hasattr(response, "output_active"):
                     is_streaming = bool(response.output_active)
-                    have_active = True
                 elif hasattr(response, "streaming"):
                     is_streaming = bool(response.streaming)
-                    have_active = True
                 elif hasattr(response, "outputActive"):
                     is_streaming = bool(response.outputActive)
-                    have_active = True
 
                 # Try to get duration
                 if is_streaming:
@@ -631,39 +627,25 @@ class ObsClient:
                         scale = 1000  # Legacy seconds-only duration field.
                     duration_ms = _stream_duration_ms(raw_duration, scale=scale)
 
-                # datain only overwrites when it actually carries the keys.
-                data = getattr(response, "datain", None)
-                if isinstance(data, dict) and data:
-                    if "outputActive" in data or "streaming" in data:
-                        is_streaming = bool(
-                            data.get("outputActive", False) or data.get("streaming", False)
-                        )
-                        have_active = True
+                # Fallback to datain dict format
+                if hasattr(response, "datain") and isinstance(response.datain, dict):
+                    data = response.datain
+                    is_streaming = bool(
+                        data.get("outputActive", False) or data.get("streaming", False)
+                    )
                     if is_streaming:
                         if "outputDuration" in data:
                             duration_ms = _stream_duration_ms(data["outputDuration"])
-                        elif "duration" in data:
+                        else:
                             duration_ms = _stream_duration_ms(data.get("duration"), scale=1000)
 
-                if not have_active:
-                    return None
                 return (is_streaming, duration_ms)
 
-            parsed = await asyncio.to_thread(_get_stream_status)
-            if parsed is None:
-                return self._held_stream_status()
-            self._stream_status_known = True
-            self._last_stream_active, self._last_stream_duration_ms = parsed
-            return parsed
+            return await asyncio.to_thread(_get_stream_status)
 
         except Exception as e:
             logger.debug(f"Failed to get stream status: {e}")
-            return self._held_stream_status()
-
-    def _held_stream_status(self) -> tuple[bool, int | None]:
-        if self._last_stream_active is None:
             return (False, None)
-        return (self._last_stream_active, self._last_stream_duration_ms)
 
     @staticmethod
     def _extract_broadcast_id_from_settings_value(
