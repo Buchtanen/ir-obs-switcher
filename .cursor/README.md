@@ -30,10 +30,10 @@ Canonical path: **`.cursor/skills/`**. `.agents/skills/` jsou jen command wrappe
 - `release-please-manifest` — `pyproject.toml` verze == `.release-please-manifest.json` `"."` == tag `vX.Y.Z`; při stuck RP syncnout manifest, nebumpovat pyproject v feature PR
 - `restart-irswitch` — start/stop/restart služby, port 17321, SSLKEYLOGFILE, `/health`, overlay cache bump (`?v=` / OBS CEF)
 - `youtube-oauth` — volitelný YouTube title (ne scene switch)
-- `iracing-sdk-display-format` — iRSDK jednotky, sentinely (`-1`, 32767) a HUD formát časů (`m:ss.fff`)
+- `iracing-sdk-display-format` — iRSDK jednotky, sentinely (`-1`, 32767), HUD časy (`m:ss.fff`); F3 `CarIdxPosition` ≠ live Race place (`race/order.py`, tape `field`)
 - `iracing-session-glossary` — session vs stream vs weekend vs `DrivingMode.RACE` vs `overlay_mode`; jeden extract path; nikdy `WeekendInfo.EventType`
 - `overlay-hud-copy` — HUD tokeny v `overlay/i18n.py`; golden ≠ live OBS
-- `overlay-tape-triage` — diagnostika z `recordings/overlay-*.jsonl` před `irswitch.log`
+- `overlay-tape-triage` — diagnostika z `recordings/overlay-*.jsonl` před `irswitch.log`; řádky `field` / `prepared_filler` / `llm_polish` (INFO); LoRA map je global skill `commentary-lora-dataset`
 - `subagents` — kdy spouštět Task subagenty vs práci v parentovi; HUD soubory jen sekvenčně
 - `subagents` také řídí trvalý handover při předání, delší pauze nebo riziku vyčerpání kontextu/kvóty
 - `source-command-handover` — Codex wrapper pro kanonický `/handover` command a povinný recovery kontrakt
