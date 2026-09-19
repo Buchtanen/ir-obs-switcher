@@ -54,6 +54,8 @@ Round via **total milliseconds** so `59.9996` → `1:00.000`, never `60.000` wit
 | `604800` | Unlimited time (7 days) | `SessionTimeRemain` |
 | Position `0` | Not in results | `PlayerCarPosition`, `CarIdxPosition` |
 
+`CarIdxPosition` / `PlayerCarPosition` are official F3 timing, not live running order. Race HUD place after green comes from `race/order.py`. Tape `type: field` dumps both. Parade/Qualify stay on official/grid.
+
 `as_float` in `telemetry.py` only strips huge sentinels (`<= -10000`). **Do not** treat every `-1` as missing (FPS, temps). Use `sdk_units` helpers per field.
 
 ## Units people mix up
