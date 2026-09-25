@@ -206,8 +206,6 @@ def test_race_wires_optional_qwen_flag_enabled() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
     assert "_narrative_qwen_enabled" in race
     assert "commentary_llm_enabled" in race
-    assert "allow_qwen=" in race
-    assert "qwen_timeout_ms=" in race
-    assert "RealizerService" in race
-    assert "StdlibTransport" in race
-    assert "warmup_qwen_component" in race
+    assert "model_client=model_client" in race
+    assert "ModelClient" in race
+    assert "StdlibTransport" not in race

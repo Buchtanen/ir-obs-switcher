@@ -1,5 +1,11 @@
 # Testy, CI, release
 
+## Current-fact commentary / remote M1
+
+`tests/test_commentary_microplan.py` covers the new accepted-event facts, independent semantic checks, remote config/transport, async cancellation and shadow behavior. Existing narrative actor, freshness, transport, config and exposure tests remain regression gates. Exact executed commands/results belong to [implementation-handover](../../v2.0.0/implementation-handover.md); this index does not assert an unrun test result. [Operator guide](../../v2.0.0/remote-commentary-microplan.md#verification-and-stream-gates) defines separate replay, shadow and audible stream gates. The standalone endpoint benchmark is not an OBS/iRacing/TTS acceptance test.
+
+## Shared gates
+
 - Pytest: `./run_tests.sh` / `run_tests.ps1`.
 - CI: `.github/workflows/ci.yml` — ruff, black, mypy, tests+coverage (blocking).
 - PR do `master`: přesně jeden `semver:*` label (`RELEASE_POLICY.md`). Check `semver-label` na `opened` počká na label z API (~60 s); nepíše ho. Policy: `scripts/check_semver_label.py`, testy `tests/test_semver_label.py`.

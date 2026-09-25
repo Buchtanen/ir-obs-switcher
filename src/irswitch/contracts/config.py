@@ -465,7 +465,7 @@ def _scalar(value: object, definition: dict[str, Any], *, from_ini: bool) -> obj
     return parsed
 
 
-def _validate_url(value: str, key: str) -> str:
+def _validate_url(value: str, key: str, *, remote: bool = False) -> str:
     try:
         parsed = urlsplit(value)
         if parsed.scheme not in {"http", "https"} or parsed.username or parsed.password:
@@ -478,6 +478,13 @@ def _validate_url(value: str, key: str) -> str:
         host = parsed.hostname
         if host is None:
             raise ValueError
+        if remote:
+            if parsed.scheme != "https" or parsed.path.rstrip("/") != "/v1":
+                raise ValueError
+            if not re.fullmatch(r"[a-zA-Z0-9.-]+", host):
+                raise ValueError
+            netloc = host if port is None else f"{host}:{port}"
+            return urlunsplit(("https", netloc, "/v1", "", ""))
         local = host == "localhost"
         if not local:
             address = ipaddress.ip_address(host)
@@ -502,7 +509,8 @@ def _validate_url(value: str, key: str) -> str:
             netloc = f"{netloc}:{port}"
         return urlunsplit((parsed.scheme, netloc, path, "", ""))
     except (ValueError, ipaddress.AddressValueError) as error:
-        raise ValueError(f"{key} URL outside local/LAN policy") from error
+        policy = "remote HTTPS /v1" if remote else "local/LAN"
+        raise ValueError(f"{key} URL outside {policy} policy") from error
 
 
 def _validate_path(
@@ -636,6 +644,14 @@ def _cross_field_errors(
 ) -> list[str]:
     errors: list[str] = []
     active_capacity = cast(int, values["commentary.director.active_episode_capacity"])
+    if (
+        re.fullmatch(
+            r"[A-Za-z_][A-Za-z0-9_]*",
+            str(values.get("commentary.llm.api_key_env", "IRSWITCH_LLM_API_KEY")),
+        )
+        is None
+    ):
+        errors.append("commentary.llm.api_key_env must be an environment variable name")
     resolved_capacity = cast(int, values["commentary.director.resolved_episode_capacity"])
     tape_channels = cast(tuple[str, ...] | list[str], values["commentary.tape.channels"])
     if active_capacity > resolved_capacity:
@@ -694,9 +710,7 @@ def parse_commentary_mapping(
         assert definition is not None
         try:
             parsed = _scalar(raw, definition, from_ini=_from_ini)
-            if definition["valueType"] == "url":
-                parsed = _validate_url(cast(str, parsed), key)
-            elif definition["valueType"] == "path":
+            if definition["valueType"] == "path":
                 parsed = _validate_path(
                     cast(str, parsed),
                     key,
@@ -715,7 +729,11 @@ def parse_commentary_mapping(
             key = definition["key"]
             try:
                 if definition["valueType"] == "url":
-                    values[key] = _validate_url(cast(str, values[key]), key)
+                    values[key] = _validate_url(
+                        cast(str, values[key]),
+                        key,
+                        remote=values.get("commentary.llm.provider") == "remote",
+                    )
                 elif definition["valueType"] == "path":
                     values[key] = _validate_path(
                         cast(str, values[key]),

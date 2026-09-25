@@ -187,7 +187,7 @@ def test_unframed_realization_rejects_when_verifier_attached() -> None:
     assert runtime.current_utterance_token() is None
 
 
-def test_race_comment_promises_template_on_qwen_miss() -> None:
+def test_race_uses_current_bundle_model_bridge() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
-    assert "Qwen miss falls back to authored/template" in race
-    assert "allow_qwen=" in race
+    assert "model_client=model_client" in race
+    assert "allow_qwen=" not in race

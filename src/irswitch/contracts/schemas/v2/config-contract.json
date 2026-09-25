@@ -134,7 +134,10 @@
     "commentary.tts.start_timeout_s": 5.0,
     "commentary.tts.steps": 6,
     "commentary.tts.stop_timeout_s": 1.0,
-    "commentary.tts.voice": ""
+    "commentary.tts.voice": "",
+    "commentary.llm.provider": "local",
+    "commentary.llm.mode": "live",
+    "commentary.llm.api_key_env": "IRSWITCH_LLM_API_KEY"
   },
   "keyDefinitions": [
     {
@@ -1119,6 +1122,61 @@
       "sensitive": false,
       "unit": null,
       "valueType": "boolean"
+    },
+    {
+      "key": "commentary.llm.provider",
+      "keyClass": "static",
+      "default": "local",
+      "defaultSource": "literal",
+      "applyBoundary": "next_request",
+      "boundaryNote": "Changes invalidate in-flight microplans before speech",
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "values": [
+          "local",
+          "remote"
+        ]
+      },
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "enum"
+    },
+    {
+      "key": "commentary.llm.mode",
+      "keyClass": "static",
+      "default": "live",
+      "defaultSource": "literal",
+      "applyBoundary": "next_request",
+      "boundaryNote": "Changes invalidate in-flight microplans before speech",
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "values": [
+          "live",
+          "shadow"
+        ]
+      },
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "enum"
+    },
+    {
+      "key": "commentary.llm.api_key_env",
+      "keyClass": "static",
+      "default": "IRSWITCH_LLM_API_KEY",
+      "defaultSource": "literal",
+      "applyBoundary": "next_request",
+      "boundaryNote": "Changes invalidate in-flight microplans before speech",
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "minLength": 1,
+        "maxLength": 128
+      },
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "string"
     }
   ],
   "ledgerContract": {

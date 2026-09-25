@@ -100,9 +100,6 @@ def test_race_enables_qwen_and_calls_warmup() -> None:
     race = RACE_SOURCE.read_text(encoding="utf-8")
     assert "commentary_llm_enabled" in race
     assert "commentary_llm_chat_url" in race
-    assert "warmup_qwen_component" in race
-    assert "StdlibTransport" in race
-    assert "endpoint=qwen_endpoint" in race
-    # Soft-fail path must remain so missing Ollama does not crash startup.
-    assert "warmup_qwen_component(" in race
-    assert "commentary_llm_warmup_timeout_ms" in race
+    assert "model_client.start()" in race
+    assert "await model_client.close()" in race
+    assert "StdlibTransport" not in race
