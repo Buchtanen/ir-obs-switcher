@@ -139,6 +139,11 @@ Aplikace poskytuje operator admin + legacy switcher dashboard + VR widget:
 
 ### Studio
 
+Pro živý provoz spusť službu s běžnou konfigurací a otevři `/studio/` na stejné
+adrese jako její API; host/port určuje konfigurace služby. Samostatný frontendový
+nebo izolovaný `create_app` náhled nemusí mít připojené runtime providery a jeho
+stav „nedostupné“ nepopisuje jinou běžící instanci služby.
+
 - **URL**: `http://127.0.0.1:17321/studio/`
 - **Funkce**: React rozhraní s hash navigací; přehled a diagnostika čtou existující admin status a activity API. Při selhání načítání označí poslední data jako zastaralá.
 - **Nastavení**: `/studio/#/settings` nabízí nativní editor polí dostupných přes `/api/config`, vyhledávání a sekce. Ukládá pouze změněné hodnoty a ukazuje, které server aplikoval za běhu a které vyžadují restart. Rozepsané změny zůstávají při navigaci ve Studiu; při opuštění nebo reloadu prohlížeč varuje.

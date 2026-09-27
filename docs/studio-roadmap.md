@@ -63,8 +63,7 @@ Legacy links/output routes are preserved; no retirement or master-release claim.
 - [x] P6 isolated17-fixture determinism and unique run identities verified; no live effects dispatched. Wheel build passed.
 - [x] Final EXE and wheel smoke passed with three disposable-config startups, exact assets/legacy URLs, startup activation, isolated custom replay and next-startup rollback; INI unchanged.
 
-Source verifier GREEN. All three Chrome suites passed. Physical OBS, TTS and
-external OAuth completion remain unverified. Legacy routes are deliberately
+Source verifier GREEN. All three Chrome suites passed. At this package checkpoint physical OBS, TTS and external OAuth completion were unverified; later OBS read evidence is recorded below. Legacy routes are deliberately
 preserved, so their retirement is not a completion requirement for this delivery.
 ## Final accepted delivery
 
@@ -74,5 +73,16 @@ positions. Sequence edges show recorded order, not inferred causality. Pinning a
 reference supports output-hash comparison, first differing output and full results.
 Final EXE/wheel smoke evidence and asset checks are in
 [studio-parity.md](studio-parity.md).
-No physical OBS/TTS/OAuth validation or legacy retirement is claimed. Integration
+This package checkpoint claimed no physical OBS/TTS/OAuth validation or legacy retirement. Later OBS read evidence is separate. Integration
 branch acceptance does not authorize the final master merge without explicit approval.
+
+## Live-service read checkpoint — issue #377
+
+Real service-run Studio now has read-only OBS integration evidence: the existing
+configured integration EXE connected to OBS, health/API and browser Overview
+agreed on connection/scene/autoswitch state, with streaming/recording unchanged
+and inactive. No configuration edits or source UI fix were needed. The previous
+unavailable view was an isolated `create_app` preview with no runtime, not the
+configured service origin. Open `/studio/` on the running service's configured
+origin for operational state. Live iRacing (game absent), actual TTS writes and
+full external OAuth remain unverified; legacy retirement remains unperformed.

@@ -171,3 +171,18 @@ exact packaged asset set and byte equality; stale/missing hashed assets are reje
 
 This completes package lifecycle/compatibility evidence, not physical OBS/TTS/OAuth
 execution. Legacy retirement is deliberately not performed.
+
+## Live-service OBS read evidence — issue #377
+
+With the verified integration EXE running under existing configuration, real OBS
+WebSocket read state matched service health/API and native Studio Overview:
+connection, scene and autoswitch were consistent. Streaming/recording stayed
+inactive before and after verification. No configuration edit or source UI defect
+was found. This extends N1/N2 read evidence; it does not turn fixture writes into
+real scene/stream or audio-effect evidence.
+
+An isolated `create_app` preview may have no service runtime and must not be used
+to infer another running service's provider state. Live Studio uses `/studio/`
+on the same configured origin as the service API. Game absence explains expected
+iRacing disconnection; live iRacing, actual TTS writes and complete external OAuth
+remain unverified. Preserved-route dispositions and no-retirement scope remain.

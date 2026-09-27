@@ -7,6 +7,27 @@ remain open. Existing pages remain available.
 
 ## Current contract
 
+Live Studio must be served by the running service, on the same origin as that
+service's API, using its configured host/port and `/studio/` path. An isolated
+`create_app` preview can serve assets/API routes without service-owned switcher,
+OBS or narrative providers. It is useful for fixture QA, but cannot report a
+different service instance's connection state.
+
+### Live read verification — issue #377
+
+The verified integration EXE was started with existing configuration, without
+configuration edits. Real OBS WebSocket reads matched service state. Service
+health reported OBS connected/API running; Studio Overview showed connected OBS,
+current scene and autoswitch consistently with the actual runtime. Streaming and
+recording were inactive before and after the checks. The earlier unavailable
+view came from an isolated preview without runtime and an absent production
+service; no source UI defect was established.
+
+The game was absent, so disconnected iRacing was expected. Live iRacing telemetry,
+actual TTS writes and complete external OAuth authorization remain unverified.
+These read checks do not claim scene/stream control effects or change prior
+fixture-controlled write evidence.
+
 `Operations.tsx` activates reads for the selected module through shared polling
 with stale notices and cleanup. OBS reads `/status` and `/oauth/status`;
 diagnostics reads `/status`, `/health`, `/metrics`, `/logging/level`; commentary
