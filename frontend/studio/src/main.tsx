@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { connectionLabel, parseStatus, parseActivity, readJson, startPolling } from './poll';
+import { parseStatus, parseActivity, readJson, startPolling } from './poll';
 import type { Snapshot, Status, Activity } from './poll';
 import { Settings } from './Settings';
 import { Replay } from './Replay';
 import { Definitions } from './Definitions';
 import { Catalog, Episodes } from './Catalog';
-import { Operations, JsonDetails } from './Operations';
+import { Operations } from './Operations';
 import './style.css';
 import {socketInvalidations} from './socket';
+import {StatusBoard, StatusSignal} from './StatusBoard';
+import {connectionSignal} from './status-model';
 
 const pages = [
   ['overview', 'Přehled'], ['events', 'Eventy'], ['scenarios', 'Scénáře'], ['episodes', 'Epizody'], ['replay', 'Replay'],
@@ -45,18 +47,16 @@ function App() {
   useEffect(() => { const update = () => setPage(route()); window.addEventListener('hashchange', update); return () => window.removeEventListener('hashchange', update); }, []);
   const sw = status.data?.runtime.switcher ? status.data.switcher : null;
   const unknown = status.stale || !status.data;
-  const connected = (key: 'connected_obs' | 'connected_iracing') => connectionLabel(sw?.[key], unknown);
+  const connected = (key: 'connected_obs' | 'connected_iracing') => connectionSignal(sw?.[key], unknown);
   return <div className="studio"><a className="skip" href="#main" onClick={event => { event.preventDefault(); document.getElementById('main')?.focus(); }}>Přejít na obsah</a><aside>
     <a className="brand" href="#/overview"><span className="logo">ir</span><span>irswitch <b>Studio</b></span></a>
     <p className="nav-label">PRACOVNÍ PROSTOR</p><nav aria-label="Hlavní navigace">{pages.map(([id, label]) => <a key={id} href={`#/${id}`} aria-current={page === id ? 'page' : undefined}><span className="nav-dot"/>{label}{id === 'settings' && dirtySettings > 0 && <span className="draft-badge" aria-label={`${dirtySettings} neuložených změn`}>{dirtySettings}</span>}</a>)}</nav>
     <div className="sidebar-foot">LOKÁLNÍ STUDIO<small>Pozorování provozu</small><a href="/admin">Současná administrace ↗</a></div>
-  </aside><div className="workspace"><header><span className="pill">{page === 'replay' ? 'IZOLOVANÝ REPLAY' : page === 'scenarios' ? 'DEFINICE' : 'ŽIVÝ PŘEHLED'}</span><div className="connections"><span>OBS · {connected('connected_obs')}</span><span>iRacing · {connected('connected_iracing')}</span></div></header>
+  </aside><div className="workspace"><header><span className="pill">{page === 'replay' ? 'IZOLOVANÝ REPLAY' : page === 'scenarios' ? 'DEFINICE' : 'ŽIVÝ PŘEHLED'}</span><div className="connections"><span>OBS <StatusSignal signal={connected('connected_obs')}/></span><span>iRacing <StatusSignal signal={connected('connected_iracing')}/></span></div></header>
     <main id="main" tabIndex={-1}><div className="page-title"><div><p className="eyebrow">IRSWITCH / STUDIO</p><h1>{pages.find(([id]) => id === page)?.[1]}</h1></div><span className="version">Engine {status.data?.version ?? '—'}</span></div>
-      {(page === 'overview' || page === 'diagnostics') && <><Freshness state={status}/><div className="cards">
-        {[['OBS', connected('connected_obs')], ['iRacing', connected('connected_iracing')], ['Automatika', unknown || !sw ? 'Neznámý stav' : sw.autoswitch ? 'Zapnuta' : 'Vypnuta'], ['Aktuální scéna', unknown ? 'Neznámý stav' : sw?.current_scene ?? 'Nedostupná']].map(([title, value]) => <section className="metric" key={title}><small>{title}</small><strong>{value}</strong></section>)}
-      </div><div className="columns"><ActivityList state={activity}/><div>
+      {(page === 'overview' || page === 'diagnostics') && <><Freshness state={status}/><StatusBoard state={status}/><div className="columns"><ActivityList state={activity}/><div>
         <section className="panel"><h2>Stav switcheru</h2><dl><dt>Režim</dt><dd>{sw?.mode ?? '—'}</dd><dt>Session</dt><dd>{sw?.session_type ?? '—'}</dd><dt>Důvod rozhodnutí</dt><dd>{sw?.reason ?? '—'}</dd></dl><a className="button" href="/gr-status">Ovládání switcheru ↗</a></section>
-        <section className="panel"><h2>Moduly a rozšíření</h2>{status.data ? <ul className="modules">{Object.entries({...status.data.extensions, ...status.data.features}).map(([key, item]) => <li key={key}><span>{'label' in item && typeof item.label === 'string' ? item.label : key}</span><span>{unknown ? 'Neznámý stav' : typeof item.status === 'string' ? item.status : 'Bez provozního stavu'}</span></li>)}</ul> : <p className="muted">Čekám na stavové API.</p>}<JsonDetails title="Připravenost, parametry modulů a důvody" value={status.data}/></section>
+
       </div></div></>}
       <Replay active={page === 'replay'}/><Catalog page={page}/><Definitions active={page === 'scenarios'}/><Episodes active={page === 'episodes'}/><Operations page={page}/>
       <Settings active={page === 'settings'} onDirtyChange={setDirtySettings}/>

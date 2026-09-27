@@ -1,10 +1,11 @@
 export type Snapshot<T> = {data?: T; stale: boolean; error?: string; updatedAt?: number};
+export type ComponentStatus = {label?: string; status?: string; available?: boolean; enabled?: boolean; active?: boolean; busy?: boolean; detail?: Record<string, unknown>; [key: string]: unknown};
 export type Status = {
   schemaVersion: 1; version: string; runtime: {overlay: boolean; switcher: boolean};
   switcher: null | {connected_obs: boolean; connected_iracing: boolean; autoswitch: boolean;
     mode?: string; current_scene?: string; target_scene?: string; reason?: string; session_type?: string};
-  extensions?: Record<string, {label?: string; status?: string; available?: boolean}>;
-  features?: Record<string, {status?: string; enabled?: boolean; available?: boolean}>;
+  extensions?: Record<string, ComponentStatus>;
+  features?: Record<string, ComponentStatus>;
 };
 export type Activity = {schemaVersion: 1; items: {dedupeKey: string; occurredAt: number; source: string; kind: string; message: string}[]};
 
