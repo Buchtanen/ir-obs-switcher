@@ -142,7 +142,8 @@ Aplikace poskytuje operator admin + legacy switcher dashboard + VR widget:
 - **URL**: `http://127.0.0.1:17321/studio/`
 - **Funkce**: React rozhraní s hash navigací; přehled a diagnostika čtou existující admin status a activity API. Při selhání načítání označí poslední data jako zastaralá.
 - **Nastavení**: `/studio/#/settings` nabízí nativní editor polí dostupných přes `/api/config`, vyhledávání a sekce. Ukládá pouze změněné hodnoty a ukazuje, které server aplikoval za běhu a které vyžadují restart. Rozepsané změny zůstávají při navigaci ve Studiu; při opuštění nebo reloadu prohlížeč varuje.
-- **Rozsah**: Ovládání OBS, commentary a overlay zatím otevírají stávající stránky. Katalog, scénáře a epizody zatím nejsou dostupné; jejich sekce popisují plánovaný rozsah. Nastavení nezobrazuje tajná pole ani redigovaná switcher metadata.
+- **Provoz**: Nativní OBS, Komentář, Overlay a Diagnostika poskytují ovládání, runtime/test řeči, škálovaný náhled/demo, metriky a potvrzenou správu služby. Po chybě akce je před dalším zápisem nutné načtení stavu a ruční potvrzení. Podrobnosti: [docs/studio-operations.md](docs/studio-operations.md).
+- **Rozsah**: Staré stránky a čisté OBS/VR výstupy zůstávají dostupné. Katalog, scénáře a epizody zatím nejsou dostupné. Nastavení nezobrazuje tajná pole ani redigovaná switcher metadata.
 - **Nejisté uložení**: Po timeoutu ukládání znovu načti serverové hodnoty, než pokus zopakuješ. Chyba zachová rozepsané změny; nové načtení slouží k ověření skutečně uloženého stavu.
 - **Vývoj/build**: [BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md#studio-frontend); další kroky a ověřování: [docs/studio-implementation.md](docs/studio-implementation.md).
 

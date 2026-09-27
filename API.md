@@ -742,10 +742,19 @@ Aplikace poskytuje HTML dashboardy pro vizualizaci stavu.
 
 ### GET /studio/
 
+Nativní OBS, Komentář, Overlay a Diagnostika používají existující status/OAuth,
+metriky/události, commentary runtime/validate/speak a overlay snapshot/debug API.
+Provozní POSTy posílají JSON a `X-Requested-With: irswitch`; akce jsou single-flight
+s timeoutem. Po chybě následuje blokace zápisů, explicitní načtení stavu a ruční
+potvrzení před další akcí, bez automatického opakování. Lifecycle akce, server TTS
+a živé debug emitování vyžadují potvrzení. Kontrakt: [studio-operations.md](docs/studio-operations.md).
+Overlay demo nabízí explicitní V4 nebo renderer podle konfigurace služby, který
+může být také V4; druhá volba nevynucuje V3. Demo není replay enginu.
+
 Studio: read-only přehled a diagnostika nad `GET /api/admin/status`
 a `GET /api/admin/activity`. Hash navigace (např. `/studio/#/diagnostics`) zůstává
-v prohlížeči; nevytváří nové REST endpointy. Další sekce odkazují na stávající
-rozhraní nebo vysvětlují dosud nedostupný katalog, scénáře a epizody.
+v prohlížeči; nevytváří nové REST endpointy. Katalog, scénáře a epizody zatím
+zobrazují vysvětlení nedostupnosti. Staré stránky zůstávají dostupné.
 
 `/studio/#/settings` používá existující `GET /api/config` a `PUT /api/config`.
 Editor nabízí jen netajná pole ze `schema` s hodnotami v `overlay`; redigovaná
