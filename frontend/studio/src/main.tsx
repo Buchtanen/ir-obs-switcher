@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { connectionLabel, parseStatus, parseActivity, readJson, startPolling } from './poll';
 import type { Snapshot, Status, Activity } from './poll';
+import { Settings } from './Settings';
 import './style.css';
 
 const pages = [
@@ -36,6 +37,7 @@ function LinkPanel({title, children, href, label}: {title: string; children: Rea
 }
 function App() {
   const [page, setPage] = useState<Page>(route);
+  const [dirtySettings, setDirtySettings] = useState(0);
   const status = useApi('/api/admin/status', parseStatus);
   const activity = useApi('/api/admin/activity?limit=30', parseActivity);
   useEffect(() => { const update = () => setPage(route()); window.addEventListener('hashchange', update); return () => window.removeEventListener('hashchange', update); }, []);
@@ -44,7 +46,7 @@ function App() {
   const connected = (key: 'connected_obs' | 'connected_iracing') => connectionLabel(sw?.[key], unknown);
   return <div className="studio"><a className="skip" href="#main" onClick={event => { event.preventDefault(); document.getElementById('main')?.focus(); }}>Přejít na obsah</a><aside>
     <a className="brand" href="#/overview"><span className="logo">ir</span><span>irswitch <b>Studio</b></span></a>
-    <p className="nav-label">PRACOVNÍ PROSTOR</p><nav aria-label="Hlavní navigace">{pages.map(([id, label]) => <a key={id} href={`#/${id}`} aria-current={page === id ? 'page' : undefined}><span className="nav-dot"/>{label}</a>)}</nav>
+    <p className="nav-label">PRACOVNÍ PROSTOR</p><nav aria-label="Hlavní navigace">{pages.map(([id, label]) => <a key={id} href={`#/${id}`} aria-current={page === id ? 'page' : undefined}><span className="nav-dot"/>{label}{id === 'settings' && dirtySettings > 0 && <span className="draft-badge" aria-label={`${dirtySettings} neuložených změn`}>{dirtySettings}</span>}</a>)}</nav>
     <div className="sidebar-foot">LOKÁLNÍ STUDIO<small>Pozorování provozu</small><a href="/admin">Současná administrace ↗</a></div>
   </aside><div className="workspace"><header><span className="pill">ŽIVÝ PŘEHLED</span><div className="connections"><span>OBS · {connected('connected_obs')}</span><span>iRacing · {connected('connected_iracing')}</span></div></header>
     <main id="main" tabIndex={-1}><div className="page-title"><div><p className="eyebrow">IRSWITCH / STUDIO</p><h1>{pages.find(([id]) => id === page)?.[1]}</h1></div><span className="version">Engine {status.data?.version ?? '—'}</span></div>
@@ -60,8 +62,8 @@ function App() {
       {page === 'overlay' && <LinkPanel title="Overlay" href="/overlay/debug" label="Otevřít diagnostiku overlaye">Náhled a ladění jsou dostupné v současné diagnostice. Nastavení overlaye zůstává v konfiguraci.</LinkPanel>}
       {page === 'commentary' && <LinkPanel title="Komentář" href="/commentary">Runtime komentáře, rozhodnutí a ruční testy jsou dostupné v současném ovládání.</LinkPanel>}
       {page === 'obs' && <LinkPanel title="OBS scény" href="/gr-status">Automatika a ruční ovládání scén jsou dostupné v současném dashboardu switcheru.</LinkPanel>}
-      {page === 'settings' && <LinkPanel title="Nastavení" href="/config">Konfigurace používá existující schéma a rozlišuje okamžité změny od změn vyžadujících restart. Nativní formuláře Studia budou doplněny v další etapě.</LinkPanel>}
-    </main><footer>Zdroj: /api/admin/status · /api/admin/activity <span>Studio · etapa 1</span></footer>
+      <Settings active={page === 'settings'} onDirtyChange={setDirtySettings}/>
+    </main><footer>Zdroj: {page === 'settings' ? '/api/config' : '/api/admin/status · /api/admin/activity'} <span>Studio · etapa 2</span></footer>
   </div></div>;
 }
 

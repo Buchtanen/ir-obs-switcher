@@ -742,10 +742,18 @@ Aplikace poskytuje HTML dashboardy pro vizualizaci stavu.
 
 ### GET /studio/
 
-První část Studia: read-only přehled a diagnostika nad `GET /api/admin/status`
+Studio: read-only přehled a diagnostika nad `GET /api/admin/status`
 a `GET /api/admin/activity`. Hash navigace (např. `/studio/#/diagnostics`) zůstává
 v prohlížeči; nevytváří nové REST endpointy. Další sekce odkazují na stávající
 rozhraní nebo vysvětlují dosud nedostupný katalog, scénáře a epizody.
+
+`/studio/#/settings` používá existující `GET /api/config` a `PUT /api/config`.
+Editor nabízí jen netajná pole ze `schema` s hodnotami v `overlay`; redigovaná
+`switcher` metadata nezobrazuje. Odesílá pouze změněné hodnoty s hlavičkou
+`X-Requested-With: irswitch`, poté načte kanonické hodnoty a zobrazí serverové
+seznamy `applied_live` / `needs_restart`. Konfiguraci nepolluje. Chyba zachová
+draft; při nejistém výsledku nebo timeoutu ukládání vyžaduje nové načtení před
+dalším pokusem. Během ukládání jsou úpravy zakázané.
 
 - `GET /studio` → **308** na `/studio/`.
 - `GET /studio/` → buildnutý `index.html`; **503**, pokud build chybí.

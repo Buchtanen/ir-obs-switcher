@@ -70,7 +70,9 @@ no change. Cursor rules/skills/agents are unchanged; `.cursor/README.md` needs n
 
 ## Subsequent slices
 
-1. Native FieldSpec settings with validation, live/restart and unsaved changes.
+1. Native FieldSpec settings with validation, live/restart and unsaved changes:
+   implementation tracked in [studio-settings.md](studio-settings.md) on
+   `feat/studio-settings`, stacked on `feat/studio-shell` until its PR merges.
 2. Native OBS controls and commentary, preserving existing action semantics.
 3. Read-only catalog graph and context editing of supported fields.
 4. Episode projection and lineage-backed timeline, after provider audit.
