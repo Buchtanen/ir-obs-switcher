@@ -6,7 +6,9 @@ from irswitch.server.studio_data import register_studio_data_routes
 
 
 @pytest.mark.asyncio
-async def test_authoritative_catalog_and_absent_episodes():
+async def test_authoritative_catalog_and_absent_episodes(monkeypatch):
+    # This case explicitly models provider absence, independently of other app tests.
+    monkeypatch.setattr("irswitch.server.studio_data.get_narrative_runtime", lambda: None)
     app = web.Application()
     register_studio_data_routes(app)
     async with TestClient(TestServer(app)) as client:
@@ -25,8 +27,9 @@ async def test_authoritative_catalog_and_absent_episodes():
 
 
 def test_episode_history_is_recorded_bounded_and_instance_scoped():
+    from test_episode_registry import _intent as intent
+
     from irswitch.events.episode_registry import EpisodeRegistry
-    from tests.test_episode_registry import _intent as intent
 
     registry = EpisodeRegistry()
     opened = registry.open(intent())
