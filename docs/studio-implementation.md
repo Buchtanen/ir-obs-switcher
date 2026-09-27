@@ -1,7 +1,23 @@
 # Studio: first implementation slice
 
-Base: local master `a381307`. Branch: `feat/studio-shell`.
-Work item: [#366](https://github.com/Buchtanen/ir-obs-switcher/issues/366). PR publication follows verification and handover.
+Historical shell base: local master `a381307`, branch `feat/studio-shell`.
+Work item: [#366](https://github.com/Buchtanen/ir-obs-switcher/issues/366).
+
+## Shared integration workflow — 2026-09-27
+
+At the user's explicit request, all Studio stages accumulate on
+`feat/studio-integration`, created from `254d3d4` with the shell and settings
+ancestry intact. This supersedes the stacked shell/settings PR workflow.
+
+Future stage branches start from this integration branch and target it in their
+PRs. After independent verifier GREEN and handover, merging stage PRs into
+`feat/studio-integration` is authorized by the user. Keep the integration branch
+as the shared source for the next stage.
+
+One cumulative draft PR to `master` replaces shell PR #367 and settings PR #369;
+its URL is pending publication. Merge to `master` requires the user's final
+explicit approval. The evidence below remains the historical shell verification;
+later stages retain their own acceptance criteria and evidence.
 
 ## Acceptance criteria
 
@@ -72,7 +88,8 @@ no change. Cursor rules/skills/agents are unchanged; `.cursor/README.md` needs n
 
 1. Native FieldSpec settings with validation, live/restart and unsaved changes:
    implementation tracked in [studio-settings.md](studio-settings.md) on
-   `feat/studio-settings`, stacked on `feat/studio-shell` until its PR merges.
+   historical branch `feat/studio-settings`; now included in
+   `feat/studio-integration`.
 2. Native OBS controls and commentary, preserving existing action semantics.
 3. Read-only catalog graph and context editing of supported fields.
 4. Episode projection and lineage-backed timeline, after provider audit.

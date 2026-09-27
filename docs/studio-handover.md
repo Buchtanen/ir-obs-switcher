@@ -1,17 +1,23 @@
-# Studio recovery checkpoint — settings, 2026-09-27
+# Studio recovery checkpoint — integration, 2026-09-27
 
 - Checkout: `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work` (independent clone).
-- Branch/upstream: `feat/studio-settings` / `origin/feat/studio-settings`.
+- Branch/upstream: `feat/studio-integration` / `origin/feat/studio-integration`.
 - Remote: `https://github.com/Buchtanen/ir-obs-switcher.git`.
-- Base: `feat/studio-shell`, checkpoint `189ca5c15f1c1c1184e8e7de1c52acdc3559bd3e`.
+- Integration starting point: settings checkpoint `254d3d4b39b5058d4ab91b658e72d3a56890969a`,
+  which already contains shell checkpoint `189ca5c15f1c1c1184e8e7de1c52acdc3559bd3e`.
 - Issue: [#368](https://github.com/Buchtanen/ir-obs-switcher/issues/368).
 - Diary: [2026-09-27](https://github.com/Buchtanen/ir-obs-switcher/issues/368#issuecomment-5851719685).
-- Dependency: [PR #367](https://github.com/Buchtanen/ir-obs-switcher/pull/367), still open.
-  Issue #368 authorizes a stacked PR to `feat/studio-shell`; retarget `master` after parent merge.
-  Do not merge either PR without a human request.
+- User instruction on 2026-09-27 supersedes the previous stacked PR policy: all Studio stages
+  accumulate in `feat/studio-integration`. Historical PRs #367 and #369 are superseded by
+  one cumulative draft PR from this integration branch to `master`.
+- Future stage branches start from integration and target integration. After verifier GREEN,
+  merge completed stage work into integration under this explicit user authorization.
+  Do not merge the integration branch to `master` without a separate explicit user request.
 - Last pushed implementation/evidence SHA: `b6ab66ec539d438622d38678b7bdf26e9ffe3b31`.
 - TDD phase: GREEN; issue-steward, docs-keeper and independent verifier completed.
-- Working tree: only this handover update, parent-owned; commit/push follows.
+- Working tree at this checkpoint: this handover (parent-owned) and integration-policy updates
+  to `docs/studio-implementation.md` and `docs/studio-settings.md` (docs-keeper-owned).
+  Commit/push follows; implementation files remain identical to the settings checkpoint.
   Ignored `build/` contains browser screenshots and generated schema fixture; `.venv/`,
   `.pytest-studio*/`, `dist/` contain local verification outputs. No user edits were absorbed.
 - Parent checkout remains on `feat/remote-commentary-microplan`; recordings are user-owned.
@@ -43,7 +49,8 @@ No new dependencies, backend changes, schema changes or migrations.
 
 ## Next action
 
-Publish stacked settings PR with exactly `semver:minor`, preserving the parent dependency.
+Continue on `feat/studio-integration`; keep one cumulative draft PR with `semver:minor`.
+Historical stage PRs are retained as closed references, not separate delivery branches.
 Next implementation slice: native OBS controls and commentary. Start with API/action inventory
 and a separate issue. Preserve backend CSRF/locality, manual override, autoswitch and TTS semantics.
 No new frontend scene-decision pipeline. Expected ownership: `frontend/studio/src/` plus tests/docs;
@@ -53,4 +60,11 @@ timeline remain separate slices.
 On resume verify cwd, branch, HEAD, upstream, dirty files and latest issue diary before editing.
 GitHub MCP is connected. Git fetch/push needs current-host execution and a command-local
 safe.directory exception for this sandbox-owned clone. No production service restart is required.
+
+## Integration verification
+
+TDD-exception: this checkpoint only changes Git organization and documentation.
+Verify shell and settings tips are ancestors of integration, the application/test/build tree
+matches `254d3d4`, and the remote integration tip matches the local tip after pushing.
+The prior GREEN implementation evidence above remains applicable; no behavior changed.
 

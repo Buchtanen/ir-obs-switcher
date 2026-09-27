@@ -1,9 +1,16 @@
 # Studio: native settings
 
-Branch: `feat/studio-settings`, based on `feat/studio-shell` (PR #367).
-The next PR targets `feat/studio-shell` until the shell merges, then `master`.
+Historical branch: `feat/studio-settings`, based on `feat/studio-shell` (PR #367).
+Settings PR #369 is superseded by the shared `feat/studio-integration` workflow,
+which includes both stages from `254d3d4` with their ancestry intact. One cumulative
+draft PR to `master` replaces #367 and #369; its URL is pending publication.
+Future stage branches base on and target `feat/studio-integration`; the user
+authorized their integration merges after independent verifier GREEN and handover.
+Merge to `master` requires final explicit user approval. See
+[the integration workflow](studio-implementation.md#shared-integration-workflow--2026-09-27).
 Work item: [#368](https://github.com/Buchtanen/ir-obs-switcher/issues/368).
-Implementation complete; independent verifier GREEN.
+Settings implementation complete; independent verifier GREEN. The evidence below
+records this stage and does not claim verification of future integration stages.
 
 ## Acceptance criteria
 
