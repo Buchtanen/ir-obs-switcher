@@ -1,3 +1,13 @@
+# Final integration state — 2026-09-27
+
+- Checkout `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`, branch/upstream `feat/studio-integration` / `origin/feat/studio-integration`, remote `https://github.com/Buchtanen/ir-obs-switcher.git`.
+- Last pushed implementation `8cb806f5ca8dba1bbe4be7e2230ca8f7f9b3cc52`; merged stage PR #375 into integration at `a9759dcce5b004e74d49e6b3783d77caed3711e2`. Integration tree equals the verified implementation tree.
+- P0–P6 agreed implementation complete. Issues #373/#370 final immutable evidence is in their existing linked diaries below. Cumulative draft PR https://github.com/Buchtanen/ir-obs-switcher/pull/371 updated for complete scope; master remains unmerged.
+- TDD GREEN, unchanged implementation after independent verification and final EXE/wheel/Chrome gates below. GitHub authoring CI additionally passed frontend, Ruff, Black, mypy, Bandit and Safety; full Python matrix was still running when this documentation checkpoint was written. Do not infer final CI completion from local GREEN.
+- Working tree at checkpoint: only this parent-owned handover update; committed/pushed immediately. TDD exception: documentation-only final Git state; verified exact stage/integration tree equality and clean status before this edit. No new behavior or tests required.
+- Next action is final cumulative PR review and explicitly authorized master merge/deployment, not another implementation stage. No physical OBS/TTS/OAuth execution or production service restart performed. Local preview at http://127.0.0.1:17329/studio/#/scenarios uses disposable definition storage and no runtime provider.
+- Recovery: verify cwd, status, HEAD/upstream and latest #370 diary before editing. Preserve parent checkout/user recordings. Prior implementation checkpoint below lists every owned file and verification evidence.
+
 # Studio P3–P6 completion checkpoint — 2026-09-27
 
 - Checkout: `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`; independent clone; remote `https://github.com/Buchtanen/ir-obs-switcher.git`.
