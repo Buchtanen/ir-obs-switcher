@@ -1,3 +1,12 @@
+# Full-suite CI isolation correction — 2026-09-27
+
+- Checkout/remote unchanged below; branch `feat/studio-ci-isolation`, PR target integration. Last pushed integration/recovery SHA `eff6944f30bfe910e5c1b3a4ccca1259566829e2`; issues #373/#370 reopened until full CI acceptance.
+- Full authoring CI ran 2680 tests: 2677 passed, three failures outside the earlier targeted selection. Initialization test cancelled after fixed100ms before cold off-loop catalog initialization completed; absent-provider test inherited another test's global provider; helper import incorrectly assumed a `tests` namespace package.
+- Fix changes tests only: wait for mocked HTTP site readiness with a bounded deadline and guaranteed cancellation; isolate the single-instance probe; explicitly monkeypatch the absent provider; use the configured pytest tests import path. Production modules/assets are unchanged from verified `8cb806f`.
+- Owner parent: `tests/test_main.py`, `tests/test_studio_catalog.py`, this handover. Independent verifier GREEN with12/12 targeted tests, Ruff/Black/diff checks.
+- Whole local suite now2678PASS; only two existing symlink-escape tests fail at setup with host WinError1314 (symlink privilege missing even outside sandbox). Those two passed in the preceding GitHub run. Do not weaken/skip them; final GitHub matrix is the acceptance gate.
+- Next: push this test-only correction, PR to integration, wait for complete GitHub Python3.11/3.12/3.13 matrix, then merge and close the existing issues/diaries. Existing EXE/wheel/Chrome evidence remains valid because application and assets did not change. No additional package build needed.
+
 # Final integration state — 2026-09-27
 
 - Checkout `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`, branch/upstream `feat/studio-integration` / `origin/feat/studio-integration`, remote `https://github.com/Buchtanen/ir-obs-switcher.git`.

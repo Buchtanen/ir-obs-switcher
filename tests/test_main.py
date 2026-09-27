@@ -54,6 +54,7 @@ async def test_run_service_initialization(config_path: Path) -> None:
         patch("irswitch.main.ObsClient") as mock_obs_class,
         patch("irswitch.main.web.AppRunner") as mock_runner_class,
         patch("irswitch.main.web.TCPSite") as mock_site_class,
+        patch("irswitch.main.ensure_single_instance"),
     ):
         # Setup mocks
         mock_reader = MagicMock()
@@ -78,23 +79,22 @@ async def test_run_service_initialization(config_path: Path) -> None:
         mock_runner_class.return_value = mock_runner
 
         # Mock TCPSite
+        started = asyncio.Event()
         mock_site = MagicMock()
-        mock_site.start = AsyncMock()
+        mock_site.start = AsyncMock(side_effect=started.set)
         mock_site_class.return_value = mock_site
 
-        # Run service for a short time
+        # Cold catalog loading happens off-loop and may exceed 100 ms on CI.
+        # Wait for an observable readiness boundary, not a scheduler-dependent sleep.
+        task = asyncio.create_task(run_service(config, str(config_path)))
         try:
-            task = asyncio.create_task(run_service(config, str(config_path)))
-            await asyncio.sleep(0.1)
+            await asyncio.wait_for(started.wait(), timeout=10)
+        finally:
             task.cancel()
             try:
                 await task
             except asyncio.CancelledError:
                 pass
-        except Exception as e:
-            # Some errors are expected during cancellation
-            if "CancelledError" not in str(type(e)):
-                raise
 
         # Verify initialization
         mock_reader.startup.assert_called_once()
