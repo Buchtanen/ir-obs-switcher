@@ -103,9 +103,7 @@ Verification evidence for this followup:
 - Controlled fresh→503 stale→recovery responses made all seven components unknown with no green LEDs while retained facts were labelled last known. Literal `__proto__` input was safe.
 - Rebuilt EXE package smoke PASS (`build/studio-package-id3p9ats`): current assets, legacy routes and three isolated starts covering next-startup activation/rollback.
 
-The mobile override did not apply to the hidden in-app browser, so this followup
-claims no new mobile evidence; earlier baseline checks remain separate. Final
-running-service UI verification is tracked separately. No master merge is claimed.
+Active in-app browser verification at 390px passed for overview and scenarios without horizontal page overflow. A followup CSS correction wraps graph controls onto separate rows while keeping button text intact. The hidden-preview viewport limitation was resolved by testing the active panel; viewport override was reset afterwards. The configured service also displayed the new overview and selected path correctly. No master merge is claimed.
 
 ## Subsequent slices
 
