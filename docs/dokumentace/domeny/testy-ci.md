@@ -2,6 +2,7 @@
 
 - Pytest: `./run_tests.sh` / `run_tests.ps1`.
 - CI: `.github/workflows/ci.yml` — ruff, black, mypy, tests+coverage (blocking).
+- Studio: CI job `frontend-studio` používá Node.js 24 a pnpm 11.25.0, instalaci s `--frozen-lockfile`, testy, produkční build a `pnpm audit --prod`; `git diff --exit-code src/irswitch/web/studio` hlídá drift verzovaných assets. Lokální postup včetně typecheck: [BUILD_AND_DEPLOY.md](../../../BUILD_AND_DEPLOY.md#studio-frontend).
 - PR do `master`: přesně jeden `semver:*` label (`RELEASE_POLICY.md`). Check `semver-label` na `opened` počká na label z API (~60 s); nepíše ho. Policy: `scripts/check_semver_label.py`, testy `tests/test_semver_label.py`.
 - Verze se nebumpuje v běžném PR. Release Please.
 

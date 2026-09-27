@@ -7,6 +7,28 @@ on:
     branches: [ master ]
 
 jobs:
+  frontend-studio:
+    name: Studio frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend/studio
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/studio/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm audit --prod
+      - run: git diff --exit-code -- ../../src/irswitch/web/studio
+
   v2-contracts:
     name: v2 frozen contracts
     if: github.ref == 'refs/heads/codex/commentary-story-flow-spec' || github.head_ref == 'codex/commentary-story-flow-spec'

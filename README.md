@@ -137,6 +137,13 @@ Starting main loop
 
 Aplikace poskytuje operator admin + legacy switcher dashboard + VR widget:
 
+### Studio (první část)
+
+- **URL**: `http://127.0.0.1:17321/studio/`
+- **Funkce**: React rozhraní s hash navigací; přehled a diagnostika čtou existující admin status a activity API. Při selhání načítání označí poslední data jako zastaralá.
+- **Rozsah**: Ovládání OBS, konfigurace, commentary a overlay zatím otevírají stávající stránky. Katalog, scénáře a epizody zatím nejsou dostupné; jejich sekce popisují plánovaný rozsah.
+- **Vývoj/build**: [BUILD_AND_DEPLOY.md](BUILD_AND_DEPLOY.md#studio-frontend); další kroky a ověřování: [docs/studio-implementation.md](docs/studio-implementation.md).
+
 ### Admin (primární)
 
 - **URL**: `http://127.0.0.1:17321/admin`

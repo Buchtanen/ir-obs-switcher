@@ -25,6 +25,7 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
 - [WebSocket Endpoint](#websocket-endpoint)
   - [WS /ws](#ws-ws)
 - [HTML Dashboardy](#html-dashboardy)
+  - [GET /studio/](#get-studio)
   - [GET /admin](#get-admin)
   - [GET /gr-status](#get-gr-status)
   - [GET /vr-status](#get-vr-status)
@@ -738,6 +739,21 @@ asyncio.run(listen_to_updates())
 ## HTML Dashboardy
 
 Aplikace poskytuje HTML dashboardy pro vizualizaci stavu.
+
+### GET /studio/
+
+První část Studia: read-only přehled a diagnostika nad `GET /api/admin/status`
+a `GET /api/admin/activity`. Hash navigace (např. `/studio/#/diagnostics`) zůstává
+v prohlížeči; nevytváří nové REST endpointy. Další sekce odkazují na stávající
+rozhraní nebo vysvětlují dosud nedostupný katalog, scénáře a epizody.
+
+- `GET /studio` → **308** na `/studio/`.
+- `GET /studio/` → buildnutý `index.html`; **503**, pokud build chybí.
+- `GET /studio/assets/...` → buildnuté JS/CSS soubory; bez výpisu adresáře.
+
+Stávající dashboardy a REST/WS kontrakty zůstávají dostupné.
+
+---
 
 ### GET /admin
 

@@ -40,6 +40,29 @@ chmod +x build_exe.sh
 
 ---
 
+## Studio frontend
+
+Zdroj je v `frontend/studio/` (React, TypeScript, Vite). Produkční soubory jsou
+verzované v `src/irswitch/web/studio/` a zahrnuté do Python balíčku a EXE přes
+stávající web assets. Pro běh distribuované služby není potřeba Node.js.
+
+Při změně frontendového zdroje použij Node.js 24 a pnpm 11.25.0; z kořene repozitáře:
+
+```powershell
+Push-Location frontend/studio
+pnpm install --frozen-lockfile
+pnpm test
+pnpm typecheck
+pnpm build
+pnpm audit --prod
+Pop-Location
+git diff -- src/irswitch/web/studio
+```
+
+Commitni zdroj, lockfile i aktualizovaný build. CI opakuje frontendové kontroly
+a ověřuje, že rebuild nezmění verzované assets. Po startu služby otevři
+`http://127.0.0.1:17321/studio/`; odpověď 503 znamená, že chybí frontendový build.
+
 ## Výstup build procesu
 
 Po buildu najdeš v `dist/` adresáři kompletní distribuci:

@@ -1,0 +1,77 @@
+# Studio: first implementation slice
+
+Base: local master `a381307`. Branch: `feat/studio-shell`.
+Work item: [#366](https://github.com/Buchtanen/ir-obs-switcher/issues/366). PR publication follows verification and handover.
+
+## Acceptance criteria
+
+- [x] `/studio` redirects to `/studio/`; the packaged React shell loads there.
+- [x] Hash navigation supports direct links and preserves existing dashboards.
+- [x] Overview and diagnostics read existing admin APIs without writes to the engine.
+- [x] Failed requests mark retained data stale; OBS/iRacing never appear connected without evidence.
+- [x] Polling is single-flight, bounded by timeouts, and cleaned up on unmount.
+- [x] Future editor modules clearly describe their unavailable capabilities.
+- [x] Wheel includes the built shell; frozen-path handling reuses the existing web root.
+- [x] Tests, type check, production build and dependency audit pass.
+
+## Test plan
+
+HTTP integration: redirect, HTML/assets, no directory listing, old routes, frozen paths.
+Browser: navigation, real and failed responses, stale data, script-shaped activity text,
+keyboard navigation and narrow layout. Browser responses may be controlled fixtures;
+such evidence is not evidence of an OBS/iRacing integration.
+Package: build wheel and inspect included Studio resources.
+
+## Decisions
+
+The implementation follows the proposed React/TypeScript/Vite direction. Runtime
+dependencies: React and React DOM only. Build dependencies: Vite, TypeScript and
+React type declarations. Versions are pinned and the resolved graph is locked.
+No graph library is introduced in this first slice. Dependency audit is required
+before completion. The user explicitly approved React + TypeScript + Vite on
+2026-09-27. These additions implement the plan requested by the user.
+
+Built frontend resources are versioned in `src/irswitch/web/studio/` so the existing
+Python and EXE build paths work without requiring Node on the operator's computer.
+CI rebuilds and checks for drift. Hash routing avoids an application-wide fallback.
+
+The first slice is read-only. Existing controls remain reachable through explicit
+links; no iframe migration or invented event/episode data. Native migrations and
+the catalog graph follow as separate slices.
+
+## Documentation and configuration impact
+
+README: Studio URL and scope. API: additive static paths and unchanged REST/WS.
+BUILD_AND_DEPLOY: frontend build, checked-in assets and wheel packaging.
+CI: `docs/dokumentace/domeny/testy-ci.md` records frontend checks and asset drift.
+Config: no keys/defaults/INI writer changes. No database migration; `CONFIG.md`
+and `config/config.example.ini` need no change.
+Release: no versioning, tag or release-process change; `RELEASE_POLICY.md` needs
+no change. Cursor rules/skills/agents are unchanged; `.cursor/README.md` needs no change.
+
+## Verification evidence
+
+- RED: original HTTP tests failed on `/studio` 404 and missing module; polling tests failed on missing adapter.
+- GREEN: 13 Python tests (Studio + admin API/health); five polling/validation tests; TypeScript build.
+- Ruff, Black and isolated mypy passed. `pnpm audit` reported no known vulnerabilities, including build dependencies.
+- Chrome headless: real local API and absent switcher runtime, hash navigation/reload,
+  keyboard skip preserving route, fixture API, script-shaped message escaped as text,
+  HTTP 503 stale state with retained data, 390px layout without page overflow, no page errors.
+- `pip wheel --no-cache-dir --no-deps --wheel-dir dist .` succeeded; ZIP inspection
+  confirmed Studio HTML and both hashed assets. Frozen web root has a regression test.
+- Independent verifier: GREEN. EXE execution and real OBS/iRacing integrations were not run;
+  existing PyInstaller `--collect-all irswitch` packaging is unchanged and uses the packaged resources.
+
+## Development diary — 2026-09-27
+
+- Inventoried admin status/activity, old dashboards and packaging contracts.
+- Created isolated local clone to preserve the user's untracked files and master.
+- GitHub MCP resolved publication access; issue #366 tracks the implementation.
+
+## Subsequent slices
+
+1. Native FieldSpec settings with validation, live/restart and unsaved changes.
+2. Native OBS controls and commentary, preserving existing action semantics.
+3. Read-only catalog graph and context editing of supported fields.
+4. Episode projection and lineage-backed timeline, after provider audit.
+5. Versioned definition drafts and isolated replay under a new domain contract.
