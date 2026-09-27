@@ -1,3 +1,47 @@
+# Final narrow-layout correction — 2026-09-27 (#379)
+
+- Same checkout/branch/remote/issue below. Last pushed implementation `767b65da64be8cb508d7b571841cc53d9de1bb85`; stage PR [#380](https://github.com/Buchtanen/ir-obs-switcher/pull/380) to integration. Existing diary remains authoritative for final merge SHA.
+- Active browser viewport test resolved the earlier hidden-tab limitation: 390px overview/scenarios have no horizontal page overflow. Found and corrected graph toolbar character wrapping with two CSS declarations (`flex-wrap:wrap`, `white-space:nowrap`). Verified readable34px-high buttons in multiple rows; reset viewport afterwards.
+- Independent verifier GREEN for CSS delta; typecheck/build/diff checks PASS. No model/backend changes since28test GREEN. Full CI of767b65d already passed Python3.12/3.13 and all static/frontend/security checks; Python3.11 still running at this checkpoint.
+- Parent owns this checkpoint: `frontend/studio/src/catalog.css`, regenerated `src/irswitch/web/studio/index.html` and JS/CSS assets, `docs/studio-implementation.md`, this handover. Generated final assets `index-BCohWCp2.js`, `index-DJb0sbO3.css`; priorCHnMR4l_/BPYzLOnB assets removed. Primary checkout/config untouched.
+- Packaging: previously verified EXE behavior still applies; rebuilt `dist/studio-status-final/irswitchd.exe` includes the final toolbar CSS. Next: verify final asset bytes after single-instance service handoff from `dist/studio-status/irswitchd.exe`, push this CSS/evidence checkpoint, wait for relevant CI, authorized integration merge and update same #379 diary/PR#371. Do not merge master. Cleanup disposable Vite17329; preserve configured service17321.
+
+# Studio status lights and complete defined paths — 2026-09-27 (#379)
+
+- Checkout `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`, branch `feat/studio-status-paths`, remote `https://github.com/Buchtanen/ir-obs-switcher.git`; target `feat/studio-integration`. User authorized accumulating every stage there. Cumulative draft PR #371 remains unmerged to master.
+- Issue [#379](https://github.com/Buchtanen/ir-obs-switcher/issues/379); [same-day diary](https://github.com/Buchtanen/ir-obs-switcher/issues/379#issuecomment-5857747334). Last pushed base/recovery SHA `561b744fd07acb4cd4375e7d0dc707392f52e821`; immutable implementation SHA follows in that diary after this checkpoint is pushed.
+- Scope: denser overview with component facts and glowing status indicators, safe unknown/off/stale semantics, scenario predecessor/successor highlighting including all reachable branches, visible directional arrows, keyboard/list selection, fit graph/path and client-only drag layout. No backend/config/dependency changes. Catalog paths are possibilities, not evaluated guards or live execution.
+- TDD GREEN. Independent verifier GREEN after repairing inherited-property lookups and adding regression coverage. `pnpm test`28PASS; typecheck/build/diff checks PASS; `pytest tests/test_studio.py -q --basetemp=.pytest-studio-status-379`3PASS. Backend full suite not repeated for this frontend delta; previous full CI evidence remains separately scoped.
+- CUA browser checks: real API overview; graph click/Enter/Space, branch highlighting, search expands selected path, story filter clears selection, zoom retained across polling, dragging without selecting and subsequent click, reset layout. Long links route through default grid gaps. Controlled fresh/503/recovery status fixture confirms7unknown/0green on stale, retained values explicitly last-known, safe literal `__proto__` status/key. New mobile-size verification remains unperformed because hidden IAB viewport override did not apply; override reset.
+- New EXE build + `scripts/qa_studio_package.py dist/studio-status/irswitchd.exe` PASS (`build/studio-package-id3p9ats`): exact current assets, legacy routes, disposable config/store, three isolated startups, selection/activation/rollback, custom replay. Final generated resources: `index-CHnMR4l_.js`, `index-BPYzLOnB.css`.
+- After GREEN, replaced only the known previous service process with the verified `dist/studio-status/irswitchd.exe`, using existing primary configuration and working directory. Single-listener handoff checked; no config edits. Config SHA unchanged. Actual service health/API and live Studio show connected OBS, disconnected simulator, API running, version1.3.0; expected overall degraded while simulator absent. Served HTML references both new resource hashes. Live overview tab refreshed and confirmed new component cards/LEDs. No overlay HUD assets changed/cache bump needed.
+- Parent owns frontend/generated assets/this handover; docs-keeper owns README and the other3 docs files. Only task-owned files below are dirty; ignored package/QA artifacts are not committed. Primary checkout and user recordings remain untouched.
+- Next: commit/push this verified checkpoint, open stage PR to integration with exactly `semver:minor`, merge under existing authorization, fast-forward local integration, update same issue diary and cumulative PR #371 with final SHAs. Keep umbrella #370 open for remaining physical simulator/TTS/OAuth acceptance; do not merge master. Stop disposable preview/fixture processes after verification, preserve actual service.
+
+## Files owned at this checkpoint
+
+- `README.md`
+- `docs/dokumentace/inflight/README.md`
+- `docs/studio-authoring.md`
+- `docs/studio-implementation.md`
+- `frontend/studio/src/Catalog.tsx`
+- `frontend/studio/src/StatusBoard.tsx`
+- `frontend/studio/src/StoryGraph.tsx`
+- `frontend/studio/src/catalog.css`
+- `frontend/studio/src/graph-model.ts`
+- `frontend/studio/src/graph-model.test.ts`
+- `frontend/studio/src/main.tsx`
+- `frontend/studio/src/poll.ts`
+- `frontend/studio/src/status-board.css`
+- `frontend/studio/src/status-model.ts`
+- `frontend/studio/src/status-model.test.ts`
+- `src/irswitch/web/studio/index.html`
+- `src/irswitch/web/studio/assets/index-3ptC8BvU.js (deleted)`
+- `src/irswitch/web/studio/assets/index-CNCWPKvB.css (deleted)`
+- `src/irswitch/web/studio/assets/index-BPYzLOnB.css (generated)`
+- `src/irswitch/web/studio/assets/index-CHnMR4l_.js (generated)`
+- `docs/studio-handover.md`
+
 # Configured-service Studio verification — 2026-09-27 (#377)
 
 - Checkout/remote as below. Branch `feat/studio-live-integration`, base/target `feat/studio-integration`; last pushed implementation/recovery SHA `61759aea889518239c7002d04bdaa685e42645a0`. Cumulative PR #371 remains unmerged to master.

@@ -1,6 +1,13 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
 ## Studio integration (open work)
+
+UI followup [#379](https://github.com/Buchtanen/ir-obs-switcher/issues/379):
+compact overview status LEDs from existing admin facts and defined scenario path
+navigation. Verified integration followup: independent GREEN, 28 frontend tests,
+CUA status/path behavior and rebuilt EXE smoke PASS. Exact scope/limits in
+[studio-implementation.md](../../studio-implementation.md) and
+[studio-authoring.md](../../studio-authoring.md); no API/config delta or master-merge claim.
 Studio P3–P6 pathmap and evidence: [studio-authoring.md](../../studio-authoring.md).
 Server `studio_data.py` projects catalog/episodes; `studio_authoring.py` owns bounded
 local transport; `studio_replay.py` owns isolated fixture jobs. Domain

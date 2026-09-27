@@ -86,6 +86,25 @@ no change. Cursor rules/skills/agents are unchanged; `.cursor/README.md` needs n
 - Created isolated local clone to preserve the user's untracked files and master.
 - GitHub MCP resolved publication access; issue #366 tracks the implementation.
 
+## Status cards and defined paths followup
+
+Work item: [#379](https://github.com/Buchtanen/ir-obs-switcher/issues/379), branch
+`feat/studio-status-paths`. Compact overview cards display component LEDs with
+`good`, `warn`, `bad`, `off` or `unknown` state from existing `/api/admin/status`
+facts. Stale readings never appear green. Event-engine flags describe configuration,
+not inferred runtime activity. Existing endpoints and configuration stay unchanged.
+
+Scenario path behavior is documented in [studio-authoring.md](studio-authoring.md#defined-path-navigation--issue-379).
+Verification evidence for this followup:
+
+- Independent verifier GREEN; 28 frontend tests, typecheck, production build and diff check PASS; three `tests/test_studio.py` tests PASS.
+- CUA browser against actual Vite/admin verified click/Enter/Space selection, search preserving a selected path (six nodes/seven edges), pursuit graph (eight nodes/twelve edges), story-filter selection reset and zoom retained across polling.
+- Node drag did not select a node; a subsequent click and layout reset worked.
+- Controlled fresh→503 stale→recovery responses made all seven components unknown with no green LEDs while retained facts were labelled last known. Literal `__proto__` input was safe.
+- Rebuilt EXE package smoke PASS (`build/studio-package-id3p9ats`): current assets, legacy routes and three isolated starts covering next-startup activation/rollback.
+
+Active in-app browser verification at 390px passed for overview and scenarios without horizontal page overflow. A followup CSS correction wraps graph controls onto separate rows while keeping button text intact. The hidden-preview viewport limitation was resolved by testing the active panel; viewport override was reset afterwards. The configured service also displayed the new overview and selected path correctly. No master merge is claimed.
+
 ## Subsequent slices
 
 1. Native FieldSpec settings with validation, live/restart and unsaved changes:

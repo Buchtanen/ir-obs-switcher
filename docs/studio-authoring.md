@@ -12,6 +12,16 @@ edges and supported FieldSpec settings. Zoom/pan/node placement are local layout
 preferences; layout never changes the engine. OBS scene logic remains separate.
 Unsupported guard/emitter parameters are visible as read-only evidence.
 
+### Defined path navigation — issue #379
+
+Click, Enter or Space selects a beat. Highlight all its defined predecessors and
+successors inside the current story filter, with directional arrows and muted
+unrelated links. Text search must not truncate the selected path. Fit-all and
+fit-path controls adjust only the view. These are possible catalog-defined paths,
+not live activity or evidence that a guard evaluated true. Selection/layout never
+changes story definitions. Independent verifier GREEN for #379; browser evidence
+and package checks are recorded in [studio-implementation.md](studio-implementation.md#status-cards-and-defined-paths-followup).
+
 The definition editor accepts JSON and a new-story form, with import/export,
 revision diff, undo/redo and unsaved-draft protection. Validate and save before
 selecting a revision for the **next startup**. Saving does not activate it; current

@@ -146,6 +146,7 @@ stav „nedostupné“ nepopisuje jinou běžící instanci služby.
 
 - **URL**: `http://127.0.0.1:17321/studio/`
 - **Funkce**: React rozhraní s hash navigací; přehled a diagnostika čtou existující admin status a activity API. Při selhání načítání označí poslední data jako zastaralá.
+- **Stav a cesty**: Přehled používá kompaktní karty s LED podle skutečných status dat; zastaralá data nejsou zelená. Ve scénářích výběr beatu zvýrazní definované předchůdce/následníky a umožní přizpůsobit pohled celé story nebo cestě. Graf neukazuje vyhodnocení guardů ani živé vykonávání.
 - **Nastavení**: `/studio/#/settings` nabízí nativní editor polí dostupných přes `/api/config`, vyhledávání a sekce. Ukládá pouze změněné hodnoty a ukazuje, které server aplikoval za běhu a které vyžadují restart. Rozepsané změny zůstávají při navigaci ve Studiu; při opuštění nebo reloadu prohlížeč varuje.
 - **Provoz**: Nativní OBS, Komentář, Overlay a Diagnostika poskytují ovládání, runtime/test řeči, škálovaný náhled/demo, metriky a potvrzenou správu služby. Po chybě akce je před dalším zápisem nutné načtení stavu a ruční potvrzení. Podrobnosti: [docs/studio-operations.md](docs/studio-operations.md).
 - **Autorství**: Eventy/Scénáře nabízejí skutečný katalog, SVG graf a editor validovaných story definic s revizemi. Aktivace platí až při příštím startupu. Epizody zobrazují omezenou historii aktuálního běhu; Replay spouští izolované existující fixture bez OBS/TTS efektů. Viz [docs/studio-authoring.md](docs/studio-authoring.md).
