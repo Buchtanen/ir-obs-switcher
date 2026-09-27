@@ -18,9 +18,10 @@ from typing import Any, Literal, TypedDict
 
 from irswitch.commentary.mailbox import AdmissionResult, NarrativeMailbox
 from irswitch.commentary.tape_writer import NarrativeTapeWriter
-from irswitch.contracts.catalog_loader import load_narrative_catalog
+from irswitch.contracts.catalog_loader import NarrativeCatalog
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.context import ContextBatchPart
+from irswitch.contracts.runtime_catalog import load_runtime_catalog as load_narrative_catalog
 from irswitch.events.detector_bank import DetectorBank
 from irswitch.events.episode_registry import EpisodeIntent, EpisodeRegistry
 from irswitch.events.exposure_store import ExposureIntent, ExposureStore
@@ -303,6 +304,7 @@ class NarrativeRuntime:
         commit_world_provider: CommitWorldProvider | None = None,
         opportunity_queue: OpportunityQueue | None = None,
         episode_registry: EpisodeRegistry | None = None,
+        definition_catalog: NarrativeCatalog | None = None,
         exposure_store: ExposureStore | None = None,
         story_director: StoryDirector | None = None,
         llm_component: LlmComponent | None = None,
@@ -386,6 +388,7 @@ class NarrativeRuntime:
         self._active_beat_id: str | None = None
         self._opportunity_now_ms: int = 0
         self._episode_registry = episode_registry
+        self._definition_catalog = definition_catalog
         self._exposure_store = exposure_store
         self._pending_exposure: dict[str, object] | None = None
         self._seeded_episode_intent: EpisodeIntent | None = None
@@ -725,6 +728,20 @@ class NarrativeRuntime:
 
     def director_selected_beat_for_test(self) -> str | None:
         return self._director_selected_beat_id
+
+    def studio_episodes(self, *, limit: int = 50, offset: int = 0) -> dict[str, Any]:
+        if self._episode_registry is None:
+            return {
+                "schemaVersion": "studio-episodes/1",
+                "available": False,
+                "runId": None,
+                "items": [],
+                "history": [],
+                "total": None,
+            }
+        data = self._episode_registry.studio_snapshot(limit=limit, offset=offset)
+        data["decisions"] = [dict(row) for row in self.decisions(128)]
+        return data
 
     def decisions(self, limit: int = 20) -> tuple[Mapping[str, Any], ...]:
         """Newest-first decision rows for commentary-runtime/2 projection."""
@@ -1253,6 +1270,7 @@ class NarrativeRuntime:
         """Project immutable timeline/fact pointers; return transition effects."""
 
         transition_effects: list[str] = []
+        previous_occurrence = self._occurrence_id
         timeline = part.batch.timeline
         self._timeline_revision = int(timeline["timelineRevision"])
         fact_view = part.batch.fact_view
@@ -1297,6 +1315,34 @@ class NarrativeRuntime:
             self._lineage_id,
             self._stage,
         ) = _session_identity_from_timeline(timeline)
+        if self._episode_registry is not None and self._seeded_episode_intent is None:
+            from irswitch.events.studio_story_projection import observe_story_events
+
+            try:
+                if previous_occurrence and previous_occurrence != self._occurrence_id:
+                    self._episode_registry.reset_occurrences(
+                        {str(previous_occurrence)},
+                        now_ms=max(
+                            (int(e.occurred_mono_ms) for e in part.batch.events),
+                            default=max(
+                                (e.updated_mono_ms for e in self._episode_registry.current()),
+                                default=0,
+                            ),
+                        ),
+                        reason="occurrence_superseded",
+                    )
+                count = observe_story_events(
+                    self._episode_registry,
+                    self._definition_catalog or load_narrative_catalog().require_catalog(),
+                    part.batch.events,
+                    reducer_sequence=self._reducer_sequence,
+                )
+                if count:
+                    transition_effects.append(f"story_instances_observed:{count}")
+            except Exception:
+                # Episode diagnostics must never stop the main narrative actor.
+                self._episode_registry.history_complete = False
+                transition_effects.append("story_projection_unavailable")
         return transition_effects
 
     def _bump_deadline_generations(self, effects: list[str]) -> None:

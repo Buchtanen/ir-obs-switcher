@@ -46,3 +46,33 @@ their merges are authorized after independent verifier GREEN and handover. One
 cumulative draft PR presents the complete result to `master`; final merge requires
 explicit user approval. Stage completion and cumulative regression evidence must
 remain distinguishable. Preserve clean OBS output and standalone VR contracts.
+
+## Current implementation checkpoint — 2026-09-27
+
+P3–P5 catalog/graph, revisioned story authoring/startup selection and current-run
+lineage history are implemented. P6 isolated existing fixture replay is implemented
+and scoped HTTP/determinism/disposable-store browser checks passed. See
+[studio-authoring.md](studio-authoring.md) for evidence and limits. Wheel build passed; bounded reconnect/invalidation and polling tests passed. Final EXE and wheel runtime/package smoke passed.
+Legacy links/output routes are preserved; no retirement or master-release claim.
+## Verification disposition — 2026-09-27
+
+- [x] P0 inventory rows each have explicit native evidence or preserved-route disposition in [studio-parity.md](studio-parity.md).
+- [x] P1 bounded socket reconnect/invalidation, single-flight polling and cleanup verified; 20 frontend tests and typecheck passed.
+- [x] P2 settings/operations Chrome QA passed with fixture-controlled operational writes; original API contracts retained.
+- [x] P3–P5 catalog/definition/episode tests and disposable-store authoring Chrome QA passed; startup revision routing/fallback evidence recorded in [studio-authoring.md](studio-authoring.md).
+- [x] P6 isolated17-fixture determinism and unique run identities verified; no live effects dispatched. Wheel build passed.
+- [x] Final EXE and wheel smoke passed with three disposable-config startups, exact assets/legacy URLs, startup activation, isolated custom replay and next-startup rollback; INI unchanged.
+
+Source verifier GREEN. All three Chrome suites passed. Physical OBS, TTS and
+external OAuth completion remain unverified. Legacy routes are deliberately
+preserved, so their retirement is not a completion requirement for this delivery.
+## Final accepted delivery
+
+P0–P6 scoped plan complete; independent verifier GREEN includes final replay delta.
+Replay visualization highlights actual recorded command/event outputs at timeline
+positions. Sequence edges show recorded order, not inferred causality. Pinning a
+reference supports output-hash comparison, first differing output and full results.
+Final EXE/wheel smoke evidence and asset checks are in
+[studio-parity.md](studio-parity.md).
+No physical OBS/TTS/OAuth validation or legacy retirement is claimed. Integration
+branch acceptance does not authorize the final master merge without explicit approval.

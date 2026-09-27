@@ -50,12 +50,17 @@ export async function readJson<T>(url: string, signal: AbortSignal, parse: (data
 }
 
 export function startPolling<T>(read: (signal: AbortSignal) => Promise<T>, publish: (state: Snapshot<T>) => void,
-  interval = 3000, timeout = 5000): () => void {
+  interval = 3000, timeout = 5000, subscribe?: (invalidate:()=>void)=>()=>void): () => void {
   let stopped = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let controller: AbortController;
   let state: Snapshot<T> = {stale: false};
+  let inFlight = false;
+  let invalidated = false;
   async function refresh() {
+    if(stopped||inFlight)return;
+    inFlight=true;
+    invalidated=false;
     controller = new AbortController();
     let deadline: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -65,9 +70,10 @@ export function startPolling<T>(read: (signal: AbortSignal) => Promise<T>, publi
       state = {data, stale: false, updatedAt: Date.now()};
     } catch (error) {
       state = {...state, stale: true, error: error instanceof Error ? error.message : 'API není dostupné'};
-    } finally { clearTimeout(deadline); }
-    if (!stopped) { publish(state); timer = setTimeout(refresh, interval); }
+    } finally { clearTimeout(deadline); inFlight=false; }
+    if (!stopped) { publish(state); timer = setTimeout(refresh, invalidated ? 0 : interval); }
   }
   void refresh();
-  return () => { stopped = true; clearTimeout(timer); controller.abort(); };
+  const unsubscribe=subscribe?.(()=>{if(stopped)return;if(inFlight){invalidated=true;return;}clearTimeout(timer);void refresh();});
+  return () => { stopped = true; unsubscribe?.(); clearTimeout(timer); controller.abort(); };
 }

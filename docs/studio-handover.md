@@ -1,3 +1,73 @@
+# Studio P3–P6 completion checkpoint — 2026-09-27
+
+- Checkout: `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`; independent clone; remote `https://github.com/Buchtanen/ir-obs-switcher.git`.
+- Branch `feat/studio-authoring`; target `feat/studio-integration`; cumulative PR #371 to master remains unmerged.
+- Current issue #373; diary https://github.com/Buchtanen/ir-obs-switcher/issues/373#issuecomment-5851927305. Umbrella #370; diary https://github.com/Buchtanen/ir-obs-switcher/issues/370#issuecomment-5851826827.
+- Last pushed implementation/base SHA `eae70716ac94d62937fa07e3a872e7d974ef0255` (P2 integration merge PR #374, implementation `76ea0f7`). Current checkpoint SHA will be recorded in the same issue diary immediately after push.
+- Dependency gates: user approved React/TypeScript/Vite; new stories with validated links, current-run bounded history, activation next startup. No further application dependencies added. PyInstaller is the existing packaging tool installed only in this isolated venv.
+- TDD GREEN; independent verifier SOURCE GREEN including final replay highlight/comparison. Relevant 242 Python regressions, subsequent 20 Studio delta tests and final 6 HTTP tests; 20 frontend tests, typecheck/build, all 11 freeze artifact builders, Ruff/Black/diff checks. Later checks overlap earlier ones; counts must not be summed as unique tests.
+- Browser: all three Chrome suites PASS; authoring uses a real disposable revision store and checks malformed drafts, conflicts, undo/redo, navigation, save/select, graph, run isolation, timeline reset/highlight, pinned deterministic comparison and narrow layout. Settings/operations writes use fixtures.
+- Final package smoke PASS for EXE (`build/studio-package-woboz3m4`) and wheel (`build/studio-package-a7l9dkkl`): three isolated service starts, unchanged INI, current asset/legacy routes, custom story save and pending selection, startup activation and next-startup rollback, custom isolated replay. Wheel checks exact asset filenames/bytes; clean stale `build/lib/irswitch/web/studio` before incremental packaging. Final assets `index-3ptC8BvU.js`, `index-CNCWPKvB.css`.
+- Scope: catalog/graph/layout/context FieldSpec links; actual current-run episode transitions with identities and evidence; immutable bounded revisions/validation/atomic conflict-safe persistence; startup-only effective catalog composition; 17 deterministic isolated replay fixtures, timeline and pinned comparison; bounded WS reconnect/invalidation.
+- No unresolved source/package blocker. Physical OBS/TTS/OAuth effects were not exercised. Legacy routes intentionally retained; no retirement or production deployment claim. New stories compose supported certified beats/edges, not arbitrary code/guards.
+- Isolated current-source preview http://127.0.0.1:17329/studio/ uses `build/studio-preview-revisions.json`, no live runtime/config. QA preview 17330 uses separate `build/studio-qa-revisions.json`. Both are local evidence only. Production port17321 untouched.
+- Next exact action: commit/push this verified stage, create stage PR to integration with semver:minor, merge under user's explicit integration authorization, fast-forward local integration, update cumulative PR371 and issue diaries with immutable SHA/PR. Close completed stage/implementation issues. Do not merge master.
+- Parent checkout remains `feat/remote-commentary-microplan`, user recordings untouched. Ignored build/dist/.venv/.pytest-studio* are local generated evidence. Current owned changes are listed below and committed as one checkpoint; this handover is parent-owned.
+
+## Owned files at checkpoint
+
+- `API.md` — docs-keeper
+- `CONFIG.md` — docs-keeper
+- `README.md` — docs-keeper
+- `docs/dokumentace/README.md` — docs-keeper
+- `docs/dokumentace/inflight/README.md` — docs-keeper
+- `docs/event_graph_editor_spec.md` — docs-keeper
+- `docs/studio-parity.md` — docs-keeper
+- `docs/studio-roadmap.md` — docs-keeper
+- `docs/v2.0.0/machine/catalog-loader-contract.json` — docs-keeper
+- `frontend/studio/src/Operations.tsx` — parent
+- `frontend/studio/src/Settings.tsx` — parent
+- `frontend/studio/src/main.tsx` — parent
+- `frontend/studio/src/poll.ts` — parent
+- `src/irswitch/contracts/resources.py` — parent
+- `src/irswitch/contracts/schemas/v2/catalog-loader-contract.json` — parent
+- `src/irswitch/events/beat_plan.py` — parent
+- `src/irswitch/events/episode_registry.py` — parent
+- `src/irswitch/events/episode_retention.py` — parent
+- `src/irswitch/events/narrative_runtime.py` — parent
+- `src/irswitch/events/opportunity_queue.py` — parent
+- `src/irswitch/events/prompt_compiler.py` — parent
+- `src/irswitch/main.py` — parent
+- `src/irswitch/server/studio.py` — parent
+- `src/irswitch/web/studio/assets/index-BtotO0aW.js` — parent
+- `src/irswitch/web/studio/assets/index-CEcw_-L8.css` — parent
+- `src/irswitch/web/studio/index.html` — parent
+- `docs/studio-authoring.md` — docs-keeper
+- `docs/studio-definitions.md` — docs-keeper
+- `frontend/studio/qa/authoring-browser.cjs` — parent
+- `frontend/studio/src/Catalog.tsx` — parent
+- `frontend/studio/src/Definitions.tsx` — parent
+- `frontend/studio/src/Replay.tsx` — parent
+- `frontend/studio/src/catalog.css` — parent
+- `frontend/studio/src/socket.test.ts` — parent
+- `frontend/studio/src/socket.ts` — parent
+- `scripts/qa_studio_package.py` — parent
+- `src/irswitch/contracts/runtime_catalog.py` — parent
+- `src/irswitch/contracts/schemas/v2/studio-narrative-replay.json` — parent
+- `src/irswitch/contracts/schemas/v2/studio-replay-scenarios.json` — parent
+- `src/irswitch/contracts/studio_definitions.py` — parent
+- `src/irswitch/events/studio_story_projection.py` — parent
+- `src/irswitch/server/studio_authoring.py` — parent
+- `src/irswitch/server/studio_data.py` — parent
+- `src/irswitch/server/studio_replay.py` — parent
+- `src/irswitch/web/studio/assets/index-3ptC8BvU.js` — parent
+- `src/irswitch/web/studio/assets/index-CNCWPKvB.css` — parent
+- `tests/test_studio_authoring_http.py` — parent
+- `tests/test_studio_catalog.py` — parent
+- `tests/test_studio_definitions.py` — parent
+
+## Earlier checkpoints
+
 # Studio P2 operations checkpoint — 2026-09-27
 
 - Checkout: `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`; remote `https://github.com/Buchtanen/ir-obs-switcher.git`.

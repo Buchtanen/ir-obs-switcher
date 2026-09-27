@@ -1,6 +1,13 @@
 # In-flight documentation — `codex/commentary-story-flow-spec`
 
 ## Studio integration (open work)
+Studio P3–P6 pathmap and evidence: [studio-authoring.md](../../studio-authoring.md).
+Server `studio_data.py` projects catalog/episodes; `studio_authoring.py` owns bounded
+local transport; `studio_replay.py` owns isolated fixture jobs. Domain
+`contracts/studio_definitions.py` validates/stores revisions; `runtime_catalog.py`
+installs next-startup catalog; `events/studio_story_projection.py` observes registered
+routes into `episode_registry.py`. Native `Catalog.tsx`/`Definitions.tsx`/`Replay.tsx`
+live in `frontend/studio/src/`. No shipped-master or legacy-retirement claim.
 
 `feat/studio-integration` accumulates Studio stages; this is not shipped-master
 documentation. Lookup: [roadmap](../../studio-roadmap.md),

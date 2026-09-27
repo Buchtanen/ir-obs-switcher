@@ -42,6 +42,7 @@ export function Settings({active, onDirtyChange}: {active: boolean; onDirtyChang
   const [query, setQuery] = useState('');
   const [section, setSection] = useState('');
   const [changedOnly, setChangedOnly] = useState(false);
+  useEffect(()=>{if(active){const search=new URLSearchParams(location.hash.split('?')[1]||'').get('search');if(search!==null){setQuery(search);setSection('');setChangedOnly(false);}}},[active]);
   const initialStarted = useRef(false);
   const request = useRef<AbortController | null>(null);
   const analysis = config ? analyseDraft(config, draft) : {changes: [], errors: {}, values: {}};

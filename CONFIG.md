@@ -4,6 +4,9 @@ Kompletní popis všech konfiguračních parametrů v `config.ini`.
 
 Viz `config/config.example.ini` pro kompletní příklad konfigurace.
 
+Studio ukládá revize story definic do `studio-definitions.json` vedle aktivního
+config souboru. Nejde o nové INI klíče ani druhý writer konfigurace; vybraná revize
+platí až při příštím startupu. Limity/fallback: [studio-definitions.md](docs/studio-definitions.md).
 ## Obsah
 
 - [Sekce `[app]`](#sekce-app---základní-nastavení)
