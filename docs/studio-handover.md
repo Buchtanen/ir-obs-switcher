@@ -1,3 +1,15 @@
+# Configured-service Studio verification — 2026-09-27 (#377)
+
+- Checkout/remote as below. Branch `feat/studio-live-integration`, base/target `feat/studio-integration`; last pushed implementation/recovery SHA `61759aea889518239c7002d04bdaa685e42645a0`. Cumulative PR #371 remains unmerged to master.
+- Issue #377; diary https://github.com/Buchtanen/ir-obs-switcher/issues/377#issuecomment-5856375328. User authorized starting the real service and verifying the missing OBS state.
+- Root cause: previous isolated `create_app()` preview had no switcher runtime; the configured service was not running. Started the verified integration executable with the existing configuration. No source/config edits, credentials changes, dependencies or overlay cache changes were required.
+- Parent verified real OBS read access before startup, then native Studio overview on the running service origin: connected OBS, actual current scene and autoswitch state, correctly disconnected simulator. Streaming/recording were inactive; no test scene/audio/broadcast action was issued. User-facing live Studio tab remains open.
+- Independent verifier scoped GREEN: two bounded health/admin/status samples agree, health timestamp advances, responses succeed with version1.3.0; served HTML/JS/CSS exactly match integration Git assets. App/source/assets diff against61759ae is empty. Browser evidence is from the actual configured service, not intercepted fixtures.
+- Limitations: no running simulator session; no real TTS write, scene-switch action or completed external OAuth flow verified. Correctly displayed absence is not active-provider acceptance. Do not claim full physical integration from this OBS read gate.
+- Docs-keeper owns README, docs/studio-operations.md, docs/studio-roadmap.md, docs/studio-parity.md; parent owns this handover. Only these5 docs files are dirty at checkpoint; no user files absorbed.
+- TDD exception: operational startup + documentation only, verified with real provider reads/UI and unchanged application tree; earlier full2680test Python3.11/3.12/3.13 CI remains applicable.
+- Next: commit/push docs evidence, stage PR to integration, authorized merge, update existing issue diaries with exact immutable SHA. Preserve current runtime; do not start a second service or isolated preview as a substitute. Full operator/simulator/audio acceptance requires the corresponding available providers and explicit test scope.
+
 # Full-suite CI isolation correction — 2026-09-27
 
 - Checkout/remote unchanged below; branch `feat/studio-ci-isolation`, PR target integration. Last pushed integration/recovery SHA `eff6944f30bfe910e5c1b3a4ccca1259566829e2`; issues #373/#370 reopened until full CI acceptance.
