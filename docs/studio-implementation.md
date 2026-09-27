@@ -14,8 +14,10 @@ PRs. After independent verifier GREEN and handover, merging stage PRs into
 `feat/studio-integration` is authorized by the user. Keep the integration branch
 as the shared source for the next stage.
 
-One cumulative draft PR to `master` replaces shell PR #367 and settings PR #369;
-its URL is pending publication. Merge to `master` requires the user's final
+One cumulative [draft PR #371](https://github.com/Buchtanen/ir-obs-switcher/pull/371)
+to `master` replaces the closed shell PR #367 and settings PR #369. The stage plan
+is tracked in [integration issue #370](https://github.com/Buchtanen/ir-obs-switcher/issues/370).
+Merge to `master` requires the user's final
 explicit approval. The evidence below remains the historical shell verification;
 later stages retain their own acceptance criteria and evidence.
 

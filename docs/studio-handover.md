@@ -5,15 +5,19 @@
 - Remote: `https://github.com/Buchtanen/ir-obs-switcher.git`.
 - Integration starting point: settings checkpoint `254d3d4b39b5058d4ab91b658e72d3a56890969a`,
   which already contains shell checkpoint `189ca5c15f1c1c1184e8e7de1c52acdc3559bd3e`.
-- Issue: [#368](https://github.com/Buchtanen/ir-obs-switcher/issues/368).
-- Diary: [2026-09-27](https://github.com/Buchtanen/ir-obs-switcher/issues/368#issuecomment-5851719685).
+- Integration issue: [#370](https://github.com/Buchtanen/ir-obs-switcher/issues/370).
+- Integration diary: [2026-09-27](https://github.com/Buchtanen/ir-obs-switcher/issues/370#issuecomment-5851826827).
+- Settings stage: [#368](https://github.com/Buchtanen/ir-obs-switcher/issues/368).
+- Cumulative draft: [PR #371](https://github.com/Buchtanen/ir-obs-switcher/pull/371).
 - User instruction on 2026-09-27 supersedes the previous stacked PR policy: all Studio stages
   accumulate in `feat/studio-integration`. Historical PRs #367 and #369 are superseded by
-  one cumulative draft PR from this integration branch to `master`.
+  cumulative draft PR #371 from this integration branch to `master`. Both historical
+  PRs have been closed without merging to master; their stage commits remain intact.
 - Future stage branches start from integration and target integration. After verifier GREEN,
   merge completed stage work into integration under this explicit user authorization.
   Do not merge the integration branch to `master` without a separate explicit user request.
 - Last pushed implementation/evidence SHA: `b6ab66ec539d438622d38678b7bdf26e9ffe3b31`.
+- Published integration-policy checkpoint: `15dbd76`; this follow-up records PR/issue links.
 - TDD phase: GREEN; issue-steward, docs-keeper and independent verifier completed.
 - Working tree at this checkpoint: this handover (parent-owned) and integration-policy updates
   to `docs/studio-implementation.md` and `docs/studio-settings.md` (docs-keeper-owned).
@@ -64,7 +68,7 @@ safe.directory exception for this sandbox-owned clone. No production service res
 ## Integration verification
 
 TDD-exception: this checkpoint only changes Git organization and documentation.
-Verify shell and settings tips are ancestors of integration, the application/test/build tree
-matches `254d3d4`, and the remote integration tip matches the local tip after pushing.
+Verified: shell and settings tips are ancestors of integration and the application/test/build tree
+matches `254d3d4`. Independent verifier GREEN. Verify local/remote tip equality after this docs push.
 The prior GREEN implementation evidence above remains applicable; no behavior changed.
 

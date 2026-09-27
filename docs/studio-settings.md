@@ -3,7 +3,9 @@
 Historical branch: `feat/studio-settings`, based on `feat/studio-shell` (PR #367).
 Settings PR #369 is superseded by the shared `feat/studio-integration` workflow,
 which includes both stages from `254d3d4` with their ancestry intact. One cumulative
-draft PR to `master` replaces #367 and #369; its URL is pending publication.
+[draft PR #371](https://github.com/Buchtanen/ir-obs-switcher/pull/371) to `master`
+replaces the closed #367 and #369; [#370](https://github.com/Buchtanen/ir-obs-switcher/issues/370)
+tracks the remaining integration stages.
 Future stage branches base on and target `feat/studio-integration`; the user
 authorized their integration merges after independent verifier GREEN and handover.
 Merge to `master` requires final explicit user approval. See
