@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { connectionLabel, parseStatus, parseActivity, readJson, startPolling } from './poll';
 import type { Snapshot, Status, Activity } from './poll';
 import { Settings } from './Settings';
+import { Operations } from './Operations';
 import './style.css';
 
 const pages = [
@@ -59,9 +60,7 @@ function App() {
       {page === 'events' && <LinkPanel title="Katalog eventů">Prohlížení definic eventů a jejich použití ve scénářích přijde v další etapě. Poslední výskyty jsou dostupné v Přehledu a Diagnostice.</LinkPanel>}
       {page === 'scenarios' && <LinkPanel title="Graf návazností se připravuje">Editor scénářů zatím není dostupný. Další etapa nejprve zobrazí skutečný katalog a validované návaznosti; uložení konceptu a aktivace budou oddělené kroky.</LinkPanel>}
       {page === 'episodes' && <LinkPanel title="Průběh epizod">Historie epizod a časová osa čekají na ověření runtime provideru a skutečných identit. Studio zatím nevytváří ukázkové epizody.</LinkPanel>}
-      {page === 'overlay' && <LinkPanel title="Overlay" href="/overlay/debug" label="Otevřít diagnostiku overlaye">Náhled a ladění jsou dostupné v současné diagnostice. Nastavení overlaye zůstává v konfiguraci.</LinkPanel>}
-      {page === 'commentary' && <LinkPanel title="Komentář" href="/commentary">Runtime komentáře, rozhodnutí a ruční testy jsou dostupné v současném ovládání.</LinkPanel>}
-      {page === 'obs' && <LinkPanel title="OBS scény" href="/gr-status">Automatika a ruční ovládání scén jsou dostupné v současném dashboardu switcheru.</LinkPanel>}
+      <Operations page={page}/>
       <Settings active={page === 'settings'} onDirtyChange={setDirtySettings}/>
     </main><footer>Zdroj: {page === 'settings' ? '/api/config' : '/api/admin/status · /api/admin/activity'} <span>Studio · etapa 2</span></footer>
   </div></div>;

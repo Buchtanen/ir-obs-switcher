@@ -1,3 +1,18 @@
+# Studio P2 operations checkpoint — 2026-09-27
+
+- Checkout: `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`; remote `https://github.com/Buchtanen/ir-obs-switcher.git`.
+- Branch: `feat/studio-operations`, base and PR target `feat/studio-integration`.
+- Issue: #372; diary https://github.com/Buchtanen/ir-obs-switcher/issues/372#issuecomment-5851851153; umbrella #370, cumulative draft PR #371.
+- Last pushed base SHA: `77421ca64d3dce4ecd6543263850579a0ff54a95`. Implementation SHA follows in issue diary after commit/push.
+- TDD GREEN: frontend18 tests/build/typecheck; independent verifier72 backend API/OAuth/logging/overlay/narrative/Studio tests. Chrome fixture-only operations QA PASS including stale retained states, shared lock, acknowledgement, cancellations and mobile layout.
+- Verifier findings corrected: renderer selector honestly labels server-config default; stale OBS data unknown/actions disabled; stale decisions block server speech; docs aligned including inflight path map. Independent verifier GREEN with external integration limitations.
+- Working tree: parent-owned frontend Operations/api/css/tests/example, QA, main and generated Studio assets; docs-keeper-owned README/API, operations/parity/roadmap/inflight index; parent handover. These changes are checkpointed together; no user files absorbed. Ignored build/.venv/.pytest-studio* are local evidence.
+- No production OBS/TTS/lifecycle writes. Isolated preview port17329 has no runtime/config; actual devices and EXE execution remain P6 checks. Existing URLs preserved.
+- Next: push this checkpoint, PR to integration and merge under explicit user authorization; then branch `feat/studio-authoring` for P3–P6. See studio-roadmap.md. New stories+validatable links; bounded current-run episode history; activation only next service startup. No new dependencies.
+- Do not merge cumulative PR371 into master without separate user request.
+
+## Earlier checkpoint
+
 # Studio recovery checkpoint — integration, 2026-09-27
 
 - Checkout: `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work` (independent clone).
