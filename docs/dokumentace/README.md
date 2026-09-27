@@ -20,6 +20,7 @@ Není to náhrada kontraktů. INI, HTTP a release zůstanou v souborech dole.
 
 | Chci změnit / pochopit | Čti | Nesahaj sem napřed |
 | --- | --- | --- |
+| Studio integration, catalog/definitions/episodes/replay (open work) | [inflight](inflight/README.md#studio-integration-open-work), [authoring](../studio-authoring.md), [API](../../API.md) | Frozen artifacts and INI outside their writers |
 | OBS scény, debounce, cooldown, GARAGE vs LOBBY | [logic](domeny/logic.md), [iracing](domeny/iracing.md) | `overlay/`, `events/` |
 | `DrivingMode`, `SwitchState` | [runtime](domeny/runtime.md), [logic](domeny/logic.md) | Event Engine |
 | iRSDK telemetrie, sentinely | [iracing](domeny/iracing.md) | `logic/` (žádné SDK volání) |
@@ -48,6 +49,7 @@ Není to náhrada kontraktů. INI, HTTP a release zůstanou v souborech dole.
 
 | Doména | Balík | Dokument |
 | --- | --- | --- |
+| Studio integration, catalog/definitions/episodes/replay (open work) | [inflight](inflight/README.md#studio-integration-open-work), [authoring](../studio-authoring.md), [API](../../API.md) | Frozen artifacts and INI outside their writers |
 | Runtime / entry | `main.py` | [runtime](domeny/runtime.md) |
 | iRacing extraction | `iracing/` | [iracing](domeny/iracing.md) |
 | OBS client | `obs/` | [obs](domeny/obs.md) |

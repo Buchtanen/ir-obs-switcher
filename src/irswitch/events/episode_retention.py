@@ -8,8 +8,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-from irswitch.contracts.catalog_loader import CatalogLoadResult, load_narrative_catalog
+from irswitch.contracts.catalog_loader import CatalogLoadResult
 from irswitch.contracts.primitives import ContractViolation, Identifier, MonotonicMs
+from irswitch.contracts.runtime_catalog import load_runtime_catalog as load_narrative_catalog
 from irswitch.events.episode_registry import RESOLVED_CAP, Episode
 
 SCHEMA_VERSION = "episode-retention/2"

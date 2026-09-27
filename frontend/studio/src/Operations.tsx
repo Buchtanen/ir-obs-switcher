@@ -5,10 +5,11 @@ import {readJson,startPolling} from './poll';
 import type {Snapshot} from './poll';
 import example from './validate-example.json';
 import './operations.css';
+import {socketInvalidations} from './socket';
 
 export function useRead(url:string,active=true,revision=0) {
   const [state,setState]=useState<Snapshot<JsonObject>>({stale:false});
-  useEffect(()=>{if(!active)return;return startPolling(signal=>readJson(url,signal,parseObject),setState);},[url,active,revision]);
+  useEffect(()=>{if(!active)return;return startPolling(signal=>readJson(url,signal,parseObject),setState,3000,5000,url==='/status'?socketInvalidations('/ws'):url==='/api/overlay/snapshot'?socketInvalidations('/ws/overlay'):undefined);},[url,active,revision]);
   return state;
 }
 export function JsonDetails({title,value,open=false}:{title:string;value:unknown;open?:boolean}) {

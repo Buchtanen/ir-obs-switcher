@@ -9,6 +9,7 @@ import signal
 import sys
 import threading
 import webbrowser
+from pathlib import Path
 
 import aiohttp
 from aiohttp import web
@@ -1268,6 +1269,15 @@ async def run_service(
         logger.error("%s", e)
         print(str(e), file=sys.stderr)
         raise
+
+    # Select validated definitions once, before constructing any narrative consumers.
+    from irswitch.contracts.runtime_catalog import initialize_runtime_catalog
+
+    definition_status = await asyncio.to_thread(
+        initialize_runtime_catalog, Path(config_path).resolve().with_name("studio-definitions.json")
+    )
+    if definition_status["startupError"]:
+        logger.warning("Studio definitions: %s", definition_status["startupError"])
 
     # Set global notifications flag
     set_notifications_enabled(config.notifications_enabled)

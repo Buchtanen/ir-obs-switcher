@@ -15,7 +15,6 @@ from typing import Any
 from irswitch.contracts.catalog_loader import (
     NarrativeCatalog,
     PolicyProfile,
-    load_narrative_catalog,
 )
 from irswitch.contracts.coverage_matrix import can_create_event_opportunity
 from irswitch.contracts.primitives import (
@@ -28,6 +27,7 @@ from irswitch.contracts.primitives import (
     StreamEpoch,
     validate_occurrence_lineage,
 )
+from irswitch.contracts.runtime_catalog import load_runtime_catalog as load_narrative_catalog
 from irswitch.events.beat_plan import CandidateOrder, FunnelLink
 from irswitch.events.exposure_store import ChannelPressureView
 

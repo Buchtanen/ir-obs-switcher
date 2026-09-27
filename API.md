@@ -753,8 +753,7 @@ může být také V4; druhá volba nevynucuje V3. Demo není replay enginu.
 
 Studio: read-only přehled a diagnostika nad `GET /api/admin/status`
 a `GET /api/admin/activity`. Hash navigace (např. `/studio/#/diagnostics`) zůstává
-v prohlížeči; nevytváří nové REST endpointy. Katalog, scénáře a epizody zatím
-zobrazují vysvětlení nedostupnosti. Staré stránky zůstávají dostupné.
+v prohlížeči. Katalog, definice, epizody a replay používají verzované Studio projekce. Staré stránky zůstávají dostupné.
 
 `/studio/#/settings` používá existující `GET /api/config` a `PUT /api/config`.
 Editor nabízí jen netajná pole ze `schema` s hodnotami v `overlay`; redigovaná
@@ -772,6 +771,26 @@ Stávající dashboardy a REST/WS kontrakty zůstávají dostupné.
 
 ---
 
+### Studio catalog, episodes, definitions and replay
+
+| Endpoint | Contract |
+| --- | --- |
+| `GET /api/studio/catalog` | `studio-catalog/1`: narrative catalog, registry events, certified guards, separate overlay catalog, runtime definitions/capabilities; unavailable →503 |
+| `GET /api/studio/episodes?limit=50&offset=0` | `studio-episodes/1`: available/runId/items/history/total; current-run only; limit1–100, offset0–10000; invalid→400; optional mismatched runId→409; absent provider has available=false,total=null |
+| `GET /api/studio/definitions` | Revision snapshot, builtin, baseRevision generation, effective/pendingRevision, available/runtime |
+| `POST /api/studio/definitions/validate` | `{document}` →valid/stories/edges; no persistence |
+| `POST /api/studio/definitions/save` | `{document, baseRevision}` saves validated immutable revision; no activation |
+| `POST /api/studio/definitions/activate` | `{revision, baseRevision}` selects pending revision for next startup |
+| `GET /api/studio/replay` | `studio-replay/1` fixture catalog: 16 overlay scenarios + narrative_world |
+| `POST /api/studio/replay` | `{fixture, document?}`; document only for narrative_world; isolated virtual-time output/runId/outputHash, optional episodes/history, effectsExecuted=false; concurrent run→409 |
+
+Definition/replay POSTs require loopback peer/host, same-origin Origin when present,
+JSON and `X-Requested-With: irswitch`. Request limit128 KiB, body timeout5s.
+Invalid body/definition→400, stale generation→409, unavailable store→503.
+Artifact `studio-definitions/1` has exact top-level schemaVersion/baseCatalogHash/
+stories/edges; nested fields are snake_case. Atomic bounded store lives beside
+config and never writes INI; activation only next startup. Full contracts:
+[authoring](docs/studio-authoring.md), [definitions](docs/studio-definitions.md).
 ### GET /admin
 
 Primární **admin shell** (live): overview + extensions + features + activity.

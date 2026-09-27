@@ -6,6 +6,15 @@ from irswitch.overlay.http import web_root
 
 
 def register_studio_routes(app: web.Application) -> None:
+    from irswitch.server.studio_data import register_studio_data_routes
+
+    register_studio_data_routes(app)
+    from irswitch.server.studio_authoring import register_studio_authoring_routes
+
+    register_studio_authoring_routes(app)
+    from irswitch.server.studio_replay import register_studio_replay_routes
+
+    register_studio_replay_routes(app)
     root = web_root() / "studio"
 
     async def redirect(_request: web.Request) -> web.Response:

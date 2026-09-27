@@ -1,0 +1,223 @@
+[
+  {
+    "schemaVersion": "narrative-command/2",
+    "commandId": "studio:fact",
+    "kind": "APPLY_CONTEXT_BATCH",
+    "enqueuedMonoMs": 1000,
+    "mailboxSequence": 0,
+    "externalOrder": {
+      "fanoutStreamSequence": 11,
+      "firstSourceOrdinal": null,
+      "lastSourceOrdinal": null
+    },
+    "contextRevision": {
+      "timelineRevision": 3,
+      "factViewRevision": 9
+    },
+    "token": null,
+    "payload": {
+      "events": [],
+      "factView": {
+        "broadcastEpoch": 4,
+        "compactedSummaryRefs": [],
+        "createdMonoMs": 1000,
+        "facts": [
+          {
+            "attributes": {
+              "gapSeconds": 0.42
+            },
+            "broadcastEpoch": 4,
+            "confidence": 0.8,
+            "evidenceRefs": [
+              "telemetry:1"
+            ],
+            "factId": "fact:battle:0",
+            "lineageId": "1:race:0",
+            "objectId": "car:34",
+            "observedAtMonoMs": 1000,
+            "occurrenceId": "1:race:0",
+            "polarity": "positive",
+            "predicate": "battle.closing",
+            "revision": 0,
+            "schemaVersion": "atomic-fact/2",
+            "scope": "occurrence",
+            "status": "active",
+            "streamEpoch": 1,
+            "subjectId": "car:12",
+            "validFromMonoMs": 900,
+            "validUntilMonoMs": 1500
+          }
+        ],
+        "historyComplete": true,
+        "lineageId": "1:race:0",
+        "occurrenceId": "1:race:0",
+        "schemaVersion": "fact-view/2",
+        "streamEpoch": 1,
+        "viewRevision": 9
+      },
+      "timeline": {
+        "broadcastEpoch": 4,
+        "historyComplete": true,
+        "lineageId": "1:race:0",
+        "narrativeRunActive": true,
+        "obsState": "active",
+        "observedMonoMs": 1000,
+        "occurrenceId": "1:race:0",
+        "schemaVersion": "timeline-snapshot/2",
+        "sessionPlanRevision": 1,
+        "sessionRef": {
+          "sessionNum": 2,
+          "subSessionId": "42"
+        },
+        "stage": "race",
+        "streamEpoch": 1,
+        "timelineRevision": 3,
+        "transitionReasons": []
+      }
+    }
+  },
+  {
+    "schemaVersion": "narrative-command/2",
+    "commandId": "studio:event",
+    "kind": "APPLY_CONTEXT_BATCH",
+    "enqueuedMonoMs": 1000,
+    "mailboxSequence": 0,
+    "externalOrder": {
+      "fanoutStreamSequence": 11,
+      "firstSourceOrdinal": 0,
+      "lastSourceOrdinal": 0
+    },
+    "contextRevision": {
+      "timelineRevision": 3,
+      "factViewRevision": 9
+    },
+    "token": null,
+    "payload": {
+      "events": [
+        {
+          "broadcastEpoch": 4,
+          "confidence": 0.8,
+          "correlationKey": [
+            "car:12",
+            "car:34"
+          ],
+          "deliveryClass": "ordinary",
+          "eventId": "event:hunting:0",
+          "factIds": [
+            "fact:battle:0"
+          ],
+          "factViewRevision": 9,
+          "funnel": {
+            "candidateId": "candidate:hunting:0",
+            "detectorObservationId": null,
+            "eventId": "event:hunting:0",
+            "materialRevision": 0,
+            "opportunityId": null,
+            "planId": null,
+            "sourceClass": "direct",
+            "tapeChannel": "race.battle.closing",
+            "utteranceId": null
+          },
+          "kind": "battle.pursuit",
+          "lineageId": "1:race:0",
+          "materialRevision": 0,
+          "occurredMonoMs": 1000,
+          "occurrenceId": "1:race:0",
+          "payload": {
+            "gapSeconds": 0.42
+          },
+          "phase": "started",
+          "schemaVersion": "narrative-event/2",
+          "sessionRef": {
+            "sessionNum": 2,
+            "subSessionId": "42"
+          },
+          "sourceEnvelope": {
+            "eventId": "event:hunting:0",
+            "eventType": "HUNTING",
+            "sequence": 1,
+            "sessionId": "session:42"
+          },
+          "sourceOrder": {
+            "fanoutStreamSequence": 11,
+            "sourceOrdinal": 0
+          },
+          "streamEpoch": 1,
+          "tapeChannel": "race.battle.closing",
+          "taxonomyHash": "sha256:720769b0a1dfb234c69529eab9e1818e37944eead1de6e41499e6cbb56baa26b"
+        }
+      ],
+      "factView": {
+        "broadcastEpoch": 4,
+        "compactedSummaryRefs": [],
+        "createdMonoMs": 1000,
+        "facts": [
+          {
+            "attributes": {
+              "gapSeconds": 0.42
+            },
+            "broadcastEpoch": 4,
+            "confidence": 0.8,
+            "evidenceRefs": [
+              "telemetry:1"
+            ],
+            "factId": "fact:battle:0",
+            "lineageId": "1:race:0",
+            "objectId": "car:34",
+            "observedAtMonoMs": 1000,
+            "occurrenceId": "1:race:0",
+            "polarity": "positive",
+            "predicate": "battle.closing",
+            "revision": 0,
+            "schemaVersion": "atomic-fact/2",
+            "scope": "occurrence",
+            "status": "active",
+            "streamEpoch": 1,
+            "subjectId": "car:12",
+            "validFromMonoMs": 900,
+            "validUntilMonoMs": 1500
+          }
+        ],
+        "historyComplete": true,
+        "lineageId": "1:race:0",
+        "occurrenceId": "1:race:0",
+        "schemaVersion": "fact-view/2",
+        "streamEpoch": 1,
+        "viewRevision": 9
+      },
+      "timeline": {
+        "broadcastEpoch": 4,
+        "historyComplete": true,
+        "lineageId": "1:race:0",
+        "narrativeRunActive": true,
+        "obsState": "active",
+        "observedMonoMs": 1000,
+        "occurrenceId": "1:race:0",
+        "schemaVersion": "timeline-snapshot/2",
+        "sessionPlanRevision": 1,
+        "sessionRef": {
+          "sessionNum": 2,
+          "subSessionId": "42"
+        },
+        "stage": "race",
+        "streamEpoch": 1,
+        "timelineRevision": 3,
+        "transitionReasons": []
+      }
+    }
+  },
+  {
+    "schemaVersion": "narrative-command/2",
+    "commandId": "studio:stop",
+    "kind": "SHUTDOWN",
+    "enqueuedMonoMs": 2000,
+    "mailboxSequence": 0,
+    "externalOrder": null,
+    "contextRevision": null,
+    "token": null,
+    "payload": {
+      "reason": "application_exit",
+      "requestedMonoMs": 2000
+    }
+  }
+]
