@@ -1,3 +1,30 @@
+# System telemetry clock rows — 2026-09-28 (#385)
+
+- Checkout `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`, branch `feat/studio-telemetry-clocks`, remote `https://github.com/Buchtanen/ir-obs-switcher.git`, target `feat/studio-integration`. Last pushed base/recovery `46f9669d69b93351bb453741bc708b560bc5ba79`. User authorizes accumulated integration, not master merge; cumulative #371 stays draft.
+- Issue [#385](https://github.com/Buchtanen/ir-obs-switcher/issues/385); [same-day diary](https://github.com/Buchtanen/ir-obs-switcher/issues/385#issuecomment-5862652182). Immutable implementation/merge SHAs follow there.
+- User asks exactly CPU and GPU rows with utilization, temperature, clock columns. Added nullable admin sysinfo detail cpuFrequencyGHz and gpuClockMHz from existing sampled bus state; no extra polling/dependency/config or HUD changes. Card caption identifies whole-PC readings; missing/nonfinite numeric cells show em dash and stale card identifies last-known values.
+- TDD RED then GREEN on API projection/units/missing values; parent15Python/31frontend PASS, typecheck/build/Ruff/Black/mypy/diff PASS; independent verifier26Python/typecheck/diff GREEN. TDD-exception: frontend pure visual wiring. Alternative verification: browser rows/units/missing/stale and narrow layout. Risk: wrong units or clipped cells; mitigated with API unit tests and browser inspection.
+- Package smoke `scripts/qa_studio_package.py dist/studio-clocks/irswitchd.exe` PASS, artifact `build/studio-package-jhyui5iu`. After GREEN, verified inactive simulator/stream and replaced only previous known service with this EXE. Original cwd/config retained, SHA unchanged; served Studio assets match source bytes.
+- Browser: disposable absent-provider shows two rows with em dashes; stopped preview yields unknown indicator and last-known caption. At390px empty-value table fits311px within345px card with no page overflow. Actual configured service displays numerical percentage/temperature/CPU GHz/GPU MHz in correct columns. A subsequent live numeric390px attempt timed out in viewport tooling, so no claim for that separate attempt; original viewport restored and user's current overview refreshed. Preview stopped. Live service preserved.
+- Parent owns source/tests/generated assets/this checkpoint; docs-keeper owns API.md and implementation doc. No user files or primary checkout edits. No known source blockers.
+- Next: commit/push checkpoint; stage PR with semver:minor to integration; full CI gate; authorized merge and local fast-forward; update same issue diary and cumulative draft #371. Keep umbrella #370 open for physical-provider acceptance. Do not merge master.
+
+## Owned files at checkpoint
+
+- `API.md`
+- `docs/studio-implementation.md`
+- `frontend/studio/src/StatusBoard.tsx`
+- `frontend/studio/src/status-board.css`
+- `src/irswitch/server/admin.py`
+- `src/irswitch/web/studio/assets/index-CrRi0psi.js`
+- `src/irswitch/web/studio/assets/index-LvFUX6ze.css`
+- `src/irswitch/web/studio/index.html`
+- `tests/test_admin_api.py`
+- `.pytest-telemetry-verifier/`
+- `src/irswitch/web/studio/assets/index-BNF20SJF.js`
+- `src/irswitch/web/studio/assets/index-DLFLpj9J.css`
+- `docs/studio-handover.md`
+
 # Companion applications and graphical branding — 2026-09-28 (#383)
 
 - Checkout `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`, branch `feat/studio-companion-readiness`, remote `https://github.com/Buchtanen/ir-obs-switcher.git`; integration target `feat/studio-integration`. Last pushed base/recovery SHA `0eab1da617f3cde1de271347ce79153fde032958`. User authorizes integration of stages; cumulative draft #371 remains unmerged to master.

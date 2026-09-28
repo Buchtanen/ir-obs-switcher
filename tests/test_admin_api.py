@@ -285,3 +285,16 @@ def test_admin_module_avoids_foreign_private_attrs() -> None:
     )
     for pattern in forbidden:
         assert re.search(pattern, text) is None, f"forbidden pattern still in admin.py: {pattern}"
+
+
+@pytest.mark.parametrize(("cpu_ghz", "gpu_mhz"), [(3.65, 210.0), (None, None)])
+def test_system_clock_units_and_unknown_values(app, cpu_ghz, gpu_mhz):
+    from irswitch.overlay.models import GPUState
+    from irswitch.server.admin import build_admin_status
+
+    get_overlay_bus().set_system(
+        SystemState(cpu=CPUState(frequency=cpu_ghz), gpu=GPUState(clock=gpu_mhz))
+    )
+    detail = build_admin_status()["extensions"]["sysinfo"]["detail"]
+    assert detail["cpuFrequencyGHz"] == cpu_ghz
+    assert detail["gpuClockMHz"] == gpu_mhz
