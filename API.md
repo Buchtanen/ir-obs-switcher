@@ -604,6 +604,7 @@ Agregovaný stav pro admin shell (`/admin`): extensions + features + switcher su
   - `blocking[]` — `{id, reason, tip}` (např. iRacing/OBS disconnected)
   - `warnings[]` — doporučené závislosti (LHM unreachable, sysinfo degraded, …); samy o sobě `ready` neflipují
 - `switcher` (object | null) — legacy snake_case subset: `connected_iracing`, `connected_obs`, `autoswitch`, `mode`, scény, `reason`
+- `iracingUi` (optional object) — `{ "running": true | false | null }`; case-insensitive exact process-name match for `iRacingUI.exe`. `false` means the process was not found; `null` means the read-only worker-thread probe was unavailable. Missing `iracingUi` means an older server/unknown state. This is an informational process signal, not SDK session connectivity.
 - `extensions.ble` / `extensions.sysinfo` — karty: `enabled`, `available`, `active`, `busy`, `status`, `severity`, `detail`
 - `extensions.lhm` — `required`, `requirementMode` (`optional`|`recommended`|`required`), ne falešné `enabled`; tip jen když required/recommended a unhealthy
 - `extensions.lhm.detail` — cache observability: `checkedAt`, `lastSuccessAt` (wall-clock epoch), `stale`, `errorCode`, `lastBaseUrl`, `sensorRows`, `connection`
@@ -611,6 +612,19 @@ Agregovaný stav pro admin shell (`/admin`): extensions + features + switcher su
 - `features.eventEngine` — rollout flagy (`v2Payload`, `practice`, …)
 
 Aggregator čte **public** `status_snapshot()` (overlay runtime) + LHM cache (`force=False`). LHM probe je fail-soft (TTL + worker thread); HTTP 200 i při unreachable. Kontrakt: [`docs/admin_dashboard_spec.md`](docs/admin_dashboard_spec.md).
+
+`iracingUi` nemění `switcher.connected_iracing`, `health`, scene control,
+commentary ani overlay. Studio dává přednost čerstvému připojení SDK pro zelený
+stav. Při čerstvém `iracingUi.running=true` a `connected_iracing=false` ukáže
+oranžové „iRacing UI / Čeká na session“. Zastaralá data se označí jako neznámá;
+nedostupný procesový probe nikdy nepředstírá běžící UI. Hlavička a přehled
+odvozují stejný stav z téže odpovědi.
+
+Ověření rozšíření: při běžící nakonfigurované službě vracelo API
+`iracingUi.running=true` a `switcher.connected_iracing=false`; Studio zobrazilo
+odpovídající oranžový stav a čekání na session. Přechod do skutečné simulátorové
+session nebyl ověřen. Testy pokrývají i hodnoty `false`, `null` a stale odpověď;
+detaily výsledků jsou v [Studio implementation](docs/studio-implementation.md#iracing-ui-process-status-followup).
 
 ---
 

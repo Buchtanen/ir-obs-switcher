@@ -1,6 +1,15 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {componentSignal,connectionSignal} from './status-model.ts';
+import {componentSignal,connectionSignal,iracingSignal} from './status-model.ts';
+test('launcher is an amber hint only while SDK is explicitly disconnected',()=>{
+  assert.deepEqual(iracingSignal(false,true,false),{tone:'warn',label:'iRacing UI'});
+  assert.equal(iracingSignal(true,true,false).tone,'good');
+  assert.equal(iracingSignal(false,false,false).tone,'bad');
+  assert.equal(iracingSignal(false,null,false).tone,'bad');
+  assert.equal(iracingSignal(false,undefined,false).tone,'bad');
+  assert.equal(iracingSignal(false,true,true).tone,'unknown');
+  assert.equal(iracingSignal(undefined,true,false).tone,'unknown');
+});
 test('missing or stale connection is never green',()=>{
   assert.equal(connectionSignal(true,false).tone,'good');
   assert.equal(connectionSignal(false,false).tone,'bad');

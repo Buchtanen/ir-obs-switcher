@@ -2,6 +2,7 @@ export type Snapshot<T> = {data?: T; stale: boolean; error?: string; updatedAt?:
 export type ComponentStatus = {label?: string; status?: string; available?: boolean; enabled?: boolean; active?: boolean; busy?: boolean; detail?: Record<string, unknown>; [key: string]: unknown};
 export type Status = {
   schemaVersion: 1; version: string; runtime: {overlay: boolean; switcher: boolean};
+  iracingUi?: {running: boolean | null};
   switcher: null | {connected_obs: boolean; connected_iracing: boolean; autoswitch: boolean;
     mode?: string; current_scene?: string; target_scene?: string; reason?: string; session_type?: string};
   extensions?: Record<string, ComponentStatus>;
@@ -22,6 +23,10 @@ export function parseStatus(v: unknown): Status {
     throw new Error('Neplatná odpověď stavového API');
   }
   // Optional feature maps must remain safe to render even with a partial provider.
+  if (v.iracingUi !== undefined && (!object(v.iracingUi) ||
+    !(v.iracingUi.running === null || typeof v.iracingUi.running === 'boolean'))) {
+    throw new Error('Neplatná odpověď stavu iRacing UI');
+  }
   for (const key of ['extensions', 'features']) {
     if (v[key] !== undefined && (!object(v[key]) || !Object.values(v[key]).every(row => object(row)
       && ['label', 'status'].every(field => row[field] == null || typeof row[field] === 'string')))) {

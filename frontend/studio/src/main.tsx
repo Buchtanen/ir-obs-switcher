@@ -10,7 +10,7 @@ import { Operations } from './Operations';
 import './style.css';
 import {socketInvalidations} from './socket';
 import {StatusBoard, StatusSignal} from './StatusBoard';
-import {connectionSignal} from './status-model';
+import {connectionSignal,iracingSignal} from './status-model';
 
 const pages = [
   ['overview', 'Přehled'], ['events', 'Eventy'], ['scenarios', 'Scénáře'], ['episodes', 'Epizody'], ['replay', 'Replay'],
@@ -47,7 +47,7 @@ function App() {
   useEffect(() => { const update = () => setPage(route()); window.addEventListener('hashchange', update); return () => window.removeEventListener('hashchange', update); }, []);
   const sw = status.data?.runtime.switcher ? status.data.switcher : null;
   const unknown = status.stale || !status.data;
-  const connected = (key: 'connected_obs' | 'connected_iracing') => connectionSignal(sw?.[key], unknown);
+  const connected = (key: 'connected_obs' | 'connected_iracing') => key==='connected_iracing'?iracingSignal(sw?.connected_iracing,status.data?.iracingUi?.running,unknown):connectionSignal(sw?.[key], unknown);
   return <div className="studio"><a className="skip" href="#main" onClick={event => { event.preventDefault(); document.getElementById('main')?.focus(); }}>Přejít na obsah</a><aside>
     <a className="brand" href="#/overview"><span className="logo">ir</span><span>irswitch <b>Studio</b></span></a>
     <p className="nav-label">PRACOVNÍ PROSTOR</p><nav aria-label="Hlavní navigace">{pages.map(([id, label]) => <a key={id} href={`#/${id}`} aria-current={page === id ? 'page' : undefined}><span className="nav-dot"/>{label}{id === 'settings' && dirtySettings > 0 && <span className="draft-badge" aria-label={`${dirtySettings} neuložených změn`}>{dirtySettings}</span>}</a>)}</nav>

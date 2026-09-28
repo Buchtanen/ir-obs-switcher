@@ -16,6 +16,9 @@ test('rejects incompatible payloads', () => {
   const base = {schemaVersion: 1, version: 'test', runtime: {overlay: true, switcher: true}, switcher: {connected_obs: true, connected_iracing: false, autoswitch: false}};
   assert.throws(() => parseStatus({...base, switcher: {...base.switcher, reason: {bad: true}}}));
   assert.throws(() => parseStatus({...base, extensions: {ble: {label: {bad: true}}}}));
+  for(const running of [true,false,null])assert.equal(parseStatus({...base,iracingUi:{running}}).iracingUi?.running,running);
+  assert.equal(parseStatus(base).iracingUi,undefined);
+  for(const iracingUi of [null,{},[],{running:'true'}])assert.throws(()=>parseStatus({...base,iracingUi}));
 });
 
 test('retains last successful data after a failed refresh', async () => {

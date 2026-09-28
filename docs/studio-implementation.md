@@ -105,6 +105,29 @@ Verification evidence for this followup:
 
 Active in-app browser verification at 390px passed for overview and scenarios without horizontal page overflow. A followup CSS correction wraps graph controls onto separate rows while keeping button text intact. The hidden-preview viewport limitation was resolved by testing the active panel; viewport override was reset afterwards. The configured service also displayed the new overview and selected path correctly. No master merge is claimed.
 
+## iRacing UI process status followup
+
+Branch `feat/studio-iracing-ui-status`: additive optional `iracingUi.running`
+in `GET /api/admin/status`. Exact case-insensitive `iRacingUI.exe` process lookup
+runs read-only in a worker thread. `false` means not found, `null` probe unavailable;
+absent field remains unknown for older servers. UI process presence does not equal
+SDK session connectivity and never changes switcher health or behavior.
+
+Studio header and overview share one priority: fresh SDK connected → green;
+fresh UI running without SDK → amber „iRacing UI / Čeká na session“; stale →
+unknown, never green; unavailable probe never claims UI running. No config key,
+default, dependency or migration change.
+
+Verification for this addition: independent source verifier GREEN; 25 targeted
+Python tests and 29 frontend tests passed, with typecheck, production build,
+mypy, Ruff and Black passing. Rebuilt EXE
+`dist/studio-iracing-ui/irswitchd.exe` passed `qa_studio_package.py` in
+`build/studio-package-v1z179jg`. The configured service was updated without
+changing the configuration SHA. Its API reported UI running and SDK disconnected;
+the served Studio browser showed matching amber card/header and waiting copy.
+The transition into a physical simulator session has not been exercised, so
+SDK-connected green remains verified by tests rather than live iRacing.
+
 ## Subsequent slices
 
 1. Native FieldSpec settings with validation, live/restart and unsaved changes:
