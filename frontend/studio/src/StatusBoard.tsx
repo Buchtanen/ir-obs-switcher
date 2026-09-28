@@ -14,13 +14,20 @@ function facts(key:string,row:ComponentStatus):[string,string][] {
   switch(key) {
     case 'ble':return [['Tep',value(d.bpm,' bpm')],['Zdroj',value(d.source)]];
     case 'lhm':return [['Senzory',value(d.sensorRows)],['Využití',row.required===true?'CPU telemetrie':row.required===false?'Volitelné':'—']];
-    case 'sysinfo':return [['CPU',value(d.cpuLoad,' %')],['GPU',value(d.gpuLoad,' %')],['Teplota CPU',value(d.cpuTemp,' °C')],['Teplota GPU',value(d.gpuTemp,' °C')]];
     case 'overlay':return [['Widgety',value(row.activeWidgets)],['Režim',value(row.mode)],['Vzhled',value(row.theme)]];
     case 'commentary':return [['Runtime',row.available===true?'Dostupný':row.available===false?'Nedostupný':'—'],['Řeč',row.busy===true?'Právě mluví':row.busy===false?'Bez řeči':'—']];
     case 'tape':return [['Zápis',row.active===true?'Aktivní':row.active===false?'Neaktivní':'—'],['Provider',row.available===true?'Dostupný':row.available===false?'Nedostupný':'—']];
     case 'eventEngine':return [['Zapnuté volby',`${Object.values(row).filter(v=>v===true).length}`],['Údaj','Konfigurace, ne aktivita']];
     default:return [['Provider',row.available===true?'Dostupný':row.available===false?'Nedostupný':'—']];
   }
+}
+function SystemTelemetry({row,stale}:{row:ComponentStatus;stale:boolean}) {
+  const d=row.detail??{};
+  const reading=(v:unknown,unit:string)=>typeof v==='number'&&Number.isFinite(v)?value(v,unit):'—';
+  return <><p className="telemetry-caption">Celý počítač{stale?' · poslední známé hodnoty':''}</p><table className="telemetry-table" aria-label="Systémová telemetrie CPU a GPU"><thead><tr><th scope="col">Čip</th><th scope="col">Vytížení</th><th scope="col">Teplota</th><th scope="col">Takt</th></tr></thead><tbody>
+    <tr><th scope="row">CPU</th><td>{reading(d.cpuLoad,' %')}</td><td>{reading(d.cpuTemp,' °C')}</td><td>{reading(d.cpuFrequencyGHz,' GHz')}</td></tr>
+    <tr><th scope="row">GPU</th><td>{reading(d.gpuLoad,' %')}</td><td>{reading(d.gpuTemp,' °C')}</td><td>{reading(d.gpuClockMHz,' MHz')}</td></tr>
+  </tbody></table></>;
 }
 const labels:Record<string,string>={ble:'Tepová frekvence',lhm:'Hardware monitor',sysinfo:'Systémová telemetrie',overlay:'Overlay',commentary:'Komentář',tape:'Záznam událostí',eventEngine:'Event engine'};
 export function StatusBoard({state}:{state:Snapshot<Status>}) {
@@ -44,7 +51,7 @@ export function StatusBoard({state}:{state:Snapshot<Status>}) {
       <div className="component-grid">{data?.companionApps?.map(row=><article key={row.id} className="component-card"><div className="card-heading"><h3>{row.label}</h3><StatusSignal signal={companionSignal(row,stale)}/></div><span className="card-caption">{row.required?'Požadovaná pro připravenost':'Volitelná'}{stale?' · poslední známé nastavení':''}</span></article>)}</div>
     </section>
     <section className="components-panel" aria-label="Stav komponent"><div className="section-heading"><h2>Komponenty</h2><p>{state.stale?'Poslední známé údaje · aktuální stav není dostupný':'Stav z běžící služby'}</p></div>
-      <div className="component-grid">{components.map(([key,row])=><article key={key} className="component-card"><div className="card-heading"><h3>{Object.hasOwn(labels,key)?labels[key]:row.label??key}</h3><StatusSignal signal={componentSignal(row,stale)}/></div><dl className="component-facts">{facts(key,row).map(([label,v])=><div key={label}><dt>{label}</dt><dd>{v}</dd></div>)}</dl></article>)}</div>
+      <div className="component-grid">{components.map(([key,row])=><article key={key} className="component-card"><div className="card-heading"><h3>{Object.hasOwn(labels,key)?labels[key]:row.label??key}</h3><StatusSignal signal={componentSignal(row,stale)}/></div><>{key==='sysinfo'?<SystemTelemetry row={row} stale={stale}/>:<dl className="component-facts">{facts(key,row).map(([label,v])=><div key={label}><dt>{label}</dt><dd>{v}</dd></div>)}</dl>}</></article>)}</div>
       {!components.length&&<p className="muted">Čekám na stavové API komponent.</p>}
       <div className="signal-legend" aria-label="Význam stavových diod">{([{tone:'good',label:'V provozu'},{tone:'warn',label:'Čeká / omezeno'},{tone:'bad',label:'Chyba / odpojeno'},{tone:'off',label:'Vypnuto / neaktivní'},{tone:'unknown',label:'Neznámé'}] as Signal[]).map(s=><StatusSignal key={s.tone} signal={s}/>)}</div>
       <JsonDetails title="Připravenost, parametry modulů a důvody" value={data}/>

@@ -607,6 +607,7 @@ Agregovaný stav pro admin shell (`/admin`): extensions + features + switcher su
 - `iracingUi` (optional object) — `{ "running": true | false | null }`; case-insensitive exact process-name match for `iRacingUI.exe`. `false` means the process was not found; `null` means the read-only worker-thread probe was unavailable. Missing `iracingUi` means an older server/unknown state. This is an informational process signal, not SDK session connectivity.
 - `companionApps` (optional array) — six rows `{id, label, running: true | false | null, required: bool}` for `dre`, `maira`, `simhub`, `cammus`, `trading_paints`, `virtual_desktop`. One off-loop read-only process-name scan checks all apps; MAIRA matches `MarvinsAIRARefactored.exe`. `required` comes from `[companion_apps]` (default true for all six), independently of overlay. Process presence says nothing about app functionality or device connection.
 - `extensions.ble` / `extensions.sysinfo` — karty: `enabled`, `available`, `active`, `busy`, `status`, `severity`, `detail`
+- `extensions.sysinfo.detail` — existující bus telemetrie plus aditivní `cpuFrequencyGHz` (GHz) a `gpuClockMHz` (MHz); obě čísla jsou nullable. CPU/GPU vytížení je v %, teplota v °C. Chybějící měření zůstává `null`/nezobrazené, nikdy se neodvozuje z odhadu.
 - `extensions.lhm` — `required`, `requirementMode` (`optional`|`recommended`|`required`), ne falešné `enabled`; tip jen když required/recommended a unhealthy
 - `extensions.lhm.detail` — cache observability: `checkedAt`, `lastSuccessAt` (wall-clock epoch), `stale`, `errorCode`, `lastBaseUrl`, `sensorRows`, `connection`
 - `features.overlay` / `features.commentary` / `features.tape` — stejné osy; commentary `ready` = active+not busy
@@ -630,6 +631,17 @@ Ověření #383: skutečně servírované Studio načetlo branding a šest proce
 statusů; browser QA s dočasným configem změnila DRE na volitelnou a souhrn ihned
 ukázal pět požadovaných aplikací. EXE smoke porovnal přesné bajty faviconu a
 assets. Jde o detekci procesů, nikoli ověření zařízení či spojení.
+
+Studio Přehled vykresluje `sysinfo.detail` jako tabulku CPU/GPU (řádky) ×
+vytížení/teplota/takt (sloupce) s popiskem telemetrie celého PC. `null` nebo
+nedostupná hodnota je „—“. Při stale odpovědi zůstávají poslední čísla výslovně
+označená jako poslední známá a status je neznámý, nikdy zelený.
+
+Ověření #385: 26 nezávislých Python testů pokrylo API jednotky a nullable
+hodnoty; živé Studio zobrazilo CPU/GPU řádky se správnými jednotkami. Prázdný
+provider vykreslil „—“ a po výpadku zůstal status neznámý s označením
+posledních známých údajů. Při 390 px byl bez přetečení ověřen prázdný stav;
+číselná živá telemetrie na této šířce ověřena nebyla.
 
 Ověření rozšíření: při běžící nakonfigurované službě vracelo API
 `iracingUi.running=true` a `switcher.connected_iracing=false`; Studio zobrazilo

@@ -155,6 +155,35 @@ the live read check. This verifies process presence/reporting and UI preference
 behavior only, not companion device function or VR connection. A separate preview
 was stopped after QA. Remote CI/PR status belongs to the task diary.
 
+## Whole-PC telemetry clocks followup — #385
+
+Branch `feat/studio-telemetry-clocks` adds CPU/GPU two-row table in Studio
+Overview, with load (%), temperature (°C) and clock (CPU GHz, GPU MHz) columns.
+The existing bus provider supplies nullable `cpuFrequencyGHz` and `gpuClockMHz`
+in `extensions.sysinfo.detail`; unavailable values render „—“. Last known numbers
+remain labelled on stale responses and the status becomes unknown. This describes
+whole-PC telemetry, not isolated iRacing process metrics. No new polling,
+configuration, dependency or overlay behavior is introduced.
+
+Verification: backend TDD red→green; 15 targeted Python tests and independent
+26 Python tests passed. Parent reports 31 frontend tests, typecheck, build,
+Ruff, Black, mypy and diff check GREEN; independent source verifier GREEN.
+Rebuilt EXE `dist/studio-clocks/irswitchd.exe` passed package QA in
+`build/studio-package-jhyui5iu`. The updated live service served exact assets
+with the configured INI SHA unchanged. Browser on the live Overview displayed
+CPU/GPU rows with %, °C, GHz and MHz from available telemetry. A disposable
+empty-provider view rendered „—“ values; after stopping that preview, stale
+state became unknown with a last-known caption. At 390 px, the empty table had
+two rows, fit within its card and caused no horizontal overflow.
+
+TDD exception for the frontend: the change was pure visual wiring, so no
+frontend RED test was added; browser checks of rows, units, unknown/stale states
+and the 390 px empty layout served as the alternative verification. The material
+risks were clipping and wrong units; API unit tests and browser inspection cover
+those paths. A numeric live-telemetry 390 px check was interrupted by a tab
+viewport tool timeout and is **not** claimed. The original viewport was restored.
+No application code changed after review.
+
 ## Subsequent slices
 
 1. Native FieldSpec settings with validation, live/restart and unsaved changes:
