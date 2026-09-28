@@ -24,6 +24,8 @@ from irswitch.contracts.authored_pack import (
 )
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.narrative import NarrativeEvent
+from irswitch.events.commentary_microplan import Microplan
+from irswitch.events.commentary_model import ModelClient
 from irswitch.events.narrative_shadow_consumer import AdaptedPublication
 from irswitch.events.narrative_verify_frame import (
     VerifyFrame,
@@ -588,6 +590,7 @@ def build_realization_effect(
     qwen_service: RealizerService | None = None,
     llm_component: LlmComponent | None = None,
     qwen_timeout_ms: int = 4_000,
+    model_client: ModelClient | None = None,
 ) -> EffectWorker:
     """Build a NarrativeRuntime ``realization_effect``.
 
@@ -602,6 +605,8 @@ def build_realization_effect(
     async def realization_effect(token: dict[str, Any]) -> NarrativeCommand:
         nonlocal first_qwen_call
         mono_ms = int(time.monotonic() * 1000)
+        if model_client is not None:
+            return await _realize_microplan(token, model_client)
         text: str | None = None
         backend = "authored"
         verify_frame: VerifyFrame | None = None
@@ -685,3 +690,62 @@ def build_realization_effect(
             )
 
     return realization_effect
+
+
+async def _realize_microplan(token: dict[str, Any], client: ModelClient) -> NarrativeCommand:
+    """The live composition uses only the selected reducer-owned current bundle."""
+    now = int(time.monotonic() * 1000)
+    raw = token.get("microplan")
+    if not isinstance(raw, dict):
+        return _failed_realization_command(
+            token, now, failure_reason="realization_invalid_response"
+        )
+    plan = Microplan.from_dict(raw)
+    if client.was_spoken(plan):
+        return _failed_realization_command(
+            token, now, failure_reason="realization_invalid_response"
+        )
+    if now >= plan.expires_ms:
+        return _failed_realization_command(token, now, failure_reason="realization_timeout")
+    # The reducer froze plan.verify_payload() on its own token before IO.
+    cfg = client.settings()
+    if not cfg.speech_enabled:
+        return _failed_realization_command(
+            token, now, failure_reason="realization_invalid_response"
+        )
+    text = plan.allowed[0]
+    backend = "authored"
+    started = now
+    if cfg.enabled:
+        if cfg.mode == "shadow":
+            client.submit_shadow(plan)
+        else:
+            candidate = await client.realize(plan)
+            if candidate is not None:
+                text, backend = candidate, "qwen_compiled"
+    completed = int(time.monotonic() * 1000)
+    if completed >= plan.expires_ms or cfg.signature != client.settings().signature:
+        return _failed_realization_command(token, completed, failure_reason="realization_timeout")
+    # Same-bundle fallback only; no arbitrary cache draft and no second attempt.
+    client.note_selection(plan, text, generated=backend == "qwen_compiled")
+    result = realization_result_payload(token, text, backend=backend)
+    result.update(
+        transportStartedMonoMs=started,
+        responseStartedMonoMs=completed,
+        firstContentMonoMs=completed,
+        completedMonoMs=completed,
+        modelReported=(
+            client.status()["lastAttempt"].get("modelReported")
+            if backend == "qwen_compiled"
+            else None
+        ),
+    )
+    return NarrativeCommand.realization_result(
+        f"effect:rz:{token['requestId']}",
+        "REALIZATION_SUCCEEDED",
+        completed,
+        request_id=str(token["requestId"]),
+        request_ordinal=int(token["requestOrdinal"]),
+        dispatch_generation=int(token["dispatchGeneration"]),
+        result=result,
+    )

@@ -1,8 +1,8 @@
 # v2.0.0 commentary public contract freeze
 
-**Status:** configuration and HTTP contracts machine-frozen for issues #238 and #273
+**Current status (2026-09-25):** NarrativeRuntime is on `master`. The original machine freeze below is historical contract evidence. The opt-in [current-fact remote M1 extension](remote-commentary-microplan.md) is implemented on `feat/remote-commentary-microplan`; runtime schemas under `src/irswitch/contracts/schemas/v2/` include its additive configuration keys. Historical `machine/` artifacts are not rewritten.
 
-This branch-only artifact freezes the public configuration and HTTP shape before parser or handler implementation. Initial numeric values are estimates permitted by the design; their types, units, ranges and reload boundaries are contract, while later value tuning inside those ranges is not an architecture change.
+This document records public configuration and HTTP contracts, with the remote extension explicitly identified below. Initial numeric values were estimates permitted by the design; their types, units, ranges and reload boundaries are contract, while later value tuning inside those ranges is not an architecture change.
 
 ## Configuration
 
@@ -40,7 +40,10 @@ NarrativeMailbox capacity is deliberately not public config in v2. Its fixed `64
 | Key | Type | Default | Allowed | Unit | Apply boundary |
 | --- | --- | --- | --- | --- | --- |
 | `commentary.llm.enabled` | bool | `false` | bool | — | `next_beat_plan` |
-| `commentary.llm.base_url` | URL | `http://127.0.0.1:11434/v1` | local/LAN HTTP(S) policy below | — | `next_beat_plan` |
+| `commentary.llm.provider` | enum | `local` | `local`, `remote` | — | `next_request`; old-config speech is rejected |
+| `commentary.llm.mode` | enum | `live` | `live`, `shadow` | — | `next_request`; old-config speech is rejected |
+| `commentary.llm.api_key_env` | string | `IRSWITCH_LLM_API_KEY` | environment variable name, 1–128 chars | — | `next_request`; stores no token |
+| `commentary.llm.base_url` | URL | `http://127.0.0.1:11434/v1` | local/LAN policy, or explicit remote HTTPS | — | `next_beat_plan` |
 | `commentary.llm.model` | string | `qwen3:4b-instruct-2507-q4_K_M` | 1–128 chars | — | `next_beat_plan`; starts preflight at acceptance |
 | `commentary.llm.timeout_s` | float | `1.5` | 0.2–10 | monotonic seconds | `next_request` |
 | `commentary.llm.max_tokens` | int | `96` | 32–256 | tokens | `next_request` |
@@ -57,11 +60,11 @@ NarrativeMailbox capacity is deliberately not public config in v2. Its fixed `64
 | `commentary.tts.duck_ratio` | float | `0.25` | 0–1 | original-volume fraction | `next_utterance` |
 | `commentary.tts.duck_fade_ms` | int | `750` | 0–5000 | milliseconds | `next_utterance` |
 
-`llm.enabled=false` means only beats whose catalog-selected realization mode is authored are eligible. An unavailable or rejected Qwen realization does not switch the same beat to authored mode; the attempt is discarded and the director chooses another eligible beat or silence. Profile ordering is exactly `tight < balanced < loose`; `llm.max_profile` is a ceiling and can never promote a catalog family.
+On the current-fact adapter, `llm.enabled=false` disables generation and uses a supported input-derived authored sentence. `llm.mode=shadow` submits a bounded background evaluation without waiting for it or playing its result. In `live`, unavailable/rejected generation may fall back to the same still-current bundle's authored sentence; unsupported or stale inputs are silent. This supersedes the original freeze's no-same-beat-fallback policy for this adapter. Profile ordering remains `tight < balanced < loose`; `llm.max_profile` cannot promote a catalog family. Remote `M1/1` fixes sampling and its token budget (192); local `tight/1` honors `llm.max_tokens`.
 
 `tts.backend=auto` resolves once per backend generation in the existing compatibility order `sapi` then `espeak`; SuperTonic remains explicit because loading it has material model/device cost. The resolved backend ID is snapshotted into each utterance/tape record. Once an utterance is dispatched, start/failure/timeout never falls through to another TTS backend for that text; recovery requires a new explicit backend generation/preflight, preventing duplicate late audio.
 
-`llm.base_url` is accepted only when all of these conditions hold: scheme is `http` or `https`; userinfo, query and fragment are absent; port is in `1..65535`; path is empty, `/v1` or ends in `/v1` after slash normalization; and host is exactly `localhost` or an IP literal classified as loopback, RFC1918 private, IPv6 unique-local or link-local. Other DNS names and public IP addresses are rejected, so validation never performs DNS resolution and cannot be changed by DNS rebinding. The transport appends exactly `/chat/completions`. This is a new v2 validation requirement; the v1 scheme-only check is not sufficient evidence.
+With `llm.provider=local`, `llm.base_url` requires scheme `http` or `https`; absent userinfo/query/fragment; port in `1..65535`; path empty, `/v1` or ending in `/v1` after slash normalization; and host `localhost` or a loopback, RFC1918, IPv6 unique-local or link-local IP literal. Other DNS names/public IPs are rejected without DNS resolution. Explicit `provider=remote` permits remote hosts but requires HTTPS and the supported `/v1` path form; the other URL restrictions remain. The transport appends `/chat/completions`, disables redirects/environment proxies, and reads the Bearer token from `api_key_env` for remote requests only. Preflight and generation share authentication and the normal timeout; no cold-load timeout extension applies. See [migration and operator steps](remote-commentary-microplan.md#configuration-and-migration).
 
 ### Detectors and tape
 

@@ -16,9 +16,10 @@ from typing import TYPE_CHECKING, Any
 
 from irswitch.contracts.primitives import ContractViolation, LineageId, OccurrenceId
 from irswitch.contracts.session import SessionRef
+from irswitch.events.commentary_microplan import plan_from_accepted
 from irswitch.events.narrative import NarrativeAdmissionError, adapt_accepted_event
 from irswitch.events.narrative_shadow_consumer import AdaptedPublication
-from irswitch.events.stream import FrozenAcceptedEventBatch
+from irswitch.events.stream import FrozenAcceptedEventBatch, thaw_envelope
 
 if TYPE_CHECKING:
     from irswitch.events.stream import SessionReset
@@ -66,6 +67,16 @@ def adapt_batch_for_shadow(
             continue
         fact_id = f"fact:shadow:{batch.stream_sequence}:{accepted.source_ordinal}:{index}"
         try:
+            microplan = plan_from_accepted(accepted, batch)
+            envelope = thaw_envelope(accepted.envelope)
+            payload = {
+                "sourceIdentity": {
+                    "sessionId": batch.session_id,
+                    "correlationId": envelope.correlation_id or accepted.event_id,
+                }
+            }
+            if microplan is not None:
+                payload["microplan"] = microplan.to_dict()
             event = adapt_accepted_event(
                 accepted,
                 fanout_stream_sequence=int(batch.stream_sequence),
@@ -78,7 +89,7 @@ def adapt_batch_for_shadow(
                 fact_view_revision=revision,
                 material_revision=0,
                 correlation_key=("shadow", str(accepted.event_id)),
-                semantic_payload={},
+                semantic_payload=payload,
                 source_ordinal=publication_ordinal,
             )
         except (NarrativeAdmissionError, ContractViolation, ValueError, TypeError) as exc:
@@ -89,7 +100,17 @@ def adapt_batch_for_shadow(
             )
             continue
         adapted_events.append(event)
-        facts.append(_shadow_fact(fact_id, observed_mono_ms=int(batch.accepted_monotonic_ms)))
+        fact = _shadow_fact(fact_id, observed_mono_ms=int(batch.accepted_monotonic_ms))
+        if microplan is not None:
+            fact.update(
+                predicate="commentary.selected_claim",
+                subjectId=microplan.actors[0][0],
+                attributes={"claim": microplan.facts[0][1]},
+                evidenceRefs=[accepted.event_id],
+                validUntilMonoMs=microplan.expires_ms,
+                confidence=1.0,
+            )
+        facts.append(fact)
         publication_ordinal += 1
     if not adapted_events:
         return None

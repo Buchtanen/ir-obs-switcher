@@ -123,6 +123,7 @@ class VerifyIntent:
     transport_form: str | None = None
     stale_bundle: bool = False
     external_failure: bool = False
+    allowed_sentences: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -235,11 +236,22 @@ class SemanticVerifier:
 
         claims = (f"required-frame:{intent.family}",)
         reasons = _shape_reasons(intent.text)
+        if intent.allowed_sentences:
+            # These are input-derived complete realizations, supplied before IO.
+            # Names may contain accents; this does not change the EN grammar.
+            if intent.text.casefold() in {text.casefold() for text in intent.allowed_sentences}:
+                reasons = [reason for reason in reasons if reason != "non_en_contract"]
+            else:
+                reasons.append("required_missing")
         if not reasons:
-            reasons = semantic_reasons(
-                intent.text,
-                intent.required_claim_surface,
-                intent.subject_surface,
+            reasons = (
+                []
+                if intent.allowed_sentences
+                else semantic_reasons(
+                    intent.text,
+                    intent.required_claim_surface,
+                    intent.subject_surface,
+                )
             )
         reported = tuple(reasons[:MAX_REASONS])
         result = VerificationResult(

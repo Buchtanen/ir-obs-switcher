@@ -13,6 +13,11 @@ from irswitch.contracts.resources import packaged_schema_bytes
 
 ROOT = Path(__file__).resolve().parents[1]
 GOLDENS = json.loads((ROOT / "docs/v2.0.0/machine/config-goldens.json").read_text(encoding="utf-8"))
+MODEL_EXTENSION = {
+    "commentary.llm.provider": "local",
+    "commentary.llm.mode": "live",
+    "commentary.llm.api_key_env": "IRSWITCH_LLM_API_KEY",
+}
 
 
 def test_absent_commentary_section_matches_every_frozen_default() -> None:
@@ -23,7 +28,7 @@ def test_absent_commentary_section_matches_every_frozen_default() -> None:
     assert candidate.valid is True
     assert candidate.diagnostics == ()
     assert candidate.snapshot is not None
-    assert candidate.snapshot.to_dict() == GOLDENS["valid"][0]["values"]
+    assert candidate.snapshot.to_dict() == {**GOLDENS["valid"][0]["values"], **MODEL_EXTENSION}
     assert candidate.snapshot.values["commentary.enabled"] is False
     with pytest.raises(TypeError):
         candidate.snapshot.values["commentary.enabled"] = True  # type: ignore[index]
@@ -31,9 +36,14 @@ def test_absent_commentary_section_matches_every_frozen_default() -> None:
 
 def test_packaged_config_and_detector_contracts_match_the_frozen_sources() -> None:
     for name in ("config-contract.json", "detector-catalog.json"):
-        assert json.loads(packaged_schema_bytes(name)) == json.loads(
-            (ROOT / f"docs/v2.0.0/machine/{name}").read_bytes()
-        )
+        packaged = json.loads(packaged_schema_bytes(name))
+        if name == "config-contract.json":
+            for key in MODEL_EXTENSION:
+                assert packaged["defaultConfig"].pop(key) == MODEL_EXTENSION[key]
+            packaged["keyDefinitions"] = [
+                item for item in packaged["keyDefinitions"] if item["key"] not in MODEL_EXTENSION
+            ]
+        assert packaged == json.loads((ROOT / f"docs/v2.0.0/machine/{name}").read_bytes())
 
 
 def test_enabled_private_llm_full_capture_golden_is_accepted() -> None:
@@ -400,7 +410,12 @@ def test_invalid_candidate_installs_no_generation_and_disables_automatic_only() 
     assert ledger.component_available("tts", 6) is True
 
 
-def test_ledger_reproduces_the_frozen_mixed_boundary_hash_chain() -> None:
+def test_ledger_reproduces_the_frozen_mixed_boundary_hash_chain(monkeypatch) -> None:
+    # Historical hashes remain immutable: exercise their original 50-key schema.
+    import irswitch.contracts.config as config_module
+
+    historical = json.loads((ROOT / "docs/v2.0.0/machine/config-contract.json").read_bytes())
+    monkeypatch.setattr(config_module, "_contract", lambda: historical)
     scenario = GOLDENS["ledgerScenario"]
     dynamic_key = "commentary.detector.battle_ahead_v1.max_closing_slope"
     initial = _candidate(**{dynamic_key: -0.04})

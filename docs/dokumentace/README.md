@@ -1,5 +1,7 @@
 # Dokumentace irswitch — mapa pro lidi i modely
 
+**Aktuální stav (2026-09-25):** NarrativeRuntime již je na `master`; staré poznámky o integrační větvi níže jsou historické. Nový topic `feat/remote-commentary-microplan` popisuje [remote M1, skutečné vstupní fakty a provozní test](../v2.0.0/remote-commentary-microplan.md). Konfigurace: [CONFIG.md](../../CONFIG.md), stav modelu: [API.md](../../API.md). Chybějící historické doménové stránky tato změna neobnovuje; aktuální runtime najdeš přes v2 index a handover.
+
 **Čti tohle dřív, než začneš grepovat `src/`.** Po změně kódu **stejnou složku zase aktualizuj** (skill `dokumentace`, agent `docs-keeper`). Tichý skip není OK — buď page, nebo `Docs: no change (reason …)`.
 
 > **Větev `codex/commentary-story-flow-spec`:** tato složka je **tenký index** (README, [jak-cist.md](jak-cist.md), [domeny/testy-ci.md](domeny/testy-ci.md), branch delta [domeny/server.md](domeny/server.md) + [domeny/events.md](domeny/events.md) pro #273/#284 runtime status (identity + speech/language/components + decisions ring), [inflight/](inflight/README.md)). Řádky tabulky níže, které odkazují na `architektura.md`, `stav.md`, `mapa-souboru.md` nebo většinu ostatních `domeny/*.md`, **na této větvi neexistují** — to není shipped drift, ale záměr. v2 narrative moduly (#239–#284 atd.) hledej v [inflight/](inflight/README.md) a [docs/v2.0.0/](../v2.0.0/README.md); nepiš je do `domeny/commentary.md` jako master pravdu.

@@ -22,6 +22,7 @@ from irswitch.contracts.catalog_loader import NarrativeCatalog
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.context import ContextBatchPart
 from irswitch.contracts.runtime_catalog import load_runtime_catalog as load_narrative_catalog
+from irswitch.events.commentary_microplan import Microplan
 from irswitch.events.detector_bank import DetectorBank
 from irswitch.events.episode_registry import EpisodeIntent, EpisodeRegistry
 from irswitch.events.exposure_store import ExposureIntent, ExposureStore
@@ -314,10 +315,18 @@ class NarrativeRuntime:
         tape_effect: AwaitableEffectWorker | None = None,
         tape_writer: NarrativeTapeWriter | None = None,
         shutdown_flush_timeout_s: float = 2.0,
+        realization_config_signature: Callable[[], str] | None = None,
+        on_microplan_spoken: Callable[[Microplan], None] | None = None,
     ) -> None:
         # Empty NarrativeMailbox is falsy via __len__; only replace on None so
         # ingress/shadow cutover can share one injected mailbox identity.
         self._mailbox = mailbox if mailbox is not None else NarrativeMailbox()
+        self._realization_config_signature = realization_config_signature
+        self._on_microplan_spoken = on_microplan_spoken
+        self._microplans: dict[tuple[int, int], Microplan] = {}
+        self._current_microplans: dict[tuple[str, str], Microplan] = {}
+        self._microplan_session: str | None = None
+        self._selected_microplan: Microplan | None = None
         self._runtime: RuntimeState = "disabled"
         self._lane: LaneState = "idle"
         self._reducer_sequence = 0
@@ -1116,6 +1125,21 @@ class NarrativeRuntime:
         attr: str,
     ) -> None:
         try:
+            if attr == "_tts_task" and not self._microplan_is_current(
+                token, now_ms=int(time.monotonic() * 1000)
+            ):
+                from irswitch.events.narrative_tts_bridge import _tts_callback
+
+                self.admit(
+                    _tts_callback(
+                        "SPEECH_FAILED",
+                        token,
+                        mono_ms=int(time.monotonic() * 1000),
+                        backend="null",
+                        worker_sequence=1,
+                    )
+                )
+                return
             produced = worker(dict(token))
             if inspect.isasyncgen(produced):
                 try:
@@ -1271,6 +1295,36 @@ class NarrativeRuntime:
 
         transition_effects: list[str] = []
         previous_occurrence = self._occurrence_id
+        self._microplans = {}
+        observed_ms = int(part.batch.timeline.get("observedMonoMs", 0))
+        self._current_microplans = {
+            key: plan
+            for key, plan in self._current_microplans.items()
+            if plan.expires_ms > observed_ms
+        }
+        if not part.batch.timeline.get("narrativeRunActive", True):
+            self._current_microplans.clear()
+        for index, event in enumerate(part.batch.events):
+            identity = event.payload.get("sourceIdentity", {})
+            if identity:
+                session = str(identity["sessionId"])
+                if self._microplan_session != session:
+                    self._current_microplans.clear()
+                    self._microplan_session = session
+                self._current_microplans.pop((session, str(identity["correlationId"])), None)
+            raw = event.payload.get("microplan")
+            if isinstance(raw, dict):
+                order = event.source_order
+                key = (
+                    (int(order.fanout_stream_sequence), int(order.source_ordinal))
+                    if order
+                    else (self._reducer_sequence, index)
+                )
+                plan = Microplan.from_dict(raw)
+                self._microplans[key] = plan
+                self._current_microplans[(plan.session_id, plan.correlation_id)] = plan
+        while len(self._current_microplans) > 128:
+            self._current_microplans.pop(next(iter(self._current_microplans)))
         timeline = part.batch.timeline
         self._timeline_revision = int(timeline["timelineRevision"])
         fact_view = part.batch.fact_view
@@ -1560,10 +1614,12 @@ class NarrativeRuntime:
             effects.append("director_selected")
             self._director_selected_beat_id = decision.selected.beat_id
             self._director_selected_episode_revision = decision.selected.episode_revision
+            self._selected_microplan = self._microplans.get(decision.selected.candidate_order.key())
             return True
         effects.append("director_silenced")
         self._director_selected_beat_id = None
         self._director_selected_episode_revision = None
+        self._selected_microplan = None
         return False
 
     def _note_director_failure(self, effects: list[str]) -> None:
@@ -1671,6 +1727,11 @@ class NarrativeRuntime:
         }
         if beat_id:
             self._realization["beatId"] = beat_id
+        if self._selected_microplan is not None:
+            self._realization["microplan"] = self._selected_microplan.to_dict()
+            self._realization.update(self._selected_microplan.verify_payload())
+        if self._realization_config_signature is not None:
+            self._realization["configSignature"] = self._realization_config_signature()
         self._utterance = None
         if self._freshness_gate is not None:
             self._commit_token = self._default_commit_token()
@@ -1978,6 +2039,7 @@ class NarrativeRuntime:
             "verifyRequiredClaimSurface",
             "verifyActorBindings",
             "verifyRequiredActors",
+            "verifyAllowedSentences",
         ):
             value = token.get(key)
             if value is None or value == "" or value == []:
@@ -2048,6 +2110,12 @@ class NarrativeRuntime:
                 "verifyActorBindings": [[name, list(forms)] for name, forms in bindings],
                 "verifyRequiredActors": sorted(required),
             }
+        allowed_raw = frame.get("verifyAllowedSentences", ())
+        allowed_sentences = (
+            tuple(str(value) for value in allowed_raw)
+            if isinstance(allowed_raw, (list, tuple))
+            else ()
+        )
         intent = VerifyIntent(
             text=text,
             family=family.strip(),
@@ -2055,10 +2123,24 @@ class NarrativeRuntime:
             required_claim_surface=claim.strip(),
             actor_bindings=tuple(bindings),
             required_actors=frozenset(required),
+            allowed_sentences=allowed_sentences,
             now_ms=int(command.enqueued_mono_ms),
             deadline_mono_ms=int(command.enqueued_mono_ms) + 60_000,
         )
         return intent, attached_live
+
+    def _microplan_is_current(self, token: dict[str, Any], *, now_ms: int) -> bool:
+        raw = token.get("microplan")
+        if not isinstance(raw, dict):
+            return True  # Existing pure reducer fixtures use their CommitToken.
+        plan = Microplan.from_dict(raw)
+        current = self._current_microplans.get((plan.session_id, plan.correlation_id))
+        if now_ms >= plan.expires_ms or current is None or current.digest != plan.digest:
+            return False
+        return (
+            self._realization_config_signature is None
+            or token.get("configSignature") == self._realization_config_signature()
+        )
 
     def _on_realization_succeeded(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
         if self._lane != "building" or not self._matches_realization(command):
@@ -2066,6 +2148,10 @@ class NarrativeRuntime:
         if command.payload.get("outcome") != "succeeded":
             return "ignored_stale_or_inapplicable", ["realization_outcome_mismatch"]
         assert self._realization is not None
+        if not self._microplan_is_current(self._realization, now_ms=int(command.enqueued_mono_ms)):
+            effects: list[str] = []
+            self._cancel_building(effects, reason="microplan_stale")
+            return "handled", effects
         if self._freshness_gate is not None:
             token = self._commit_token
             if token is None:
@@ -2160,6 +2246,9 @@ class NarrativeRuntime:
             "text": text,
         }
         beat_id = self._realization.get("beatId")
+        if "microplan" in self._realization:
+            self._utterance["microplan"] = self._realization["microplan"]
+            self._utterance["configSignature"] = self._realization.get("configSignature")
         opportunity_id = self._opportunity_id
         self._begin_speech_projection(
             source_kind="narrative",
@@ -2219,6 +2308,9 @@ class NarrativeRuntime:
         if not self._matches_utterance(command):
             return "ignored_stale_or_inapplicable", ["stale_playback_token"]
         if self._lane == "committed":
+            raw_plan = (self._utterance or {}).get("microplan")
+            if isinstance(raw_plan, dict) and self._on_microplan_spoken is not None:
+                self._on_microplan_spoken(Microplan.from_dict(raw_plan))
             self._lane = "speaking"
             self._speech_deadline_stage = "playback"
             self._speech_accepted_at_mono_ms = int(command.enqueued_mono_ms)

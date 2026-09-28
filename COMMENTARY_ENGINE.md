@@ -1,4 +1,10 @@
-# Commentary engine (Phase 0)
+# Commentary engine
+
+**Current runtime (2026-09-25):** `master` uses EN-only `NarrativeRuntime`. The current-fact remote model extension is documented in [Current-fact commentary and remote M1](docs/v2.0.0/remote-commentary-microplan.md), with configuration in [CONFIG.md](CONFIG.md). It is opt-in on `feat/remote-commentary-microplan`; stream/TTS validation remains pending.
+
+## Historical Phase 0 implementation
+
+The remainder records the earlier graph runtime at `master@0ce75d4`. Its EN+CS, legacy mode and LLM keys are historical and must not be used as current setup instructions.
 
 **Status:** EN+CS graph v2, N12 independent consumers, stateful graph runtime (`legacy | shadow | active`), bounded story history, grounded commentary planner, TTS and `/commentary`. Commentary and active graph mode both remain explicit opt-ins.
 **Implementation branch:** `feat/stateful-commentary-sequence-graph`; Windows/OBS/Ollama live validation pending.

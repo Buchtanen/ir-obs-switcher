@@ -1,5 +1,11 @@
 # Testy, CI, release
 
+## Current-fact commentary / remote M1
+
+`tests/test_commentary_microplan.py` covers the new accepted-event facts, independent semantic checks, remote config/transport, async cancellation and shadow behavior. Existing narrative actor, freshness, transport, config and exposure tests remain regression gates. Exact executed commands/results belong to [implementation-handover](../../v2.0.0/implementation-handover.md); this index does not assert an unrun test result. [Operator guide](../../v2.0.0/remote-commentary-microplan.md#verification-and-stream-gates) defines separate replay, shadow and audible stream gates. The standalone endpoint benchmark is not an OBS/iRacing/TTS acceptance test.
+
+## Shared gates
+
 - Pytest: `./run_tests.sh` / `run_tests.ps1`.
 - CI: `.github/workflows/ci.yml` — ruff, black, mypy, tests+coverage (blocking).
 - Studio: CI job `frontend-studio` používá Node.js 24 a pnpm 11.25.0, instalaci s `--frozen-lockfile`, testy, produkční build a `pnpm audit --prod`; `git diff --exit-code src/irswitch/web/studio` hlídá drift verzovaných assets. Lokální postup včetně typecheck: [BUILD_AND_DEPLOY.md](../../../BUILD_AND_DEPLOY.md#studio-frontend).
