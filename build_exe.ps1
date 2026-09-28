@@ -35,6 +35,7 @@ if ($Core -or $All) {
     pyinstaller --onefile `
         --name irswitchd `
         --noconsole `
+        --paths (Join-Path $PSScriptRoot 'src') `
         --collect-all irswitch `
         --collect-all bleak `
         --collect-all psutil `
