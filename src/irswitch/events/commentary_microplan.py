@@ -204,6 +204,7 @@ def plan_from_accepted(
         else:
             claims = (
                 f"completes a lap in {lap}",
+                f"completes the lap in {lap}",
                 f"posts a lap of {lap}",
                 f"clocks a lap of {lap}",
             )
@@ -259,6 +260,7 @@ def plan_from_accepted(
             f"{subject} sets a new personal best with a {lap} lap.",
             f"{subject} posts a {lap} lap for a new personal best.",
         )
+    if kind in {"PERSONAL_BEST", "LAP_COMPLETE"}:
         seconds, fraction = divmod(rem, 1000)
         spoken_lap = (
             (f"{_spoken_number(minutes)} minute" + ("s" if minutes != 1 else "") + ", ")

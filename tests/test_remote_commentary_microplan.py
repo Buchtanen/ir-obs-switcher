@@ -49,6 +49,16 @@ def test_no_unknown_or_invalid_fact_becomes_speech():
     assert plan(metrics={"lapTime": -1}) is None
 
 
+def test_completed_lap_accepts_spoken_time_but_rejects_changed_facts():
+    current = plan("LAP_COMPLETE")
+    assert current is not None
+    text = "Buchtanen completes the lap in one minute, forty-two point three one five."
+    assert current.accepts(text)
+    assert not current.accepts(text.replace("forty-two", "forty-one"))
+    assert not current.accepts(text.replace("Buchtanen", "Rossi"))
+    assert not current.accepts(text[:-1] + " for a personal best.")
+
+
 @pytest.mark.asyncio
 async def test_one_attempt_async_cancel_and_shadow_is_owned(monkeypatch):
     current = plan()
