@@ -12,18 +12,23 @@ try {
     & $PythonExecutable -c 'import PyInstaller, supertonic, sounddevice, soundfile, onnxruntime'
     if ($LASTEXITCODE -ne 0) { throw 'Build environment requires PyInstaller and .[supertonic]' }
     $env:PYTHONPATH = Join-Path $projectRoot 'src'
+    $identityPath = Join-Path $projectRoot 'build/live-commentary/build-identity.json'
+    & $PythonExecutable scripts/write_build_identity.py $identityPath
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot record build identity' }
+    $identity = Get-Content -LiteralPath $identityPath -Raw | ConvertFrom-Json
     & $PythonExecutable -m PyInstaller --onefile --noconsole --name irswitchd `
         --paths (Join-Path $projectRoot 'src') --collect-all irswitch --collect-all bleak --collect-all psutil `
         --collect-all supertonic --collect-all onnxruntime --collect-all sounddevice `
         --collect-all soundfile --collect-all huggingface_hub --hidden-import pynvml `
+        --add-data "$identityPath;." `
         --add-data "$(Join-Path $projectRoot 'assets');assets" --distpath $OutputDirectory `
         --workpath build/live-commentary --specpath build/live-commentary --clean --noupx `
         (Join-Path $projectRoot 'src/irswitch/main.py')
     if ($LASTEXITCODE -ne 0) { throw 'Commentary EXE build failed' }
     $binary = Join-Path $OutputDirectory 'irswitchd.exe'
     @{
-        commit = (git rev-parse HEAD)
-        dirty = [bool](git status --porcelain --untracked-files=no)
+        commit = $identity.commit
+        dirty = $identity.dirty
         sha256 = (Get-FileHash -LiteralPath $binary -Algorithm SHA256).Hash
         builtAtUtc = (Get-Date).ToUniversalTime().ToString('o')
         supertonic = $true

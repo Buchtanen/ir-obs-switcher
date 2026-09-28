@@ -3,6 +3,7 @@ export type ComponentStatus = {label?: string; status?: string; available?: bool
 export type CompanionApp = {id:string;label:string;running:boolean|null;required:boolean};
 export type Status = {
   schemaVersion: 1; version: string; runtime: {overlay: boolean; switcher: boolean};
+  build?: {commit: string | null; shortCommit: string | null; dirty: boolean | null; source: string};
   companionApps?: CompanionApp[];
   iracingUi?: {running: boolean | null};
   switcher: null | {connected_obs: boolean; connected_iracing: boolean; autoswitch: boolean;

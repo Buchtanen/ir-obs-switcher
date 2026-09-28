@@ -76,6 +76,9 @@ async def test_admin_status_extensions_and_features(app: web.Application) -> Non
                 body = await resp.json()
                 assert body["schemaVersion"] == 1
                 assert "version" in body
+                from irswitch.build_identity import BUILD_IDENTITY
+
+                assert body["build"] == BUILD_IDENTITY
                 assert "health" in body
                 assert "ready" in body["health"]
                 assert isinstance(body["health"]["blocking"], list)

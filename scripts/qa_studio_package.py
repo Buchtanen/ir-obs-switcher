@@ -134,6 +134,11 @@ enabled = false
 
     proc = start()
     try:
+        if len(sys.argv) > 2:
+            identity = get("/api/admin/status")["build"]
+            assert identity["commit"] == sys.argv[2], identity
+            assert identity["source"] == "embedded", identity
+            assert identity["dirty"] is False, identity
         for path in (
             "/studio/",
             "/admin",
