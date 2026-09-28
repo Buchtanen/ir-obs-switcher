@@ -1,5 +1,5 @@
 import type {ComponentStatus, Snapshot, Status} from './poll';
-import {componentSignal, connectionSignal} from './status-model';
+import {componentSignal, connectionSignal, iracingSignal} from './status-model';
 import type {Signal} from './status-model';
 import {JsonDetails} from './Operations';
 import './status-board.css';
@@ -27,11 +27,12 @@ export function StatusBoard({state}:{state:Snapshot<Status>}) {
   const sw=data?.runtime.switcher?data.switcher:null;
   const api:Signal=stale?{tone:'unknown',label:'Bez čerstvých dat'}:data?.runtime.switcher?{tone:'good',label:'Runtime dostupný'}:{tone:'warn',label:'Runtime není připojen'};
   const auto:Signal=stale||!sw?{tone:'unknown',label:'Neznámý stav'}:sw.autoswitch?{tone:'good',label:'Zapnuta'}:{tone:'off',label:'Vypnuta'};
+  const uiWaiting=!stale&&sw?.connected_iracing===false&&data?.iracingUi?.running===true;
   const components=Object.entries({...data?.extensions,...data?.features});
   return <>
     <div className="status-cards">
       <section className="status-card"><div className="card-heading"><h2>OBS Studio</h2><StatusSignal signal={connectionSignal(sw?.connected_obs,stale)}/></div><strong className="card-value">{value(sw?.current_scene)}</strong><span className="card-caption">Aktuální scéna{stale?' · poslední známá':''}</span><div className="card-bottom"><span>Cílová scéna</span><b>{value(sw?.target_scene)}</b></div></section>
-      <section className="status-card"><div className="card-heading"><h2>iRacing</h2><StatusSignal signal={connectionSignal(sw?.connected_iracing,stale)}/></div><strong className="card-value">{sw?.session_type||'Bez session'}</strong><span className="card-caption">{stale?'Čekám na čerstvá data':sw?.connected_iracing===false?'Čekám na simulátor':'Aktuální session'}</span><div className="card-bottom"><span>Stav řízení</span><b>{value(sw?.mode)}</b></div></section>
+      <section className="status-card"><div className="card-heading"><h2>iRacing</h2><StatusSignal signal={iracingSignal(sw?.connected_iracing,data?.iracingUi?.running,stale)}/></div><strong className="card-value">{uiWaiting?'iRacing UI':sw?.session_type||'Bez session'}</strong><span className="card-caption">{stale?'Čekám na čerstvá data':uiWaiting?'Čeká na session simulátoru':sw?.connected_iracing===false?'Čekám na simulátor':'Aktuální session'}</span><div className="card-bottom"><span>Stav řízení</span><b>{value(sw?.mode)}</b></div></section>
       <section className="status-card"><div className="card-heading"><h2>Automatika</h2><StatusSignal signal={auto}/></div><strong className="card-value">{stale||!sw?'—':sw.autoswitch?'Automatické scény':'Ruční režim'}</strong><span className="card-caption">Řízení přepínání scén</span><div className="card-bottom"><span>Důvod</span><b>{value(sw?.reason)}</b></div></section>
       <section className="status-card"><div className="card-heading"><h2>Služba a API</h2><StatusSignal signal={api}/></div><strong className="card-value">{stale?'Nedostupná data':data?.runtime.switcher?'Runtime běží':'Pouze API'}</strong><span className="card-caption">Engine {data?.version??'—'}</span><div className="card-bottom"><span>Poslední odpověď</span><b>{state.updatedAt?new Date(state.updatedAt).toLocaleTimeString('cs-CZ'):'—'}</b></div></section>
     </div>

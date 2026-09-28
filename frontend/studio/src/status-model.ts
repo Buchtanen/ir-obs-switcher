@@ -5,6 +5,10 @@ export function connectionSignal(value: boolean | undefined, stale: boolean): Si
   if (stale || value === undefined) return {tone:'unknown',label:'Neznámý stav'};
   return value ? {tone:'good',label:'Připojeno'} : {tone:'bad',label:'Odpojeno'};
 }
+export function iracingSignal(connected:boolean|undefined, uiRunning:boolean|null|undefined, stale:boolean):Signal {
+  if(!stale && connected===false && uiRunning===true)return {tone:'warn',label:'iRacing UI'};
+  return connectionSignal(connected,stale);
+}
 export function componentSignal(row: ComponentStatus | undefined, stale: boolean): Signal {
   if (stale || !row) return {tone:'unknown',label:'Neznámý stav'};
   if (row.enabled === false || row.status === 'disabled') return {tone:'off',label:'Vypnuto'};

@@ -1,3 +1,14 @@
+# iRacing UI informational waiting status — 2026-09-28 (#381)
+
+- Checkout `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`, branch `feat/studio-iracing-ui-status`, remote `https://github.com/Buchtanen/ir-obs-switcher.git`; target `feat/studio-integration`. Base/recovery SHA `cbb76d989bc2213e021e8359b60a55ed518b37a9`. User authorizes stage integration; cumulative draft PR #371 must remain unmerged to master.
+- Issue [#381](https://github.com/Buchtanen/ir-obs-switcher/issues/381), [diary](https://github.com/Buchtanen/ir-obs-switcher/issues/381#issuecomment-5862191645). Final immutable implementation and merge SHAs follow in the diary.
+- Exact `iRacingUI.exe` presence adds nullable `iracingUi.running` to admin status. Enumeration runs off the event loop, uses the existing optional psutil dependency and returns unknown on failure/incomplete readings. The one-second scan budget is cooperative between process items, not a hard OS-call timeout.
+- Studio shows amber iRacing UI / waiting for simulator session only with fresh UI presence and explicitly disconnected SDK. Connected SDK remains green; stale/unknown SDK remains unknown. The launcher does not affect switcher health/decisions, commentary or overlays.
+- TDD RED then GREEN; independent verifier GREEN. Targeted Python25PASS, frontend29PASS, typecheck/build/mypy/Ruff/Black/diff checks PASS. Physical simulator transition is covered by model tests but has not been exercised with a running simulator.
+- EXE `dist/studio-iracing-ui/irswitchd.exe` and `scripts/qa_studio_package.py` PASS; evidence `build/studio-package-v1z179jg` (exact assets, legacy routes, disposable revisions/config and next-startup activation/rollback). Actual configured service updated after GREEN. Browser confirms amber indicator in header/card and waiting text; all three served Studio resources match source bytes, configuration SHA unchanged. No new dependency, config edit, overlay HUD change or simulator/OBS action.
+- Parent owns detector/admin/frontend/tests/generated assets and this handover; docs-keeper owns API.md and docs/studio-implementation.md. Prior JS index-BCohWCp2 removed; new JS index-XDJJL3si, CSS index-DJb0sbO3 retained. Primary checkout/user recordings untouched.
+- Next: commit/push checkpoint, stage PR to integration with semver:minor, wait full CI, merge under existing authorization, fast-forward local integration and update this issue diary plus cumulative PR #371. Keep umbrella #370 open for broader physical-provider acceptance. Preserve the configured service and live Studio tab.
+
 # Final narrow-layout correction — 2026-09-27 (#379)
 
 - Same checkout/branch/remote/issue below. Last pushed implementation `767b65da64be8cb508d7b571841cc53d9de1bb85`; stage PR [#380](https://github.com/Buchtanen/ir-obs-switcher/pull/380) to integration. Existing diary remains authoritative for final merge SHA.

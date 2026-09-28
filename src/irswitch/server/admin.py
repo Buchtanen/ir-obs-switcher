@@ -13,6 +13,7 @@ from irswitch import __version__
 from irswitch.overlay.http import _file_response, get_overlay_bus, get_overlay_runtime
 from irswitch.server.admin_health import evaluate_health
 from irswitch.server.event_log import get_event_log
+from irswitch.system.iracing_ui import detect_iracing_ui
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +154,7 @@ def _runtime_snapshot(runtime: Any | None, now: float) -> dict[str, Any]:
 def build_admin_status(
     *,
     lhm: dict[str, Any] | None = None,
+    iracing_ui: bool | None = None,
     now: float | None = None,
 ) -> dict[str, Any]:
     """Aggregator used by GET /api/admin/status and tests."""
@@ -327,6 +329,7 @@ def build_admin_status(
             "switcher": state is not None,
         },
         "switcher": switcher,
+        "iracingUi": {"running": iracing_ui},
         "extensions": {
             "ble": _extension_card(
                 ext_id="ble",
@@ -503,8 +506,8 @@ async def build_admin_activity(*, limit: int = 50) -> dict[str, Any]:
 
 async def handle_admin_status(_request: web.Request) -> web.Response:
     try:
-        lhm = await _probe_lhm()
-        payload = build_admin_status(lhm=lhm)
+        lhm, iracing_ui = await asyncio.gather(_probe_lhm(), asyncio.to_thread(detect_iracing_ui))
+        payload = build_admin_status(lhm=lhm, iracing_ui=iracing_ui)
         return web.json_response(payload)
     except Exception:
         logger.exception("GET /api/admin/status failed")
