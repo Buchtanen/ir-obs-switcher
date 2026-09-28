@@ -47,3 +47,18 @@ The live test still must establish performance and commentary quality during an
 actual iRacing session. Automated/mock speech tests and a manual audio test do not
 substitute for that acceptance. Preserve model attempts, fallback selections,
 rejections and speech results with telemetry for subsequent evaluation.
+
+## Verification checkpoint
+
+- Combined full local suite: 2741 passed, two Windows symlink-privilege exclusions;
+  independent 255 integration tests, 31 frontend tests and selected static checks GREEN.
+- Packaged Studio QA passed (assets, custom definitions, three isolated starts).
+- Real model pipeline probe exposed two equivalent completed-lap phrasings rejected
+  by the bounded grammar. Added input-derived article/completion variants and the
+  already supported spoken-time conversion to completed laps. Regression rejects
+  changed time, changed driver and added personal-best claims; 15 focused tests pass.
+- Repeated real approved endpoint probe after correction: 3/3 model candidates
+  accepted and delivered through the runtime to a null audio sink. This uses synthetic
+  lap data and does not establish live iRacing coverage or physical audio delivery.
+- Final CI and deployed-process results are recorded in PR #371 and the local operator
+  test output. Keep the user-requested live mode for the next audible test.

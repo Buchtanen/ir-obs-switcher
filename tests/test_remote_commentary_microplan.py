@@ -49,10 +49,13 @@ def test_no_unknown_or_invalid_fact_becomes_speech():
     assert plan(metrics={"lapTime": -1}) is None
 
 
-def test_completed_lap_accepts_spoken_time_but_rejects_changed_facts():
+@pytest.mark.parametrize(
+    "completion", ["completes the lap in", "has completed the lap with a time of"]
+)
+def test_completed_lap_accepts_spoken_time_but_rejects_changed_facts(completion):
     current = plan("LAP_COMPLETE")
     assert current is not None
-    text = "Buchtanen completes the lap in one minute, forty-two point three one five."
+    text = f"Buchtanen {completion} one minute, forty-two point three one five."
     assert current.accepts(text)
     assert not current.accepts(text.replace("forty-two", "forty-one"))
     assert not current.accepts(text.replace("Buchtanen", "Rossi"))

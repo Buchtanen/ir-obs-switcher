@@ -202,9 +202,12 @@ def plan_from_accepted(
                 f"records a personal best of {lap}",
             )
         else:
-            claims = (
-                f"completes a lap in {lap}",
-                f"completes the lap in {lap}",
+            claims = tuple(
+                f"{verb} {article} lap {timing} {lap}"
+                for verb in ("completes", "has completed")
+                for article in ("a", "the")
+                for timing in ("in", "with a time of")
+            ) + (
                 f"posts a lap of {lap}",
                 f"clocks a lap of {lap}",
             )
