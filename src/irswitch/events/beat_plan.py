@@ -9,7 +9,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Any
 
-from irswitch.contracts.catalog_loader import load_narrative_catalog
 from irswitch.contracts.primitives import (
     ContractViolation,
     CycleAttemptOrdinal,
@@ -23,6 +22,7 @@ from irswitch.contracts.primitives import (
     deterministic_planning_seed,
     validate_occurrence_lineage,
 )
+from irswitch.contracts.runtime_catalog import load_runtime_catalog as load_narrative_catalog
 
 SCHEMA_VERSION = "beat-plan/2"
 PROMPT_SCHEMA = "prompt-options/2"

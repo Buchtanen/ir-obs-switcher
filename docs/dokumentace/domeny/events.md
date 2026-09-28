@@ -1,5 +1,9 @@
 # Events — branch delta (#272 **CLOSED**; #273 **CLOSED**; #274 closeout evidence; #275 CLOSED; #276 CLOSED; #277 **CLOSED** slice 7 inventory shadow; #284 **CLOSED** merged @ `77452a9`; **#362** live mixed-source admit)
 
+## Current-fact remote M1 extension (2026-09-25)
+
+Topic branch `feat/remote-commentary-microplan`, based on current `master`: `events/commentary_microplan.py` projects accepted event facts and independent whole-sentence verification; `events/commentary_model.py` owns bounded async local/remote requests and shadow diagnostics. `narrative_shadow_adapter.py` → selected runtime token → `narrative_realization_bridge.py` → input verification/freshness → TTS. `race/runtime.py` composes the client and its lifecycle. See [operator guide and scope](../../v2.0.0/remote-commentary-microplan.md), [CONFIG.md](../../../CONFIG.md), [API.md](../../../API.md). The old #362 warmup/first-call timeout allowances below are historical and do not apply to the new adapter. Unsupported input families are silent; supported same-bundle authored fallback remains bounded by freshness.
+
 **#362:** `adapt_batch_for_shadow` assigns publication-local `sourceOrdinal` (commentary-audience index). `RacePipeline` ordinals are per emitter; two `0`s in one fanout batch used to raise `NarrativeEvent source order must be strictly increasing` and drop the item. Battle/HUNTING already have commentary audience — do **not** flip `FAMILY_ROUTE`. Qwen follows `commentary.llm.enabled`, not the commentary kill-switch. Warmup deadline is `max(timeout_s, 45s)` so a cold Ollama load can finish; live `timeout_s` stays the per-call cap. Detail: [inflight #362](../inflight/README.md#362-live-silence-branch-fixnarrative-live-silence).
 
 > **Větev `cursor/timing-family-map-275-cad3` (#275, slice 1):** timing lap/SF + sector inventory — [§ #275 map](../inflight/README.md#275-timing-family-map-slice-1-lookup) · [timing-family-migration.md](../../v2.0.0/timing-family-migration.md).

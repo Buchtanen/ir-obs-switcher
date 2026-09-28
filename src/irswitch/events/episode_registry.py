@@ -5,10 +5,12 @@ Does not import the narrative actor, overlay tape or commentary. Not live-wired.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
+from collections import deque
+from dataclasses import asdict, dataclass, field, replace
 from typing import Literal
+from uuid import uuid4
 
-from irswitch.contracts.catalog_loader import load_narrative_catalog
+from irswitch.contracts.catalog_loader import NarrativeCatalog
 from irswitch.contracts.primitives import (
     ContractViolation,
     Identifier,
@@ -17,6 +19,12 @@ from irswitch.contracts.primitives import (
     OccurrenceId,
     SchemaVersion,
     validate_occurrence_lineage,
+)
+from irswitch.contracts.runtime_catalog import (
+    load_runtime_catalog as load_narrative_catalog,
+)
+from irswitch.contracts.runtime_catalog import (
+    runtime_definition_status,
 )
 
 ACTIVE_CAP = 64
@@ -200,6 +208,44 @@ class EpisodeRegistry:
     _pins: dict[str, set[str]] = field(default_factory=dict)
     _stories: frozenset[str] | None = None
 
+    _studio_run_id: str = field(default_factory=lambda: str(uuid4()), init=False, repr=False)
+    _studio_history: deque = field(
+        default_factory=lambda: deque(maxlen=512), init=False, repr=False
+    )
+    definition_catalog: NarrativeCatalog | None = field(default=None, repr=False)
+    definition_revision: str = field(
+        default_factory=lambda: runtime_definition_status()["effectiveRevision"], repr=False
+    )
+    _studio_sequence: int = field(default=0, init=False, repr=False)
+
+    def _record_studio(self, transition: EpisodeTransition) -> None:
+        self._studio_sequence += 1
+        self._studio_history.append({"sequence": self._studio_sequence, **asdict(transition)})
+
+    def studio_snapshot(self, *, limit: int = 50, offset: int = 0) -> dict:
+        """Detached bounded current-instance projection, with recorded transitions only."""
+        rows = sorted(
+            (*self._current.values(), *self._resolved.values()),
+            key=lambda row: (row.opened_mono_ms, row.episode_id),
+            reverse=True,
+        )
+        import copy
+
+        return {
+            "schemaVersion": "studio-episodes/1",
+            "available": True,
+            "runId": self._studio_run_id,
+            "definitionRevision": self.definition_revision,
+            "total": len(rows),
+            "offset": offset,
+            "items": [asdict(row) for row in rows[offset : offset + min(100, max(1, limit))]],
+            "history": copy.deepcopy(list(self._studio_history)),
+            "historyComplete": self.history_complete and self._studio_sequence <= 512,
+            "historyCapacity": 512,
+            "activeCapacity": self.active_capacity,
+            "resolvedCapacity": self.resolved_capacity,
+        }
+
     def current(self) -> tuple[Episode, ...]:
         return tuple(sorted(self._current.values(), key=lambda item: item.episode_id))
 
@@ -289,6 +335,7 @@ class EpisodeRegistry:
                 source_refs=intent.source_refs,
             )
         )
+        self._record_studio(transitions[-1])
         return EpisodeStep(episode=episode, transitions=tuple(transitions))
 
     def activate(
@@ -335,6 +382,7 @@ class EpisodeRegistry:
             reason="spoken_beat",
             source_refs=source_refs,
         )
+        self._record_studio(transition)
         return EpisodeStep(episode=updated, transitions=(transition,))
 
     def reset_occurrences(
@@ -352,7 +400,15 @@ class EpisodeRegistry:
         return EpisodeStep(episode=None, transitions=tuple(transitions), affected=tuple(affected))
 
     def _validate_intent(self, intent: EpisodeIntent) -> None:
-        stories = self._stories if self._stories is not None else _story_ids()
+        stories = (
+            self._stories
+            if self._stories is not None
+            else (
+                frozenset(s.id for s in self.definition_catalog.stories)
+                if self.definition_catalog
+                else _story_ids()
+            )
+        )
         self._stories = stories
         if intent.definition_id not in stories:
             raise ContractViolation(f"unknown story {intent.definition_id}")
@@ -395,6 +451,7 @@ class EpisodeRegistry:
             reason="material_revision",
             source_refs=intent.source_refs,
         )
+        self._record_studio(transition)
         return EpisodeStep(episode=updated, transitions=(transition,))
 
     def _suspend_conflicts(self, intent: EpisodeIntent) -> list[EpisodeTransition]:
@@ -480,6 +537,7 @@ class EpisodeRegistry:
             reason=reason,
             source_refs=source_refs,
         )
+        self._record_studio(transition)
         return EpisodeStep(episode=updated, transitions=(transition,))
 
     def _terminal(
@@ -513,6 +571,7 @@ class EpisodeRegistry:
             reason=reason,
             source_refs=(episode.episode_id,),
         )
+        self._record_studio(transition)
         return EpisodeStep(episode=updated, transitions=(transition,), affected=(updated,))
 
     def _trim_resolved(self) -> None:

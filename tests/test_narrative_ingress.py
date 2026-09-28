@@ -914,27 +914,15 @@ def test_race_attaches_narrative_supervisor_heartbeats() -> None:
     assert '"narrativeShadow"' in race_src or "'narrativeShadow'" in race_src
 
 
-def test_race_wires_llm_component_into_narrative_runtime() -> None:
-    """Race cutover passes the warmed LlmComponent into NarrativeRuntime for status."""
+def test_race_wires_model_status_into_narrative_runtime() -> None:
+    """Current model owner exposes status through the narrative supervisor projection."""
     race_src = (
         Path(__file__).resolve().parents[1] / "src" / "irswitch" / "race" / "runtime.py"
     ).read_text(encoding="utf-8")
-    assert "NarrativeRuntime(" in race_src
-    # Must appear as NarrativeRuntime kwarg, not only realization_effect.
-    block_start = race_src.index("runtime = NarrativeRuntime(")
-    depth = 0
-    block_end = None
-    for index, char in enumerate(race_src[block_start:], start=block_start):
-        if char == "(":
-            depth += 1
-        elif char == ")":
-            depth -= 1
-            if depth == 0:
-                block_end = index + 1
-                break
-    assert block_end is not None
-    block = race_src[block_start:block_end]
-    assert "llm_component=llm_component" in block
+    assert (
+        'runtime.attach_supervisor_heartbeat("commentary_model", model_client.status)' in race_src
+    )
+    assert "self._commentary_model = model_client" in race_src
 
 
 def test_project_runtime_status_identity_follows_context_timeline() -> None:

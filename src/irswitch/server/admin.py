@@ -13,6 +13,7 @@ from irswitch import __version__
 from irswitch.overlay.http import _file_response, get_overlay_bus, get_overlay_runtime
 from irswitch.server.admin_health import evaluate_health
 from irswitch.server.event_log import get_event_log
+from irswitch.system.companion_apps import COMPANION_APPS, detect_companion_apps
 
 logger = logging.getLogger(__name__)
 
@@ -153,6 +154,8 @@ def _runtime_snapshot(runtime: Any | None, now: float) -> dict[str, Any]:
 def build_admin_status(
     *,
     lhm: dict[str, Any] | None = None,
+    iracing_ui: bool | None = None,
+    companion_apps: dict[str, bool | None] | None = None,
     now: float | None = None,
 ) -> dict[str, Any]:
     """Aggregator used by GET /api/admin/status and tests."""
@@ -327,6 +330,16 @@ def build_admin_status(
             "switcher": state is not None,
         },
         "switcher": switcher,
+        "iracingUi": {"running": iracing_ui},
+        "companionApps": [
+            {
+                "id": key,
+                "label": label,
+                "running": (companion_apps or {}).get(key),
+                "required": getattr(cfg, "companion_required", {}).get(key, True) is not False,
+            }
+            for key, label, _name in COMPANION_APPS
+        ],
         "extensions": {
             "ble": _extension_card(
                 ext_id="ble",
@@ -365,7 +378,9 @@ def build_admin_status(
                     "cpuTemp": system.cpu.temperature,
                     "cpuPower": system.cpu.power,
                     "cpuLoad": system.cpu.load,
+                    "cpuFrequencyGHz": system.cpu.frequency,
                     "gpuLoad": system.gpu.load,
+                    "gpuClockMHz": system.gpu.clock,
                     "gpuTemp": system.gpu.temperature,
                     "lhmRequired": lhm_required,
                     "lhmRequirementMode": requirement_mode,
@@ -503,8 +518,8 @@ async def build_admin_activity(*, limit: int = 50) -> dict[str, Any]:
 
 async def handle_admin_status(_request: web.Request) -> web.Response:
     try:
-        lhm = await _probe_lhm()
-        payload = build_admin_status(lhm=lhm)
+        lhm, apps = await asyncio.gather(_probe_lhm(), asyncio.to_thread(detect_companion_apps))
+        payload = build_admin_status(lhm=lhm, iracing_ui=apps["iracing_ui"], companion_apps=apps)
         return web.json_response(payload)
     except Exception:
         logger.exception("GET /api/admin/status failed")

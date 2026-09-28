@@ -21,6 +21,7 @@ from irswitch.commentary.tts import build_tts_sink
 from irswitch.config import AppConfig
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.events.async_fanout import AsyncEventFanout
+from irswitch.events.commentary_model import ModelClient, ModelSettings
 from irswitch.events.engine import EventEngine
 from irswitch.events.envelope import EventEnvelope, make_envelope
 from irswitch.events.episode_registry import EpisodeRegistry
@@ -32,7 +33,6 @@ from irswitch.events.narrative_ingress import NarrativeIngress
 from irswitch.events.narrative_realization_bridge import (
     SpeechDraftCache,
     build_realization_effect,
-    warmup_qwen_component,
 )
 from irswitch.events.narrative_runtime import NarrativeRuntime
 from irswitch.events.narrative_runtime_http import set_narrative_runtime
@@ -44,7 +44,6 @@ from irswitch.events.narrative_tape_bridge import (
 )
 from irswitch.events.narrative_tts_bridge import build_tts_effect
 from irswitch.events.opportunity_queue import OpportunityQueue
-from irswitch.events.qwen_transport import LlmComponent, RealizerService, StdlibTransport
 from irswitch.events.replay import is_n12_replay, load_n12_replay
 from irswitch.events.semantic_verifier import SemanticVerifier
 from irswitch.events.story_director import StoryDirector
@@ -372,6 +371,7 @@ class RaceRuntime:
         self._speech_draft_cache = None
         self._narrative_qwen_service = None
         self._narrative_llm_component = None
+        self._commentary_model = None
         if self._narrative_shadow_enabled:
             self._narrative_shadow_subscription = self._event_fanout.subscribe(
                 "narrative_shadow", capacity=64
@@ -391,35 +391,16 @@ class RaceRuntime:
             self._speech_draft_cache = SpeechDraftCache()
             opportunity_queue = OpportunityQueue()
             exposure_store = ExposureStore()
-            qwen_service = None
-            llm_component = None
-            if self._narrative_qwen_enabled:
-                # Live StdlibTransport + soft-fail warmup against INI base_url.
-                # Qwen miss falls back to authored/template (with verify frame).
-                cfg_qwen = self._get_config()
-                qwen_endpoint = commentary_llm_chat_url(cfg_qwen)
-                qwen_model = commentary_llm_model(cfg_qwen)
-                llm_component = LlmComponent()
-                transport = StdlibTransport()
-                qwen_service = RealizerService(transport=transport, endpoint=qwen_endpoint)
-                warmup_qwen_component(
-                    llm_component,
-                    transport,
-                    generation=1,
-                    model=qwen_model,
-                    endpoint=qwen_endpoint,
-                    timeout_ms=commentary_llm_warmup_timeout_ms(cfg_qwen),
-                )
-                self._narrative_llm_component = llm_component
-                self._narrative_qwen_service = qwen_service
-            qwen_timeout_ms = commentary_llm_timeout_ms(self._get_config())
+            # One owned async client for local tight and remote M1. Constructors
+            # do no network IO; shadow is a separate single-flight task.
+            model_client = ModelClient(
+                lambda: ModelSettings.from_values(_commentary_v2_values(self._get_config()) or {})
+            )
+            self._commentary_model = model_client
             realization_effect = build_realization_effect(
                 self._speech_draft_cache,
                 prefer_authored=True,
-                allow_qwen=self._narrative_qwen_enabled,
-                qwen_service=qwen_service,
-                llm_component=llm_component,
-                qwen_timeout_ms=qwen_timeout_ms,
+                model_client=model_client,
             )
             cfg = self._get_config()
             journal_dir = Path(
@@ -459,13 +440,15 @@ class RaceRuntime:
                 episode_registry=EpisodeRegistry(),
                 exposure_store=exposure_store,
                 freshness_gate=FreshnessGate(opportunity_queue),
-                llm_component=llm_component,
+                realization_config_signature=lambda: model_client.settings().signature,
+                on_microplan_spoken=model_client.note_spoken,
                 command_journal_path=None,
                 semantic_verifier=SemanticVerifier(),
                 tape_effect=tape_effect,
                 tape_writer=tape_writer,
             )
             runtime.enable()
+            runtime.attach_supervisor_heartbeat("commentary_model", model_client.status)
             self.narrative_runtime = runtime
             set_narrative_runtime(runtime)
             # #284 EventSubscription full replace: no CommentaryConsumer stream
@@ -1152,7 +1135,14 @@ class RaceRuntime:
         state = runtime.status().runtime_state
         if state in {"stopped", "disabled", "stopping"}:
             runtime.enable()
-        await runtime.run()
+        model_client = self._commentary_model
+        if model_client is not None:
+            model_client.start()
+        try:
+            await runtime.run()
+        finally:
+            if model_client is not None:
+                await model_client.close()
 
     async def _request_narrative_shutdown(self, *, reason: str = "application_exit") -> None:
         """Admit SHUTDOWN so owned tape_effect can flush before worker cancel."""

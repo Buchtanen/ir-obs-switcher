@@ -25,6 +25,7 @@ class VerifyFrame:
     required_claim_surface: str
     actor_bindings: tuple[tuple[str, tuple[str, ...]], ...]
     required_actors: frozenset[str]
+    allowed_sentences: tuple[str, ...] = ()
 
     def as_payload(self) -> dict[str, Any]:
         return {
@@ -33,6 +34,7 @@ class VerifyFrame:
             "verifyRequiredClaimSurface": self.required_claim_surface,
             "verifyActorBindings": [[name, list(forms)] for name, forms in self.actor_bindings],
             "verifyRequiredActors": sorted(self.required_actors),
+            "verifyAllowedSentences": list(self.allowed_sentences),
         }
 
 

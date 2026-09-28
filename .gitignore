@@ -69,3 +69,5 @@ build/
 dist/
 *.egg-info/
 .grafika-v4-review/
+node_modules/
+.pytest-studio*/

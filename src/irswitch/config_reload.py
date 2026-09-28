@@ -19,6 +19,7 @@ from irswitch.contracts.config import (
 )
 from irswitch.models import DrivingMode
 from irswitch.overlay.schema import overlay_values
+from irswitch.system.companion_apps import COMPANION_APPS
 
 
 class CommentaryConfigCoordinator:
@@ -91,6 +92,7 @@ class CommentaryConfigCoordinator:
 # Keys that take effect after POST /config/reload without process restart.
 LIVE_CONFIG_KEYS: frozenset[str] = frozenset(
     {
+        *(f"companion_apps.{key}" for key, _label, _name in COMPANION_APPS),
         "switching.safe_scene",
         "switching.debounce_ms",
         "switching.cooldown_ms",
@@ -257,6 +259,9 @@ def snapshot_tracked_keys(config: AppConfig) -> dict[str, object]:
         "stream_chapters.youtube_vod": config.stream_chapters.youtube_vod,
     }
     values.update(overlay_values(config.overlay))
+    values.update(
+        {f"companion_apps.{key}": required for key, required in config.companion_required.items()}
+    )
     for mode in DrivingMode:
         values[f"scenes.{mode.name}"] = config.scenes.get(mode)
     return values

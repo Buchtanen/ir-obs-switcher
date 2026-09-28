@@ -25,6 +25,7 @@ Služba vystavuje REST API na `http://127.0.0.1:17321` (nebo podle konfigurace v
 - [WebSocket Endpoint](#websocket-endpoint)
   - [WS /ws](#ws-ws)
 - [HTML Dashboardy](#html-dashboardy)
+  - [GET /studio/](#get-studio)
   - [GET /admin](#get-admin)
   - [GET /gr-status](#get-gr-status)
   - [GET /vr-status](#get-vr-status)
@@ -603,13 +604,50 @@ Agregovaný stav pro admin shell (`/admin`): extensions + features + switcher su
   - `blocking[]` — `{id, reason, tip}` (např. iRacing/OBS disconnected)
   - `warnings[]` — doporučené závislosti (LHM unreachable, sysinfo degraded, …); samy o sobě `ready` neflipují
 - `switcher` (object | null) — legacy snake_case subset: `connected_iracing`, `connected_obs`, `autoswitch`, `mode`, scény, `reason`
+- `iracingUi` (optional object) — `{ "running": true | false | null }`; case-insensitive exact process-name match for `iRacingUI.exe`. `false` means the process was not found; `null` means the read-only worker-thread probe was unavailable. Missing `iracingUi` means an older server/unknown state. This is an informational process signal, not SDK session connectivity.
+- `companionApps` (optional array) — six rows `{id, label, running: true | false | null, required: bool}` for `dre`, `maira`, `simhub`, `cammus`, `trading_paints`, `virtual_desktop`. One off-loop read-only process-name scan checks all apps; MAIRA matches `MarvinsAIRARefactored.exe`. `required` comes from `[companion_apps]` (default true for all six), independently of overlay. Process presence says nothing about app functionality or device connection.
 - `extensions.ble` / `extensions.sysinfo` — karty: `enabled`, `available`, `active`, `busy`, `status`, `severity`, `detail`
+- `extensions.sysinfo.detail` — existující bus telemetrie plus aditivní `cpuFrequencyGHz` (GHz) a `gpuClockMHz` (MHz); obě čísla jsou nullable. CPU/GPU vytížení je v %, teplota v °C. Chybějící měření zůstává `null`/nezobrazené, nikdy se neodvozuje z odhadu.
 - `extensions.lhm` — `required`, `requirementMode` (`optional`|`recommended`|`required`), ne falešné `enabled`; tip jen když required/recommended a unhealthy
 - `extensions.lhm.detail` — cache observability: `checkedAt`, `lastSuccessAt` (wall-clock epoch), `stale`, `errorCode`, `lastBaseUrl`, `sensorRows`, `connection`
 - `features.overlay` / `features.commentary` / `features.tape` — stejné osy; commentary `ready` = active+not busy
 - `features.eventEngine` — rollout flagy (`v2Payload`, `practice`, …)
 
 Aggregator čte **public** `status_snapshot()` (overlay runtime) + LHM cache (`force=False`). LHM probe je fail-soft (TTL + worker thread); HTTP 200 i při unreachable. Kontrakt: [`docs/admin_dashboard_spec.md`](docs/admin_dashboard_spec.md).
+
+`iracingUi` nemění `switcher.connected_iracing`, `health`, scene control,
+commentary ani overlay. Studio dává přednost čerstvému připojení SDK pro zelený
+stav. Při čerstvém `iracingUi.running=true` a `connected_iracing=false` ukáže
+oranžové „iRacing UI / Čeká na session“. Zastaralá data se označí jako neznámá;
+nedostupný procesový probe nikdy nepředstírá běžící UI. Hlavička a přehled
+odvozují stejný stav z téže odpovědi.
+
+U `companionApps` je chybějící požadovaná aplikace oranžové upozornění,
+chybějící volitelná neutrální. Při žádné požadované aplikaci je souhrn neutrální;
+stale nebo nedostupný probe nikdy nezobrazí zelenou. Tyto indikátory nemění
+serverové `health` ani nespouštějí/neukončují aplikace.
+
+Ověření #383: skutečně servírované Studio načetlo branding a šest procesových
+statusů; browser QA s dočasným configem změnila DRE na volitelnou a souhrn ihned
+ukázal pět požadovaných aplikací. EXE smoke porovnal přesné bajty faviconu a
+assets. Jde o detekci procesů, nikoli ověření zařízení či spojení.
+
+Studio Přehled vykresluje `sysinfo.detail` jako tabulku CPU/GPU (řádky) ×
+vytížení/teplota/takt (sloupce) s popiskem telemetrie celého PC. `null` nebo
+nedostupná hodnota je „—“. Při stale odpovědi zůstávají poslední čísla výslovně
+označená jako poslední známá a status je neznámý, nikdy zelený.
+
+Ověření #385: 26 nezávislých Python testů pokrylo API jednotky a nullable
+hodnoty; živé Studio zobrazilo CPU/GPU řádky se správnými jednotkami. Prázdný
+provider vykreslil „—“ a po výpadku zůstal status neznámý s označením
+posledních známých údajů. Při 390 px byl bez přetečení ověřen prázdný stav;
+číselná živá telemetrie na této šířce ověřena nebyla.
+
+Ověření rozšíření: při běžící nakonfigurované službě vracelo API
+`iracingUi.running=true` a `switcher.connected_iracing=false`; Studio zobrazilo
+odpovídající oranžový stav a čekání na session. Přechod do skutečné simulátorové
+session nebyl ověřen. Testy pokrývají i hodnoty `false`, `null` a stale odpověď;
+detaily výsledků jsou v [Studio implementation](docs/studio-implementation.md#iracing-ui-process-status-followup).
 
 ---
 
@@ -739,6 +777,57 @@ asyncio.run(listen_to_updates())
 
 Aplikace poskytuje HTML dashboardy pro vizualizaci stavu.
 
+### GET /studio/
+
+Nativní OBS, Komentář, Overlay a Diagnostika používají existující status/OAuth,
+metriky/události, commentary runtime/validate/speak a overlay snapshot/debug API.
+Provozní POSTy posílají JSON a `X-Requested-With: irswitch`; akce jsou single-flight
+s timeoutem. Po chybě následuje blokace zápisů, explicitní načtení stavu a ruční
+potvrzení před další akcí, bez automatického opakování. Lifecycle akce, server TTS
+a živé debug emitování vyžadují potvrzení. Kontrakt: [studio-operations.md](docs/studio-operations.md).
+Overlay demo nabízí explicitní V4 nebo renderer podle konfigurace služby, který
+může být také V4; druhá volba nevynucuje V3. Demo není replay enginu.
+
+Studio: read-only přehled a diagnostika nad `GET /api/admin/status`
+a `GET /api/admin/activity`. Hash navigace (např. `/studio/#/diagnostics`) zůstává
+v prohlížeči. Katalog, definice, epizody a replay používají verzované Studio projekce. Staré stránky zůstávají dostupné.
+
+`/studio/#/settings` používá existující `GET /api/config` a `PUT /api/config`.
+Editor nabízí jen netajná pole ze `schema` s hodnotami v `overlay`; redigovaná
+`switcher` metadata nezobrazuje. Odesílá pouze změněné hodnoty s hlavičkou
+`X-Requested-With: irswitch`, poté načte kanonické hodnoty a zobrazí serverové
+seznamy `applied_live` / `needs_restart`. Konfiguraci nepolluje. Chyba zachová
+draft; při nejistém výsledku nebo timeoutu ukládání vyžaduje nové načtení před
+dalším pokusem. Během ukládání jsou úpravy zakázané.
+
+- `GET /studio` → **308** na `/studio/`.
+- `GET /studio/` → buildnutý `index.html`; **503**, pokud build chybí.
+- `GET /studio/assets/...` → buildnuté JS/CSS soubory; bez výpisu adresáře.
+
+Stávající dashboardy a REST/WS kontrakty zůstávají dostupné.
+
+---
+
+### Studio catalog, episodes, definitions and replay
+
+| Endpoint | Contract |
+| --- | --- |
+| `GET /api/studio/catalog` | `studio-catalog/1`: narrative catalog, registry events, certified guards, separate overlay catalog, runtime definitions/capabilities; unavailable →503 |
+| `GET /api/studio/episodes?limit=50&offset=0` | `studio-episodes/1`: available/runId/items/history/total; current-run only; limit1–100, offset0–10000; invalid→400; optional mismatched runId→409; absent provider has available=false,total=null |
+| `GET /api/studio/definitions` | Revision snapshot, builtin, baseRevision generation, effective/pendingRevision, available/runtime |
+| `POST /api/studio/definitions/validate` | `{document}` →valid/stories/edges; no persistence |
+| `POST /api/studio/definitions/save` | `{document, baseRevision}` saves validated immutable revision; no activation |
+| `POST /api/studio/definitions/activate` | `{revision, baseRevision}` selects pending revision for next startup |
+| `GET /api/studio/replay` | `studio-replay/1` fixture catalog: 16 overlay scenarios + narrative_world |
+| `POST /api/studio/replay` | `{fixture, document?}`; document only for narrative_world; isolated virtual-time output/runId/outputHash, optional episodes/history, effectsExecuted=false; concurrent run→409 |
+
+Definition/replay POSTs require loopback peer/host, same-origin Origin when present,
+JSON and `X-Requested-With: irswitch`. Request limit128 KiB, body timeout5s.
+Invalid body/definition→400, stale generation→409, unavailable store→503.
+Artifact `studio-definitions/1` has exact top-level schemaVersion/baseCatalogHash/
+stories/edges; nested fields are snake_case. Atomic bounded store lives beside
+config and never writes INI; activation only next startup. Full contracts:
+[authoring](docs/studio-authoring.md), [definitions](docs/studio-definitions.md).
 ### GET /admin
 
 Primární **admin shell** (live): overview + extensions + features + activity.
@@ -882,6 +971,7 @@ The operator page at `/commentary` surfaces `byTapeChannel` cadence (kick/accept
 - `#273` `components.detectors` / `components.facts` (disabled-library zeros feat `03c34b2`; live projection feat `d13d6bd`; fact capacity health feat — branch `cursor/fact-health-273-cad3`, SHA pending): **`components.facts`** — live `viewRevision`, `active` (`len(facts[])`), `historicalSummaries` (`len(compactedSummaryRefs[])`), `historyComplete` from cached `RuntimeStatus` after planning `APPLY_CONTEXT_BATCH` (`fact_view_revision`, `fact_active_count`, `fact_historical_summary_count`, shared `history_complete`); zeros/`historyComplete: true` until first context. **Fact capacity health / recovery** (matches frozen `public-contracts.md`): `status`/`reason` are `ready`/`null` | `degraded`/`fact_capacity_evicted` | `unavailable`/`fact_capacity_exhausted`. **`historyComplete=false`** on FactView latches eviction for the rest of the narrative run (`fact_capacity_evicted`); projected `components.facts.historyComplete` is forced `false` while eviction is latched. Exhaustion (`fact_capacity_exhausted`) is latched via library hook `NarrativeRuntime.note_fact_capacity(...)` — FactView cannot carry diagnostics (frozen field set); upstream FactLedger wiring calls this when capacity is exhausted. A publishable FactView (non-empty `facts[]`) clears exhaustion only (moves `unavailable`→`degraded` if eviction still latched); eviction stays latched until recovery. Latches survive run close; **`narrative_run_opened`** clears both latches before ingesting that batch's FactView (which may immediately re-latch). **`ready`/`null`** restores only on a new lossless run (new narrative run open + lossless FactView with `historyComplete=true`). **`components.detectors`** — `status=ready`, `reason=null`; `disabled` is sorted `{id, reason}` rows from optional injected `DetectorBank.disabled_for_status()` via `NarrativeRuntime(detector_bank=...)` (reasons from `disable_for_run`); without bank → `disabled: []`.
 - `#273` `components.llm` / `components.tts` (schema stubs feat `3670502`; live llm/tts residency projection feat `60565ae`; live tts `voice` + `quarantinedGeneration` (when set, `components.tts.reason` is `tts_start_timeout`|`tts_stop_timeout` and status is unavailable until a newer backend generation clears quarantine; `components.tape.enabled` reflects live writer attachment; `components.tape` with drops>0 projects `status=degraded` + `reason=tape_queue_drop`) feat `17a84eb`): `_llm_component_projection` / `_tts_component_projection` in `project_runtime_status`. **Without attached `LlmComponent`:** prior stub defaults — llm `generation=0`, `model="unconfigured"`, `residencyEvidence="not_requested"`, `lastAttempt=null`; tts `backend=null` (or speech backend when in `{sapi,espeak,supertonic}`), `backendGeneration` from speech lane or `0`, `quarantinedGeneration=null`, `voice=null`; both read `configGeneration` from CONFIG_UPDATE ledger `desiredGeneration` when present (else `0`). **With attached warmed `LlmComponent`** (`NarrativeRuntime(llm_component=...)`; race passes post-`warmup_qwen_component` instance): llm `generation=applied_generation`, `model` from component (set in warmup), `residencyEvidence` only public enum `warmup_succeeded`|`not_requested` (failed warmup → `not_requested`, `status=unavailable`, `reason=component_unavailable`); tts still speech-lane `backend`/`backendGeneration`; `configGeneration` from ledger for both. **`components.tts.voice`** (feat `17a84eb`): best-effort from cached CONFIG_UPDATE ledger bags — checks `effectiveValues` then `desiredValues` for `voice` or `commentary.tts.voice`; absent/empty → `null`. **`components.tts.quarantinedGeneration`** (feat `17a84eb`): mirrors `RuntimeStatus.speech_quarantined_generation` after speech **stop-deadline** timeout (`tts_backend_quarantined`); `null` when not quarantined. Cleared only when `COMPONENT_HEALTH_CHANGED` for `tts` arrives with `status=ready` and `generation > quarantinedGeneration` (`tts_quarantine_cleared`); equal/lower generation keeps `tts` `unavailable` (`tts_quarantine_held`). `lastAttempt` is `null` until the first **admitted** Qwen request completes (feat `19887aa`); warmup and authored backend do not set it. When set: `{requestId, outcome, ttfbMs, ttftMs, totalMs, reducerLagMs, terminalReason}` with outcome `succeeded|failed|cancelled|timed_out|stale` (`realization_timeout` → `timed_out`). Recorded by `RealizerService` via `record_qwen_last_attempt` / `build_last_attempt` in `qwen_transport.py`; projected via `RuntimeStatus.llm_last_attempt`.
 - `#284` actor loop heartbeats on `GET /api/commentary/runtime`: additive `loop` object — `active` (true only while `NarrativeRuntime.run()` owns the actor; library enable-without-run stays `false`; feat `c2e02d4`), `lastReduceMonoMs` (`null` until first `reduce_next`; monotonic ms; feat `952cc1d`), `reduceCount` (monotonic reduce count; feat `952cc1d`), `supervisors` (camelCase map of attached `WorkerSupervisor.status_snapshot` payloads — `{running, restarts, lastError}`; race attaches `narrativeRuntime` + `narrativeShadow` via `NarrativeRuntime.attach_supervisor_heartbeat`; library without attach → `{}`; feat `952cc1d`).
+- Current-fact model adapter adds `loop.supervisors.commentary_model` (the key intentionally retains its underscore). It is a model diagnostic snapshot, not a `{running,restarts,lastError}` worker record: `provider`, `mode`, `model`, `profile`, `enabled`, `busy`, `generation`, `preflight`, `attemptCount`, `lastReason`, `lastAttempt`, `recentAttempts` (last 100 maximum). Attempt records contain input event/beat/revision IDs, bundle/config/prompt hashes, model/mode/generation, monotonic start/completion and elapsed milliseconds, `accepted`, terminal `reason`, and bounded candidate `text`/`modelReported` when parsed. `attemptCount` is the retained deduplication-window count, not a lifetime metric. Shadow text and semantic rejects can appear here but never play. `accepted=true` means model validation, not confirmed audio playback. No endpoint, token, headers or raw exception is exposed. The window is memory-only; export regularly for longer reviews. Configuration/status/review limits: [remote M1 guide](docs/v2.0.0/remote-commentary-microplan.md).
 - `#273` decisions ring at `GET /api/commentary/runtime/decisions`; validate/speak at `POST /api/commentary/runtime/validate|speak` (thin slice landed; `ManualAdmissionLatch` rendezvous at feat `ca0f2f6`; public `/api/commentary/validate|speak` cut over to NarrativeRuntime handlers). Tape/`capture_unavailable` + detectors `disabled[]` health projection freeze (#273 goldens `status_component_tape_capture_unavailable.json`, `status_component_detectors_disabled.json`, `status_health_projections_library.json`). Live detectors/facts status projection landed feat `d13d6bd`. **#284 remainder:** master cutover only (human kick).
 
 **Example (disabled / no provider)**
@@ -1366,3 +1456,5 @@ Body: `{ "values": { "sampling.default_hz": 6 } }`. Atomický zápis INI + `.bak
 Legacy `commentary.*` klíče nejsou součástí tohoto schema-driven endpointu a vrací chybu neznámého klíče. V2 commentary se zapisuje do přesných INI sekcí z `CONFIG.md` a aktivuje přes `POST /config/reload`, který vlastní ConfigLedger generace.
 
 Security: localhost + CSRF header. Neznámé klíče a path traversal se odmítnou.
+
+The model diagnostic block also includes `speechEnabled`, `totalAttempts` and `recentSelections` (100 records). A selection exposes event/bundle identity, source (`remote`, `local`, `authored`), model, text and `played`; only PLAYBACK_ACCEPTED sets `played=true`. A changed configuration makes a previously successful preflight `stale`.

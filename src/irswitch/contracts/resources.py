@@ -8,6 +8,8 @@ from .primitives import ContractViolation
 
 _PACKAGED_SCHEMAS = frozenset(
     {
+        "studio-replay-scenarios.json",
+        "studio-narrative-replay.json",
         "beat-catalog.json",
         "beat-catalog.schema.json",
         "catalog-loader-contract.json",

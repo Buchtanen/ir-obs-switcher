@@ -70,8 +70,15 @@ def test_slice22_machine_projection_and_calculations(
 
 def test_f36_mixed_boundary_config_is_explicit_and_replayable(
     fixtures_by_id: dict[str, dict[str, Any]],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """F36: mixed-boundary config apply groups stay explicit and replayable."""
+
+    import irswitch.contracts.config as config_module
+
+    # Replay the original schema that owns these immutable historical hashes.
+    historical = json.loads((MACHINE / "config-contract.json").read_bytes())
+    monkeypatch.setattr(config_module, "_contract", lambda: historical)
 
     expected = set(fixtures_by_id["F36"]["expectations"])
     observed: set[str] = set()

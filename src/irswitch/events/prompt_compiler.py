@@ -10,7 +10,6 @@ import json
 from dataclasses import dataclass
 from typing import Any
 
-from irswitch.contracts.catalog_loader import load_narrative_catalog
 from irswitch.contracts.primitives import (
     ContractViolation,
     PlanningSeedMaterial,
@@ -20,6 +19,7 @@ from irswitch.contracts.primitives import (
 )
 from irswitch.contracts.realization_catalog import PatternCard, load_realization_catalog
 from irswitch.contracts.resources import packaged_schema_bytes
+from irswitch.contracts.runtime_catalog import load_runtime_catalog as load_narrative_catalog
 
 from .beat_plan import ROLE_MAP, PromptOptions
 

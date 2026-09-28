@@ -1,11 +1,20 @@
 # Spec: Event graph editor (nice-to-have)
 
-**Status:** idea — not scheduled, no implementation in this document  
+**Status:** historical idea; superseded for Studio by [studio-definitions.md](studio-definitions.md) and [studio-roadmap.md](studio-roadmap.md). No implementation is claimed by this document.
 **Priority:** nice-to-have  
 **Baseline:** Event Engine V4 catalog + `/config` FieldSpec UI (master). Visual node chrome is stronger after Pit Wall themes land ([#118](https://github.com/Buchtanen/ir-obs-switcher/pull/118)).  
 **Related:** [`EVENT_ENGINE_V4_PARALLEL_PLAN.md`](../EVENT_ENGINE_V4_PARALLEL_PLAN.md) §0.5.2 (INI + FieldSpec stays the config contract)
 
 This file captures a product idea so it is not rediscovered from scratch. It is **not** current behavior. Do not treat anything below as a shipping contract until a later work item promotes a slice.
+
+Studio now permits new stories using known beats and editable validated memberships
+and certified successor links, with revisioned drafts and next-startup activation.
+This supersedes the fixed-graph-only and no-bundler assumptions below. React,
+TypeScript and Vite were explicitly approved; graph rendering uses native SVG
+without another dependency. INI/FieldSpec remains the configuration authority;
+definition documents are a separate domain contract and cannot write INI.
+Arbitrary guard/emitter/code authoring and mixing OBS logic into the graph remain
+outside the supported contract. Historical sections below describe the old scope.
 
 ---
 

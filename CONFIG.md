@@ -4,6 +4,10 @@ Kompletní popis všech konfiguračních parametrů v `config.ini`.
 
 Viz `config/config.example.ini` pro kompletní příklad konfigurace.
 
+Studio ukládá revize story definic do `studio-definitions.json` vedle aktivního
+config souboru. Nejde o nové INI klíče ani druhý writer konfigurace; vybraná revize
+platí až při příštím startupu. Limity/fallback: [studio-definitions.md](docs/studio-definitions.md).
+
 ## Obsah
 
 - [Sekce `[app]`](#sekce-app---základní-nastavení)
@@ -13,6 +17,7 @@ Viz `config/config.example.ini` pro kompletní příklad konfigurace.
 - [Sekce `[hotkeys]`](#sekce-hotkeys---globální-hotkey-volitelné)
 - [Sekce `[scenes]`](#sekce-scenes---mapování-módu-na-obs-scény)
 - [Sekce `[dashboards]`](#sekce-dashboards---html-dashboardy-volitelné)
+- [Sekce `[companion_apps]`](#sekce-companion_apps---studio-readiness)
 - [Sekce `[stream_chapters]`](#sekce-stream_chapters---kapitoly-streamu-přes-ws-volitelné)
 
 ---
@@ -583,6 +588,29 @@ dashboard_vr_icons_path = assets/vr_icons/
 
 ---
 
+## Sekce `[companion_apps]` - Studio readiness
+
+`dre`, `maira`, `simhub`, `cammus`, `trading_paints` a `virtual_desktop` jsou
+volitelné boolean klíče s výchozí hodnotou `true`. Označují, které companion
+aplikace chce operátor vidět jako požadované ve Studiu. Lze je měnit za běhu
+přes existující FieldSpec nastavení a `PUT /api/config`; nejsou závislé na
+`[overlay]` ani na stavu jeho widgetů. Ukázka:
+
+```ini
+[companion_apps]
+dre = true
+maira = true
+simhub = true
+cammus = true
+trading_paints = true
+virtual_desktop = true
+```
+
+Procesový probe je pouze indikace běžícího programu, ne potvrzení zařízení,
+spojení ani funkce. `required=false` vypne upozornění při chybějícím procesu,
+nespouští ani nezastavuje aplikaci. Změna těchto klíčů neřídí iRacing SDK,
+scény, komentář, overlay ani serverové `health`.
+
 ## Sekce `[stream_chapters]` - Kapitoly streamu přes WS (volitelné)
 
 In-memory chapter markery pro aktuální OBS stream. Emitují se jako **additive** zprávy na `WS /ws` (viz `API.md`).
@@ -732,9 +760,12 @@ Volitelné sekce v `config.ini` (defaults platí i bez nich). Kompletní klíče
 - `[overlay]` `session_tape_dir` (default `recordings`) — adresář tape souborů; změna vyžaduje restart. `..` v cestě se ignoruje.
 - `[event_engine]` `v2_payload`, `practice`, `quali_projection`, `overtake_classifier`, `pit_story`, `hr_pressure` (`config.example.ini` defaults `true` for full V4 demo; production defaults remain `false` in code) — event-engine rollout flags. Missing `[event_engine]` = all off. With `v2_payload=true`, the overlay bus emits V4 envelopes (wire phases include `ACTIVE`). `practice` / `quali_projection` enable S1/S2(/S3) split callouts (`SECTOR_SPLIT`) in Practice and Quali (absolute sector time; detector uses iRSDK `SplitTimeInfo` sector lines, with geometric 1/3+2/3 only as fallback). Practice still also emits `GAIN_FOUND` / `TIME_LOST` vs a reference lap; `quali_projection` still emits projected lap / position attack / hot lap. Race never announces splits — battles and gaps stay the race overlay. `SessionState` 5 (checkered) is only the **session clock**; widgets stay live on the flying lap until `player_finished` / `mute_field` (S/F post-checkered, eligible pit-rise if the car was on track at checkered, or CoolDown fallback). Already in pits at checkered is not finish. After mute only `finish` / `final_lap` (plus widget EXIT) stay live; hunting, pits, and lap noise are muted. Invalid-lap HUD/commentary is Practice and Quali only (never Race). Pit stories start only after a driven on-track stint (lobby sit-in-car, ESC teleport, and tow do not).
 - V2 commentary používá pouze přesné sekce a klíče z [`docs/v2.0.0/public-contracts.md` + `config/config.example.ini`](docs/v2.0.0/public-contracts.md) a z validního příkladu v [`config/config.example.ini`](config/config.example.ini). Neznámý `commentary.*` klíč odmítne celý kandidát; strict INI booleany jsou jen `true`/`false` a číselné exponenty nejsou povolené.
-- Legacy flat TTS/LLM klíče, `[commentary.scheduler]`, `[commentary.graph_runtime]` i hodnoty `legacy`/`shadow`/`active` nejsou aliasy ani rollout přepínače. Vyvolají migraci/diagnostiku a nemohou vybrat starý runtime. Dokud #284 nezapojí jediný `NarrativeRuntime`, zůstává legacy `overlay.commentary` vždy vypnutý i pro validní v2 kandidát.
-- **#284 mailbox/timeouts (reason-code impact):** actor mailbox capacity is fixed at 64 (56+7+1) with **no public INI capacity override**. Overload/eviction/recovery surface as freeze-registry reason codes on `GET /api/commentary/runtime` `diagnostics.reasonCodes` and `/health` `commentary.reason` (`mailbox_overloaded`, `mailbox_evicted_update`, `mailbox_recovery`, `deadline_admission_skipped`, …). Manual speak latch timeout is library-fixed `ADMISSION_TIMEOUT_S=1.0` (not an INI key) and projects `admission_timeout`. Existing `[commentary.llm] timeout_s`, `[commentary.tts] start_timeout_s`/`stop_timeout_s`, and tape `shutdown_flush_timeout_s` remain the transport/flush knobs; they do not change mailbox reservations. Live `timeout_s` is the per-call cap (contract max 10s). Qwen warmup uses a code floor of 45s (`commentary_llm_warmup_timeout_ms`) so a cold Ollama load can finish; do not raise `timeout_s` to cover load.
-- `[commentary.llm]` přijímá OpenAI-compatible URL pouze na loopback, RFC1918, link-local nebo IPv6 ULA literal adrese. Konfigurace má jeden transportní pokus, krátký wall-clock timeout a žádný klíč pro teplotu či legacy retry. LLM dostane až v runtime pouze povolený facts/profile payload; validátor zůstává autoritou nad fakty.
+- Legacy flat TTS/LLM klíče, `[commentary.scheduler]`, `[commentary.graph_runtime]` i jejich hodnoty `legacy`/`shadow`/`active` nejsou aliasy ani rollout přepínače. Vyvolají migraci/diagnostiku a nemohou vybrat starý runtime. Automatický komentář již řídí `NarrativeRuntime`; nové `commentary.llm.mode=shadow` znamená pouze tiché vyhodnocení modelu.
+- **#284 mailbox/timeouts (reason-code impact):** actor mailbox capacity is fixed at 64 (56+7+1) with **no public INI capacity override**. Overload/eviction/recovery surface as freeze-registry reason codes on `GET /api/commentary/runtime` `diagnostics.reasonCodes` and `/health` `commentary.reason` (`mailbox_overloaded`, `mailbox_evicted_update`, `mailbox_recovery`, `deadline_admission_skipped`, …). Manual speak latch timeout is library-fixed `ADMISSION_TIMEOUT_S=1.0` (not an INI key) and projects `admission_timeout`. Existing `[commentary.llm] timeout_s`, `[commentary.tts] start_timeout_s`/`stop_timeout_s`, and tape `shutdown_flush_timeout_s` remain the transport/flush knobs; they do not change mailbox reservations. Live `timeout_s` is the per-call cap (contract max 10s). The current-fact async adapter uses the ordinary timeout for optional preflight too; historical Qwen 45s warmup and first-call 8s extensions no longer apply to this path. Warm a cold local model externally before a stream if needed.
+- `[commentary.llm] provider` (`local` default, `remote`) volí adresní politiku. `local` přijímá localhost, loopback, RFC1918, link-local nebo IPv6 ULA literal; `remote` výslovně povoluje vzdálený HTTPS endpoint s podporovanou `/v1` cestou. URL nesmí obsahovat přihlašovací údaje, query ani fragment. Redirecty a proxy z prostředí jsou vypnuté. `api_key_env` (default `IRSWITCH_LLM_API_KEY`) je pouze jméno proměnné prostředí s Bearer tokenem, nikoli token; remote preflight i generování používají stejnou autentizaci.
+- `[commentary.llm] mode` (`live` default, `shadow`) řídí použití modelu. `shadow` má vlastní omezenou async úlohu, nezdržuje authored řeč a jeho výstup nikdy nejde do TTS. `live` může přehrát jen ověřenou větu z aktuálního bundle; při chybě použije platný authored text stejného bundle, jinak ticho. `enabled=false` vypíná požadavky modelu. Vstupní allowlist je nyní omezený; nepodporované situace jsou tiché i na authored fallback cestě.
+- Remote profil `M1/1` je pevný: teplota 0.3, `top_p=1`, 192 tokenů, `reasoning_effort=none`, jedna JSON kandidátní věta, bez streamování. `max_tokens` nastavuje lokální profil `tight/1` (teplota 0.2 / `top_p=0.8`); remote M1 jej nepřebírá. `max_profile` nerozšiřuje povolenou gramatiku. Žádné legacy INI klíče pro teplotu/retry se nevracejí. Jeden pokus na bundle, platnost nejvýše 5s od původního eventu, kontrola aktuálních faktů/config před řečí. Model sám nepotvrzuje pravdivost své věty.
+- **Migrace remote M1:** nové `provider`, `mode`, `api_key_env` jsou volitelné, mění se na hranici dalšího požadavku; odlišný config podpis znemožní přijetí starého výsledku. Existující lokální INI nové klíče nepotřebuje, ale nová realizace záměrně odmítá nepodporované vstupy. Proměnnou tokenu musí zdědit běžící proces/služba; změna prostředí může vyžadovat restart. [Postup shadow/live, diagnostika, rollback a dosud nesplněné streamové brány](docs/v2.0.0/remote-commentary-microplan.md). Změna sama neupravuje uživatelský `config.ini`.
 - `[commentary.tts]` má enum `auto|sapi|espeak|supertonic`; `null` ani prázdný backend nejsou platná konfigurace. V2 řeč je pevně anglická a nezávisí na `[app].language` nebo `[overlay].language`.
 - `[race_observer]` `leader_pace_cooldown_s` (default `300`) — minimum seconds between leader field-fact fillers. Other filler kinds (position/gap/weather) still rotate; missing section uses the default. Later incident/flag keys land on this same section.
 - `[race_observer]` `incident_classify` (default `false`) — when true, HUD/commentary `INCIDENT` envelopes set `metrics.branch` to `off_track` (`PlayerTrackSurface == OffTrack` around the tick) or `unknown`. Nearby cars (`nearbyCarIdx` / `nearbyGap`) are metrics only — never a spoken kind (`contact_object` is refused). Leave off until trusted. Same-tick speech: engine `INCIDENT` (delta ≥ `events.incident_min_delta`, default **2**, prio 90) wins over derived `INCIDENT_AFTERMATH` (any count rise, prio 72). 1× off-track therefore speaks aftermath only unless you lower `incident_min_delta`. Speed motion for P3 aftermath is not INI: stalled ≤ 1.0 m/s, rolling ≥ 2.5 m/s (`race/aftermath.py`); missing Speed still uses LapDistPct. Classify stays surface-first (off-track/tow is stalled even if Speed > 0) so `BACK_UNDER_WAY` can still fire. No `INCIDENT_RECOVERED`.
