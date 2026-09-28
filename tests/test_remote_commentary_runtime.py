@@ -55,12 +55,13 @@ def reply(text, plan):
     }
 
 
-def setup(monkeypatch, mode="live"):
+def setup(monkeypatch, mode="live", wording_policy="strict"):
     monkeypatch.setenv("IRSWITCH_LLM_API_KEY", "unit-secret")
     cfg = ModelSettings(
         enabled=True,
         provider="remote",
         mode=mode,
+        wording_policy=wording_policy,
         warmup=False,
         base_url="https://llm.buchtovo.cz/v1",
         model="openai/gpt-oss-120b",
@@ -77,6 +78,7 @@ def setup(monkeypatch, mode="live"):
         tts_effect=build_tts_effect(sink, locale="en", backend="null"),
         semantic_verifier=SemanticVerifier(),
         realization_config_signature=lambda: client.settings().signature,
+        realization_wording_policy=lambda: client.settings().effective_wording_policy,
         on_microplan_spoken=client.note_spoken,
     )
     runtime.enable()
@@ -129,8 +131,9 @@ async def test_real_admitted_bundle_paraphrase_reaches_tts_and_spoken_memory(mon
 
 
 @pytest.mark.asyncio
-async def test_shadow_does_not_wait_or_speak_model_output(monkeypatch):
-    _, client, sink, runtime = setup(monkeypatch, "shadow")
+@pytest.mark.parametrize("wording_policy", ["strict", "experimental_free"])
+async def test_shadow_does_not_wait_or_speak_model_output(monkeypatch, wording_policy):
+    _, client, sink, runtime = setup(monkeypatch, "shadow", wording_policy)
     entered = asyncio.Event()
     cancelled = asyncio.Event()
 
@@ -213,8 +216,9 @@ async def test_client_restart_after_supervisor_close(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_expired_bundle_never_speaks_fallback(monkeypatch):
-    _, client, sink, runtime = setup(monkeypatch)
+@pytest.mark.parametrize("wording_policy", ["strict", "experimental_free"])
+async def test_expired_bundle_never_speaks_fallback(monkeypatch, wording_policy):
+    _, client, sink, runtime = setup(monkeypatch, wording_policy=wording_policy)
     batch = current_batch()
     envelope = thaw_envelope(batch.events[0].envelope)
     envelope.monotonic_ms -= 6000

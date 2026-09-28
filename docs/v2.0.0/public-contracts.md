@@ -42,6 +42,7 @@ NarrativeMailbox capacity is deliberately not public config in v2. Its fixed `64
 | `commentary.llm.enabled` | bool | `false` | bool | — | `next_beat_plan` |
 | `commentary.llm.provider` | enum | `local` | `local`, `remote` | — | `next_request`; old-config speech is rejected |
 | `commentary.llm.mode` | enum | `live` | `live`, `shadow` | — | `next_request`; old-config speech is rejected |
+| `commentary.llm.wording_policy` | enum | `strict` | `strict`, `experimental_free` | — | `next_request`; remote-only experiment skips sentence membership checks, records `semanticCheck=not_enforced`; local remains strict |
 | `commentary.llm.api_key_env` | string | `IRSWITCH_LLM_API_KEY` | environment variable name, 1–128 chars | — | `next_request`; stores no token |
 | `commentary.llm.base_url` | URL | `http://127.0.0.1:11434/v1` | local/LAN policy, or explicit remote HTTPS | — | `next_beat_plan` |
 | `commentary.llm.model` | string | `qwen3:4b-instruct-2507-q4_K_M` | 1–128 chars | — | `next_beat_plan`; starts preflight at acceptance |

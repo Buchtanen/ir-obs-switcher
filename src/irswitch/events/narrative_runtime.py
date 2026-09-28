@@ -316,12 +316,14 @@ class NarrativeRuntime:
         tape_writer: NarrativeTapeWriter | None = None,
         shutdown_flush_timeout_s: float = 2.0,
         realization_config_signature: Callable[[], str] | None = None,
+        realization_wording_policy: Callable[[], str] | None = None,
         on_microplan_spoken: Callable[[Microplan], None] | None = None,
     ) -> None:
         # Empty NarrativeMailbox is falsy via __len__; only replace on None so
         # ingress/shadow cutover can share one injected mailbox identity.
         self._mailbox = mailbox if mailbox is not None else NarrativeMailbox()
         self._realization_config_signature = realization_config_signature
+        self._realization_wording_policy = realization_wording_policy
         self._on_microplan_spoken = on_microplan_spoken
         self._microplans: dict[tuple[int, int], Microplan] = {}
         self._current_microplans: dict[tuple[str, str], Microplan] = {}
@@ -1732,6 +1734,9 @@ class NarrativeRuntime:
             self._realization.update(self._selected_microplan.verify_payload())
         if self._realization_config_signature is not None:
             self._realization["configSignature"] = self._realization_config_signature()
+        if self._realization_wording_policy is not None:
+            # Application-owned policy frozen before IO, never from model output.
+            self._realization["wordingPolicy"] = self._realization_wording_policy()
         self._utterance = None
         if self._freshness_gate is not None:
             self._commit_token = self._default_commit_token()
@@ -2124,6 +2129,12 @@ class NarrativeRuntime:
             actor_bindings=tuple(bindings),
             required_actors=frozenset(required),
             allowed_sentences=allowed_sentences,
+            experimental_free_wording=(
+                isinstance(self._realization, dict)
+                and isinstance(self._realization.get("microplan"), dict)
+                and self._realization.get("wordingPolicy") == "experimental_free"
+                and command.payload.get("backend") == "qwen_compiled"
+            ),
             now_ms=int(command.enqueued_mono_ms),
             deadline_mono_ms=int(command.enqueued_mono_ms) + 60_000,
         )
@@ -2236,7 +2247,9 @@ class NarrativeRuntime:
                     self._invalidate_episode(effects)
                     self._note_director_failure(effects)
                     return "handled", effects
-                semantic_verdict = "accepted"
+                semantic_verdict = (
+                    "not_enforced" if intent.experimental_free_wording else "accepted"
+                )
         self._lane = "committed"
         self._utterance = {
             "utteranceId": f"utterance:{self._reducer_sequence}",

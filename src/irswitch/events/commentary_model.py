@@ -18,6 +18,7 @@ from typing import Any
 import aiohttp
 
 from irswitch.events.commentary_microplan import M1_SYSTEM, Microplan, digest
+from irswitch.events.semantic_verifier import free_wording_reasons
 
 
 @dataclass(frozen=True)
@@ -26,6 +27,7 @@ class ModelSettings:
     speech_enabled: bool = True
     provider: str = "local"
     mode: str = "live"
+    wording_policy: str = "strict"
     base_url: str = "http://127.0.0.1:11434/v1"
     model: str = "qwen3:4b-instruct-2507-q4_K_M"
     api_key_env: str = "IRSWITCH_LLM_API_KEY"
@@ -46,6 +48,16 @@ class ModelSettings:
     @property
     def signature(self) -> str:
         return digest(self.__dict__)
+
+    @property
+    def effective_wording_policy(self) -> str:
+        if (
+            self.enabled
+            and self.provider == "remote"
+            and self.wording_policy == "experimental_free"
+        ):
+            return "experimental_free"
+        return "strict"
 
 
 class ModelFailure(Exception):
@@ -96,6 +108,13 @@ class ModelClient:
                 "model": cfg.model if generated else None,
                 "text": text,
                 "played": False,
+                "wordingPolicy": cfg.effective_wording_policy,
+                "semanticCheck": (
+                    "not_enforced"
+                    if generated and cfg.effective_wording_policy == "experimental_free"
+                    else "strict"
+                ),
+                "strictWouldAccept": plan.accepts(text),
                 "selectedMonoMs": round(self._clock() * 1000),
             }
         )
@@ -107,6 +126,8 @@ class ModelClient:
             "mode": cfg.mode,
             "model": cfg.model,
             "profile": "M1/1" if cfg.provider == "remote" else "tight/1",
+            "wordingPolicy": cfg.effective_wording_policy,
+            "timeoutSeconds": cfg.timeout_s,
             "enabled": cfg.enabled,
             "speechEnabled": cfg.speech_enabled,
             "busy": self._busy,
@@ -254,11 +275,17 @@ class ModelClient:
             "revision": plan.revision,
             "bundleHash": plan.digest,
             "configHash": cfg.signature,
+            "facts": [{"id": key, "text": text} for key, text in plan.facts],
+            "fallbackText": plan.allowed[0],
             "generation": self._generation,
             "mode": cfg.mode,
             "model": cfg.model,
             "startedMonoMs": round(started * 1000),
             "accepted": False,
+            "wordingPolicy": cfg.effective_wording_policy,
+            "semanticCheck": (
+                "not_enforced" if cfg.effective_wording_policy == "experimental_free" else "strict"
+            ),
         }
         try:
             headers = self._headers(cfg)
@@ -278,9 +305,22 @@ class ModelClient:
             # Keep candidate for shadow audit only after bounded JSON shape validation.
             row["text"] = text
             row["modelReported"] = str(response.get("model", ""))[:128]
-            if not plan.accepts(text):
+            row["strictWouldAccept"] = plan.accepts(text)
+            if cfg.effective_wording_policy == "experimental_free":
+                shape_reasons = free_wording_reasons(text)
+                if shape_reasons:
+                    row["shapeReasons"] = shape_reasons
+                    raise ModelFailure("speech_shape_rejected")
+            elif not row["strictWouldAccept"]:
                 raise ModelFailure("semantic_rejected")
-            row.update(accepted=True, reason="accepted")
+            row.update(
+                accepted=True,
+                reason=(
+                    "accepted_experimental_free"
+                    if cfg.effective_wording_policy == "experimental_free"
+                    else "accepted"
+                ),
+            )
             return text
         except asyncio.CancelledError:
             row["reason"] = "cancelled"

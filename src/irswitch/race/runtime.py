@@ -441,6 +441,7 @@ class RaceRuntime:
                 exposure_store=exposure_store,
                 freshness_gate=FreshnessGate(opportunity_queue),
                 realization_config_signature=lambda: model_client.settings().signature,
+                realization_wording_policy=lambda: model_client.settings().effective_wording_policy,
                 on_microplan_spoken=model_client.note_spoken,
                 command_journal_path=None,
                 semantic_verifier=SemanticVerifier(),
