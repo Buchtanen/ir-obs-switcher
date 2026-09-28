@@ -30,6 +30,7 @@ from irswitch.overlay.settings import (
     SystemInfoSettings,
 )
 from irswitch.sampling.scheduler import clamp_hz
+from irswitch.system.companion_apps import COMPANION_APPS
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +96,10 @@ class AppConfig:
 
     # [stream_chapters] - optional WS chapter markers for the current stream
     stream_chapters: StreamChaptersSettings = field(default_factory=StreamChaptersSettings)
+
+    companion_required: Mapping[str, bool] = field(
+        default_factory=lambda: {key: True for key, _label, _name in COMPANION_APPS}
+    )
 
     # Overlay / race pipeline (optional INI sections, defaults apply)
     overlay: OverlaySettings = field(default_factory=OverlaySettings)
@@ -314,6 +319,10 @@ class AppConfig:
             oauth_client_id=oauth_client_id,
             oauth_client_secret=oauth_client_secret,
             stream_chapters=stream_chapters,
+            companion_required={
+                key: parser.getboolean("companion_apps", key, fallback=True)
+                for key, _label, _name in COMPANION_APPS
+            },
             overlay=overlay,
             commentary_v2=commentary_v2,
         )

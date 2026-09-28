@@ -128,6 +128,33 @@ the served Studio browser showed matching amber card/header and waiting copy.
 The transition into a physical simulator session has not been exercised, so
 SDK-connected green remains verified by tests rather than live iRacing.
 
+## Companion readiness and branding followup — #383
+
+Branch `feat/studio-companion-readiness` adds graphical Studio branding/favicon
+from `/assets/favicon/favicon-96x96.png` and six configurable companion readiness
+preferences. A single worker-thread read-only process-name scan supplies optional
+`companionApps` status rows to the existing admin response. `[companion_apps]`
+defaults all six `required=true`; settings use the existing FieldSpec writer and
+live application. Missing required process warns, missing optional is neutral,
+no required apps is neutral; stale/unknown never green. Process presence is not
+device/functional readiness. There is no app launch/kill, SDK, health, scene,
+commentary or overlay control change.
+
+Verification: independent source and QA-script verifier GREEN; 65 targeted Python
+tests and 31 frontend tests passed, plus typecheck, production build, Ruff, Black
+and mypy on seven files. Rebuilt EXE passed `qa_studio_package.py` in
+`build/studio-package-wpfoo4c6`; the QA compares favicon bytes exactly and the
+served assets/logo match packaged bytes. Its raw-HTML check reads bytes so Windows
+CRLF normalization is not mistaken for an asset failure.
+
+Disposable-config browser QA changed DRE to optional via native checkbox, saved
+through Settings and immediately showed five required apps in the summary; the
+preference persisted. The updated running service loaded the branding and
+detected the six process statuses. Configuration SHA stayed unchanged during
+the live read check. This verifies process presence/reporting and UI preference
+behavior only, not companion device function or VR connection. A separate preview
+was stopped after QA. Remote CI/PR status belongs to the task diary.
+
 ## Subsequent slices
 
 1. Native FieldSpec settings with validation, live/restart and unsaved changes:

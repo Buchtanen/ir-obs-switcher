@@ -146,8 +146,13 @@ enabled = false
             assert get(path), path
         import re
 
-        html = get("/studio/").decode()
-        assert html == (root / "src/irswitch/web/studio/index.html").read_text(encoding="utf-8")
+        html_bytes = get("/studio/")
+        assert html_bytes == (root / "src/irswitch/web/studio/index.html").read_bytes()
+        html = html_bytes.decode()
+        assert (
+            get("/assets/favicon/favicon-96x96.png")
+            == (root / "assets/favicon/favicon-96x96.png").read_bytes()
+        )
         for asset in re.findall(r'(?:src|href)="(/studio/assets/[^"]+)"', html):
             assert get(asset), asset
         state = get("/api/studio/definitions")

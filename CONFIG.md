@@ -7,6 +7,7 @@ Viz `config/config.example.ini` pro kompletní příklad konfigurace.
 Studio ukládá revize story definic do `studio-definitions.json` vedle aktivního
 config souboru. Nejde o nové INI klíče ani druhý writer konfigurace; vybraná revize
 platí až při příštím startupu. Limity/fallback: [studio-definitions.md](docs/studio-definitions.md).
+
 ## Obsah
 
 - [Sekce `[app]`](#sekce-app---základní-nastavení)
@@ -16,6 +17,7 @@ platí až při příštím startupu. Limity/fallback: [studio-definitions.md](d
 - [Sekce `[hotkeys]`](#sekce-hotkeys---globální-hotkey-volitelné)
 - [Sekce `[scenes]`](#sekce-scenes---mapování-módu-na-obs-scény)
 - [Sekce `[dashboards]`](#sekce-dashboards---html-dashboardy-volitelné)
+- [Sekce `[companion_apps]`](#sekce-companion_apps---studio-readiness)
 - [Sekce `[stream_chapters]`](#sekce-stream_chapters---kapitoly-streamu-přes-ws-volitelné)
 
 ---
@@ -585,6 +587,29 @@ dashboard_vr_icons_path = assets/vr_icons/
 ```
 
 ---
+
+## Sekce `[companion_apps]` - Studio readiness
+
+`dre`, `maira`, `simhub`, `cammus`, `trading_paints` a `virtual_desktop` jsou
+volitelné boolean klíče s výchozí hodnotou `true`. Označují, které companion
+aplikace chce operátor vidět jako požadované ve Studiu. Lze je měnit za běhu
+přes existující FieldSpec nastavení a `PUT /api/config`; nejsou závislé na
+`[overlay]` ani na stavu jeho widgetů. Ukázka:
+
+```ini
+[companion_apps]
+dre = true
+maira = true
+simhub = true
+cammus = true
+trading_paints = true
+virtual_desktop = true
+```
+
+Procesový probe je pouze indikace běžícího programu, ne potvrzení zařízení,
+spojení ani funkce. `required=false` vypne upozornění při chybějícím procesu,
+nespouští ani nezastavuje aplikaci. Změna těchto klíčů neřídí iRacing SDK,
+scény, komentář, overlay ani serverové `health`.
 
 ## Sekce `[stream_chapters]` - Kapitoly streamu přes WS (volitelné)
 
