@@ -10,6 +10,7 @@ from typing import Any
 from aiohttp import web
 
 from irswitch import __version__
+from irswitch.build_identity import BUILD_IDENTITY
 from irswitch.overlay.http import _file_response, get_overlay_bus, get_overlay_runtime
 from irswitch.server.admin_health import evaluate_health
 from irswitch.server.event_log import get_event_log
@@ -325,6 +326,7 @@ def build_admin_status(
     payload = {
         "schemaVersion": ADMIN_SCHEMA_VERSION,
         "version": __version__,
+        "build": dict(BUILD_IDENTITY),
         "runtime": {
             "overlay": runtime is not None,
             "switcher": state is not None,

@@ -50,6 +50,24 @@ rejections and speech results with telemetry for subsequent evaluation.
 
 ## Verification checkpoint
 
+### Running build identity — 2026-09-29
+
+Studio Overview shows the running service's short commit, with the full commit in
+its detail. The top-level `build` object in `GET /api/admin/status` contains nullable
+`commit`, `shortCommit` and `dirty`, plus `source=embedded|source|unknown`.
+Frozen executables use only their
+embedded `build-identity.json`; they never derive identity from Git in the launch
+directory. Source execution captures its package repository identity once at module
+import with bounded Git calls. Missing or invalid metadata remains unknown, and a
+later checkout does not change an already running process's identity.
+
+Use this card to confirm which implementation is serving Studio after deployment.
+Retained data is marked stale when refresh fails; stale identity does not confirm
+the current process. Continue retaining artifact SHA256 evidence for binary-level
+verification. This addition does not establish a new live commentary acceptance result.
+
+### Combined deployment evidence
+
 - Combined full local suite: 2741 passed, two Windows symlink-privilege exclusions;
   independent 255 integration tests, 31 frontend tests and selected static checks GREEN.
 - Packaged Studio QA passed (assets, custom definitions, three isolated starts).

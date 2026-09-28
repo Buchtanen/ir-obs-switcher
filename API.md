@@ -598,6 +598,7 @@ Agregovaný stav pro admin shell (`/admin`): extensions + features + switcher su
 **Method**: `GET`
 
 **Response** (200 OK) — klíčová pole (`schemaVersion: 1`, additive):
+- `build` (object, top-level) - identita zdroje běžícího procesu: `{commit: string|null, shortCommit: string|null, dirty: boolean|null, source: "embedded"|"source"|"unknown"}`. `commit` obsahuje celý Git hash, `shortCommit` jeho zkrácené zobrazení; `dirty` označuje zaznamenané lokální změny, `null` neznámý stav. Frozen EXE čte pouze vložený `build-identity.json` a nikdy Git v aktuálním pracovním adresáři. Zdrojový běh zachytí identitu jednou při importu modulu pomocí časově omezeného Git dotazu v repozitáři balíčku. Chybějící/neplatná metadata vracejí `source="unknown"` a nullable údaje; pozdější checkout na disku nemění identitu již běžícího procesu. Pole patří pouze do `GET /api/admin/status`; kontrakty `/status` a `/health` se touto změnou nerozšiřují.
 - `runtime.overlay` / `runtime.switcher` (bool)
 - `health` — server-side aggregation:
   - `ready` (bool) — `false` jen když existuje alespoň jedna **blocking** položka
@@ -791,6 +792,8 @@ může být také V4; druhá volba nevynucuje V3. Demo není replay enginu.
 Studio: read-only přehled a diagnostika nad `GET /api/admin/status`
 a `GET /api/admin/activity`. Hash navigace (např. `/studio/#/diagnostics`) zůstává
 v prohlížeči. Katalog, definice, epizody a replay používají verzované Studio projekce. Staré stránky zůstávají dostupné.
+
+Studio Přehled zobrazuje kartu běžícího buildu se zkráceným commitem a plným hashem v detailu. Neznámá identita se nedoplňuje z pracovního adresáře ani z verze balíčku. Při neúspěšném obnovení jsou ponechaná data označena jako zastaralá; karta tak nepotvrzuje, že posledně načtený proces stále běží.
 
 `/studio/#/settings` používá existující `GET /api/config` a `PUT /api/config`.
 Editor nabízí jen netajná pole ze `schema` s hodnotami v `overlay`; redigovaná

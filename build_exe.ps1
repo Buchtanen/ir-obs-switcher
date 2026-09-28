@@ -29,13 +29,18 @@ if (-not (Test-Path "dist")) {
 # Build core service
 if ($Core -or $All) {
     Write-Host "Building core service (irswitchd.exe)..." -ForegroundColor Green
+    $identityPath = Join-Path $PSScriptRoot 'build/build-identity.json'
+    python scripts/write_build_identity.py $identityPath
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot record build identity' }
     pyinstaller --onefile `
         --name irswitchd `
         --noconsole `
+        --paths (Join-Path $PSScriptRoot 'src') `
         --collect-all irswitch `
         --collect-all bleak `
         --collect-all psutil `
         --hidden-import pynvml `
+        --add-data "$identityPath;." `
         --add-data "assets;assets" `
         --distpath dist `
         --workpath build `
