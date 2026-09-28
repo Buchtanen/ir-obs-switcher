@@ -1,7 +1,9 @@
 export type Snapshot<T> = {data?: T; stale: boolean; error?: string; updatedAt?: number};
 export type ComponentStatus = {label?: string; status?: string; available?: boolean; enabled?: boolean; active?: boolean; busy?: boolean; detail?: Record<string, unknown>; [key: string]: unknown};
+export type CompanionApp = {id:string;label:string;running:boolean|null;required:boolean};
 export type Status = {
   schemaVersion: 1; version: string; runtime: {overlay: boolean; switcher: boolean};
+  companionApps?: CompanionApp[];
   iracingUi?: {running: boolean | null};
   switcher: null | {connected_obs: boolean; connected_iracing: boolean; autoswitch: boolean;
     mode?: string; current_scene?: string; target_scene?: string; reason?: string; session_type?: string};
@@ -21,6 +23,12 @@ export function parseStatus(v: unknown): Status {
   if (object(v.switcher) && ['mode', 'current_scene', 'target_scene', 'reason', 'session_type'].some(key =>
     v.switcher !== null && object(v.switcher) && v.switcher[key] != null && typeof v.switcher[key] !== 'string')) {
     throw new Error('Neplatná odpověď stavového API');
+  }
+  if(v.companionApps !== undefined && (!Array.isArray(v.companionApps) ||
+    !v.companionApps.every(row=>object(row)&&typeof row.id==='string'&&typeof row.label==='string'&&
+      typeof row.required==='boolean'&&(row.running===null||typeof row.running==='boolean')) ||
+    new Set(v.companionApps.map(row=>row.id)).size!==v.companionApps.length)) {
+    throw new Error('Neplatná odpověď doprovodných aplikací');
   }
   // Optional feature maps must remain safe to render even with a partial provider.
   if (v.iracingUi !== undefined && (!object(v.iracingUi) ||

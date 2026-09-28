@@ -605,6 +605,7 @@ Agregovaný stav pro admin shell (`/admin`): extensions + features + switcher su
   - `warnings[]` — doporučené závislosti (LHM unreachable, sysinfo degraded, …); samy o sobě `ready` neflipují
 - `switcher` (object | null) — legacy snake_case subset: `connected_iracing`, `connected_obs`, `autoswitch`, `mode`, scény, `reason`
 - `iracingUi` (optional object) — `{ "running": true | false | null }`; case-insensitive exact process-name match for `iRacingUI.exe`. `false` means the process was not found; `null` means the read-only worker-thread probe was unavailable. Missing `iracingUi` means an older server/unknown state. This is an informational process signal, not SDK session connectivity.
+- `companionApps` (optional array) — six rows `{id, label, running: true | false | null, required: bool}` for `dre`, `maira`, `simhub`, `cammus`, `trading_paints`, `virtual_desktop`. One off-loop read-only process-name scan checks all apps; MAIRA matches `MarvinsAIRARefactored.exe`. `required` comes from `[companion_apps]` (default true for all six), independently of overlay. Process presence says nothing about app functionality or device connection.
 - `extensions.ble` / `extensions.sysinfo` — karty: `enabled`, `available`, `active`, `busy`, `status`, `severity`, `detail`
 - `extensions.lhm` — `required`, `requirementMode` (`optional`|`recommended`|`required`), ne falešné `enabled`; tip jen když required/recommended a unhealthy
 - `extensions.lhm.detail` — cache observability: `checkedAt`, `lastSuccessAt` (wall-clock epoch), `stale`, `errorCode`, `lastBaseUrl`, `sensorRows`, `connection`
@@ -619,6 +620,16 @@ stav. Při čerstvém `iracingUi.running=true` a `connected_iracing=false` uká�
 oranžové „iRacing UI / Čeká na session“. Zastaralá data se označí jako neznámá;
 nedostupný procesový probe nikdy nepředstírá běžící UI. Hlavička a přehled
 odvozují stejný stav z téže odpovědi.
+
+U `companionApps` je chybějící požadovaná aplikace oranžové upozornění,
+chybějící volitelná neutrální. Při žádné požadované aplikaci je souhrn neutrální;
+stale nebo nedostupný probe nikdy nezobrazí zelenou. Tyto indikátory nemění
+serverové `health` ani nespouštějí/neukončují aplikace.
+
+Ověření #383: skutečně servírované Studio načetlo branding a šest procesových
+statusů; browser QA s dočasným configem změnila DRE na volitelnou a souhrn ihned
+ukázal pět požadovaných aplikací. EXE smoke porovnal přesné bajty faviconu a
+assets. Jde o detekci procesů, nikoli ověření zařízení či spojení.
 
 Ověření rozšíření: při běžící nakonfigurované službě vracelo API
 `iracingUi.running=true` a `switcher.connected_iracing=false`; Studio zobrazilo

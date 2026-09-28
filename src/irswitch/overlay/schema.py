@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from irswitch.overlay.settings import OverlaySettings
+from irswitch.system.companion_apps import COMPANION_APPS
 
 FieldType = Literal["float", "int", "bool", "str"]
 
@@ -712,6 +713,19 @@ OVERLAY_FIELDS: tuple[FieldSpec, ...] = (
         1,
         100,
     ),
+)
+
+# Shared config editor also exposes advisory operator prerequisites.
+OVERLAY_FIELDS += tuple(
+    FieldSpec(
+        f"companion_apps.{key}",
+        "bool",
+        True,
+        True,
+        "companion_apps",
+        f"{label}: požadovaná pro připravenost. Vypnutím zůstane sledovaná jako volitelná.",
+    )
+    for key, label, _name in COMPANION_APPS
 )
 
 _FIELD_BY_KEY = {spec.key: spec for spec in OVERLAY_FIELDS}

@@ -49,7 +49,7 @@ function App() {
   const unknown = status.stale || !status.data;
   const connected = (key: 'connected_obs' | 'connected_iracing') => key==='connected_iracing'?iracingSignal(sw?.connected_iracing,status.data?.iracingUi?.running,unknown):connectionSignal(sw?.[key], unknown);
   return <div className="studio"><a className="skip" href="#main" onClick={event => { event.preventDefault(); document.getElementById('main')?.focus(); }}>Přejít na obsah</a><aside>
-    <a className="brand" href="#/overview"><span className="logo">ir</span><span>irswitch <b>Studio</b></span></a>
+    <a className="brand" href="#/overview"><img className="logo" src="/assets/favicon/favicon-96x96.png" alt="" width="48" height="48"/><span>irswitch <b>Studio</b></span></a>
     <p className="nav-label">PRACOVNÍ PROSTOR</p><nav aria-label="Hlavní navigace">{pages.map(([id, label]) => <a key={id} href={`#/${id}`} aria-current={page === id ? 'page' : undefined}><span className="nav-dot"/>{label}{id === 'settings' && dirtySettings > 0 && <span className="draft-badge" aria-label={`${dirtySettings} neuložených změn`}>{dirtySettings}</span>}</a>)}</nav>
     <div className="sidebar-foot">LOKÁLNÍ STUDIO<small>Pozorování provozu</small><a href="/admin">Současná administrace ↗</a></div>
   </aside><div className="workspace"><header><span className="pill">{page === 'replay' ? 'IZOLOVANÝ REPLAY' : page === 'scenarios' ? 'DEFINICE' : 'ŽIVÝ PŘEHLED'}</span><div className="connections"><span>OBS <StatusSignal signal={connected('connected_obs')}/></span><span>iRacing <StatusSignal signal={connected('connected_iracing')}/></span></div></header>

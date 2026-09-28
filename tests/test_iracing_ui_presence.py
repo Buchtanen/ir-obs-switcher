@@ -39,7 +39,7 @@ def test_scan_budget_expiry_is_unknown():
     processes = [SimpleNamespace(info={"name": "unrelated.exe"})]
     with (
         patch.object(psutil, "process_iter", return_value=iter(processes)),
-        patch("irswitch.system.iracing_ui.time.monotonic", side_effect=[0.0, 1.1]),
+        patch("irswitch.system.companion_apps.time.monotonic", side_effect=[0.0, 1.1]),
     ):
         assert detect_iracing_ui() is None
 
@@ -67,11 +67,14 @@ async def test_http_projection_uses_worker_thread():
     with (
         patch("irswitch.server.admin._probe_lhm", new=AsyncMock(return_value={})),
         patch(
-            "irswitch.server.admin.asyncio.to_thread", new=AsyncMock(return_value=True)
+            "irswitch.server.admin.asyncio.to_thread",
+            new=AsyncMock(return_value={"iracing_ui": True}),
         ) as worker,
     ):
         async with TestClient(TestServer(create_app())) as client:
             response = await client.get("/api/admin/status")
             assert response.status == 200
             assert (await response.json())["iracingUi"] == {"running": True}
-        worker.assert_awaited_once_with(detect_iracing_ui)
+        from irswitch.system.companion_apps import detect_companion_apps
+
+        worker.assert_awaited_once_with(detect_companion_apps)

@@ -18,6 +18,9 @@ test('rejects incompatible payloads', () => {
   assert.throws(() => parseStatus({...base, extensions: {ble: {label: {bad: true}}}}));
   for(const running of [true,false,null])assert.equal(parseStatus({...base,iracingUi:{running}}).iracingUi?.running,running);
   assert.equal(parseStatus(base).iracingUi,undefined);
+  const app={id:'dre',label:'DRE',running:true,required:true};
+  assert.deepEqual(parseStatus({...base,companionApps:[app]}).companionApps,[app]);
+  for(const companionApps of [null,{},[app,app],[{...app,running:'true'}],[{...app,required:null}]])assert.throws(()=>parseStatus({...base,companionApps}));
   for(const iracingUi of [null,{},[],{running:'true'}])assert.throws(()=>parseStatus({...base,iracingUi}));
 });
 

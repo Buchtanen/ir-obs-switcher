@@ -1,3 +1,49 @@
+# Companion applications and graphical branding — 2026-09-28 (#383)
+
+- Checkout `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`, branch `feat/studio-companion-readiness`, remote `https://github.com/Buchtanen/ir-obs-switcher.git`; integration target `feat/studio-integration`. Last pushed base/recovery SHA `0eab1da617f3cde1de271347ce79153fde032958`. User authorizes integration of stages; cumulative draft #371 remains unmerged to master.
+- Issue [#383](https://github.com/Buchtanen/ir-obs-switcher/issues/383), [same-day diary](https://github.com/Buchtanen/ir-obs-switcher/issues/383#issuecomment-5862354474). Final immutable implementation/merge SHAs follow in that diary.
+- Existing graphical favicon is now used for Studio branding and explicit page icon. One off-loop process scan detects iRacing UI and six exact companion main executables. No process inventory/path/PID is exposed. User confirmed MAIRA executable and individual optionality. Companion presence is advisory, never a device/connection/functionality guarantee or a change to switcher health/control.
+- Six live FieldSpec booleans in `[companion_apps]` control required status (default true for the requested prerequisites); persisted through existing config API, stored separately from overlay settings in AppConfig. Missing optional applications do not degrade summary; stale/unknown/incomplete evidence never claims readiness. No required applications is neutral. Config absence requires no migration; configured INI remains unchanged until explicitly saved.
+- TDD RED then GREEN; independent source and package-QA-delta verifier GREEN. Parent65 targeted Python tests,31 frontend tests, typecheck/build/Ruff/Black/mypy7files/diff PASS. Independent44Python/31frontend PASS. Logo uses a TDD exception for visual wiring, verified through browser load and exact packaged/served bytes.
+- Package smoke `scripts/qa_studio_package.py dist/studio-companions/irswitchd.exe` PASS; evidence `build/studio-package-wpfoo4c6`. Corrected a CRLF-only false failure by comparing HTML bytes, and added favicon byte verification. Browser on disposable config confirms six process detections, graphic load, settings deep link, saved DRE optional and immediate five-required summary.
+- Actual configured service replaced only after source/package GREEN and confirming inactive simulator/stream; new EXE `dist/studio-companions/irswitchd.exe`, original primary cwd/config. Health/API and browser confirm six detections plus loaded logo, all served Studio assets and logo match source bytes, config SHA unchanged. No companion launched/stopped; no physical device/VR connectivity tested. Disposable preview stopped, live Studio preserved. No HUD assets/cache change.
+- Known limit: one-second scan budget is cooperative between OS process items. No new dependencies. Primary checkout/user recordings untouched. Parent owns implementation/tests/generated assets/QA script/this handover; docs-keeper owns API.md, CONFIG.md, example INI, implementation doc. Ignored test/package artifacts are not part of commit.
+- Next: commit/push verified checkpoint, stage PR with semver:minor to integration, wait full CI, merge under standing authorization, fast-forward local integration, update same issue diary and cumulative draft #371. Keep broader acceptance issue #370 open; do not merge master.
+
+## Owned files at checkpoint
+
+- `API.md`
+- `CONFIG.md`
+- `config/config.example.ini`
+- `docs/studio-implementation.md`
+- `frontend/studio/index.html`
+- `frontend/studio/src/Settings.tsx`
+- `frontend/studio/src/StatusBoard.tsx`
+- `frontend/studio/src/main.tsx`
+- `frontend/studio/src/poll.test.ts`
+- `frontend/studio/src/poll.ts`
+- `frontend/studio/src/status-board.css`
+- `frontend/studio/src/style.css`
+- `frontend/studio/vite.config.ts`
+- `scripts/qa_studio_package.py`
+- `src/irswitch/config.py`
+- `src/irswitch/config_reload.py`
+- `src/irswitch/overlay/http.py`
+- `src/irswitch/overlay/schema.py`
+- `src/irswitch/server/admin.py`
+- `src/irswitch/system/iracing_ui.py`
+- `src/irswitch/web/studio/assets/index-DJb0sbO3.css`
+- `src/irswitch/web/studio/assets/index-XDJJL3si.js`
+- `src/irswitch/web/studio/index.html`
+- `tests/test_iracing_ui_presence.py`
+- `frontend/studio/src/companion-model.test.ts`
+- `frontend/studio/src/companion-model.ts`
+- `src/irswitch/system/companion_apps.py`
+- `src/irswitch/web/studio/assets/index-CrRi0psi.js`
+- `src/irswitch/web/studio/assets/index-LvFUX6ze.css`
+- `tests/test_companion_apps.py`
+- `docs/studio-handover.md`
+
 # iRacing UI informational waiting status — 2026-09-28 (#381)
 
 - Checkout `C:/Users/richa/Projekty/ir-obs-switcher/.studio-work`, branch `feat/studio-iracing-ui-status`, remote `https://github.com/Buchtanen/ir-obs-switcher.git`; target `feat/studio-integration`. Base/recovery SHA `cbb76d989bc2213e021e8359b60a55ed518b37a9`. User authorizes stage integration; cumulative draft PR #371 must remain unmerged to master.

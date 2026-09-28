@@ -259,7 +259,13 @@ async def handle_get_config(request: web.Request) -> web.Response:
     return web.json_response(
         {
             "schema": schema_as_dicts(),
-            "overlay": overlay_values(config.overlay),
+            "overlay": {
+                **overlay_values(config.overlay),
+                **{
+                    f"companion_apps.{key}": required
+                    for key, required in config.companion_required.items()
+                },
+            },
             "switcher": _redact_switcher(config),
         }
     )

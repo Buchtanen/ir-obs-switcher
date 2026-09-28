@@ -5,6 +5,7 @@ import './settings.css';
 
 const display = (value: Value) => value === null ? 'Výchozí / zděděná' : value === true ? 'Zapnuto' : value === false ? 'Vypnuto' : value === '' ? '(prázdné)' : String(value);
 const sectionNames: Record<string, string> = {
+  companion_apps: 'Doprovodné aplikace · připravenost',
   overlay: 'Overlay', event_engine: 'Události', race_observer: 'Sledování závodu',
   sampling: 'Vzorkování', 'sampling.race': 'Vzorkování závodu', 'sampling.system': 'Vzorkování systému', 'sampling.bio': 'Vzorkování tepu',
   'battle.hunting': 'Souboj · útok', 'battle.hunted': 'Souboj · obrana', 'battle.overtake': 'Předjíždění', battle: 'Souboje',
@@ -12,12 +13,14 @@ const sectionNames: Record<string, string> = {
   'system_info.cpu': 'Procesor', 'system_info.gpu': 'Grafická karta', 'system_info.memory': 'Paměť', events: 'Overlay události', 'events.priorities': 'Priority událostí',
 };
 
+const companionNames:Record<string,string>={dre:'DRE',maira:'MAIRA',simhub:'SimHub',cammus:'Cammus',trading_paints:'Trading Paints',virtual_desktop:'Virtual Desktop Streamer'};
+const fieldLabel=(key:string)=>key.startsWith('companion_apps.')&&Object.hasOwn(companionNames,key.slice(15))?`${companionNames[key.slice(15)]} · požadovaná pro připravenost`:key;
 function FieldInput({field, value, error, changed, onChange}: {field: Field; value: Draft[string]; error?: string; changed: boolean; onChange: (value: Draft[string]) => void}) {
   const id = `setting-${field.key}`;
   const common = {id, 'aria-describedby': `${id}-help${error ? ` ${id}-error` : ''}`, 'aria-invalid': !!error};
   const inherited = field.optional && value === null;
   return <div className={`setting-field${changed ? ' changed' : ''}`}>
-    <div className="setting-title"><label htmlFor={id}>{field.key}</label><span className={field.live ? 'apply-live' : 'apply-restart'}>{field.live ? 'Za běhu' : 'Po restartu'}</span>{changed && <span className="changed-marker">Změněno</span>}</div>
+    <div className="setting-title"><label htmlFor={id}>{fieldLabel(field.key)}</label><span className={field.live ? 'apply-live' : 'apply-restart'}>{field.live ? 'Za běhu' : 'Po restartu'}</span>{changed && <span className="changed-marker">Změněno</span>}</div>
     {field.optional && <label className="inherit"><input type="checkbox" checked={inherited} onChange={event => onChange(event.target.checked ? null : draftValue(field.default ?? (field.type === 'bool' ? false : field.type === 'str' ? field.choices?.[0] ?? '' : field.min ?? 0)))}/> Použít výchozí / zděděnou hodnotu</label>}
     {field.type === 'bool' ? <label className="toggle"><input {...common} type="checkbox" disabled={inherited} checked={value === true} onChange={event => onChange(event.target.checked)}/><span>{inherited ? 'Zděděno' : value ? 'Zapnuto' : 'Vypnuto'}</span></label>
       : field.choices ? <select {...common} disabled={inherited} value={value === null ? '' : String(value)} onChange={event => onChange(event.target.value)}>

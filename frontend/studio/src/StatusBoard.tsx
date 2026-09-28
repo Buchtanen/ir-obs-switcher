@@ -3,6 +3,7 @@ import {componentSignal, connectionSignal, iracingSignal} from './status-model';
 import type {Signal} from './status-model';
 import {JsonDetails} from './Operations';
 import './status-board.css';
+import {companionSignal,readinessSignal} from './companion-model';
 
 export function StatusSignal({signal}:{signal:Signal}) {
   return <span className={`status-signal signal-${signal.tone}`}><i className="status-light" aria-hidden="true"/>{signal.label}</span>;
@@ -36,6 +37,12 @@ export function StatusBoard({state}:{state:Snapshot<Status>}) {
       <section className="status-card"><div className="card-heading"><h2>Automatika</h2><StatusSignal signal={auto}/></div><strong className="card-value">{stale||!sw?'—':sw.autoswitch?'Automatické scény':'Ruční režim'}</strong><span className="card-caption">Řízení přepínání scén</span><div className="card-bottom"><span>Důvod</span><b>{value(sw?.reason)}</b></div></section>
       <section className="status-card"><div className="card-heading"><h2>Služba a API</h2><StatusSignal signal={api}/></div><strong className="card-value">{stale?'Nedostupná data':data?.runtime.switcher?'Runtime běží':'Pouze API'}</strong><span className="card-caption">Engine {data?.version??'—'}</span><div className="card-bottom"><span>Poslední odpověď</span><b>{state.updatedAt?new Date(state.updatedAt).toLocaleTimeString('cs-CZ'):'—'}</b></div></section>
     </div>
+    <section className="components-panel companion-panel" aria-label="Připravenost doprovodných aplikací">
+      <div className="section-heading"><h2>Doprovodné aplikace</h2><a href="#/settings?search=companion_apps">Nastavit požadované aplikace</a></div>
+      <div className="readiness-summary" role="status"><StatusSignal signal={readinessSignal(data?.companionApps,stale)}/></div>
+      <p className="muted companion-note">Kontrola spuštění aplikací. Připojení zařízení, účtů a VR ani funkčnost aplikací tím není ověřena.</p>
+      <div className="component-grid">{data?.companionApps?.map(row=><article key={row.id} className="component-card"><div className="card-heading"><h3>{row.label}</h3><StatusSignal signal={companionSignal(row,stale)}/></div><span className="card-caption">{row.required?'Požadovaná pro připravenost':'Volitelná'}{stale?' · poslední známé nastavení':''}</span></article>)}</div>
+    </section>
     <section className="components-panel" aria-label="Stav komponent"><div className="section-heading"><h2>Komponenty</h2><p>{state.stale?'Poslední známé údaje · aktuální stav není dostupný':'Stav z běžící služby'}</p></div>
       <div className="component-grid">{components.map(([key,row])=><article key={key} className="component-card"><div className="card-heading"><h3>{Object.hasOwn(labels,key)?labels[key]:row.label??key}</h3><StatusSignal signal={componentSignal(row,stale)}/></div><dl className="component-facts">{facts(key,row).map(([label,v])=><div key={label}><dt>{label}</dt><dd>{v}</dd></div>)}</dl></article>)}</div>
       {!components.length&&<p className="muted">Čekám na stavové API komponent.</p>}
