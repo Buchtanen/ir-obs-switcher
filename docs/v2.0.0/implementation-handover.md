@@ -1,5 +1,14 @@
 # v2 narrative runtime — implementation handover
 
+## Current checkpoint — grounded live commentary follow-up (2026-09-30)
+
+- Worktree: `C:\Users\richa\Documents\Codex\2026-09-25\z\work\commentary-grounded`; branch `feat/commentary-grounded-input`; base of this slice `75654e7`; implementation commit `285e1f2875c3069ed3f731b0e60fb8ad00caf2d7`.
+- Issue [#389](https://github.com/Buchtanen/ir-obs-switcher/issues/389); draft PR [#390](https://github.com/Buchtanen/ir-obs-switcher/pull/390). Keep the PR open for the next live driving test and evaluation; this checkpoint does not request a master merge.
+- Live speech now accepts validated position changes, finish, final lap, current position fact, race restart and safe flag/incident subsets. The HUNTING request survives a newer same-pair update. The 33-second configured silence watchdog asks for a fresh current-position fact after telemetry and warmup rather than replaying a stale candidate. Narrative speech bypasses legacy TTS polish.
+- Tape uses the configured output directory and a unique process identity, and writes `context_applied` rows with actual session/epoch from the payload. It does **not** yet record every model attempt, director decision, or TTS outcome; API runtime ring, logs and overlay tape remain necessary for a complete next-stream audit.
+- QA: focused 186 passed; full suite 2792 passed, 2 Windows symlink-privilege cases deselected; Black, Ruff and `git diff --check` passed. Verifier GREEN after reviewing the stale-silence and tape fixes. Docs impact recorded in `remote-commentary-microplan.md` and `dokumentace/domeny/events.md`.
+- Next actions: publish this checkpoint to PR #390, update the issue diary, run the branch in the local service for an observed stream, then compare tape, model attempts and actual TTS playback. Do not infer on-air speech count from selected events alone.
+
 ## Current checkpoint — remote commentary microplan (2026-09-25)
 
 - Worktree: `C:\Users\richa\Documents\Codex\2026-09-25\z\work\ir-obs-switcher`; branch `feat/remote-commentary-microplan`; remote `https://github.com/Buchtanen/ir-obs-switcher.git`; base `master@a381307611a5aaf633f61ed048c9bee066b77a24`.
