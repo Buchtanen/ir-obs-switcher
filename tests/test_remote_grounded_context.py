@@ -172,7 +172,7 @@ def test_gap_reduction_is_computed_only_from_played_same_target():
     same_name_new_car = replace(second, actors=(("player", "Buchtanen"), ("other-car", "Rossi")))
     assert client._request_plan(same_name_new_car) == same_name_new_car
     new_relation = replace(second, correlation_id="new-relation")
-    assert client._request_plan(new_relation) == new_relation
+    assert dict(client._request_plan(new_relation).input_fields)["gap_reduction_seconds"] == 1.6
     assert client._request_plan(replace(second, session_id="another")) == replace(
         second, session_id="another"
     )

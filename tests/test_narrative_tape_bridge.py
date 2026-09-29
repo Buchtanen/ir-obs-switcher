@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pytest
@@ -73,6 +74,41 @@ async def test_open_writer_flush_effect_closes_on_shutdown(tmp_path: Path) -> No
     assert not runtime.tape_task_active()
     files = list(tmp_path.glob("narrative-*.ndjson"))
     assert len(files) == 1
+
+
+@pytest.mark.asyncio
+async def test_live_context_is_recorded_and_new_process_keeps_previous_tape(tmp_path: Path) -> None:
+    from test_narrative_runtime import _context_with_timeline, _timeline_run
+    from test_narrative_tape_writer import _errors
+
+    for revision in (40, 41):
+        writer = open_narrative_tape_writer(tmp_path)
+        writer.start()
+        runtime = NarrativeRuntime(tape_writer=writer)
+        runtime.enable()
+        runtime.admit(
+            _context_with_timeline(
+                f"tape:context:{revision}",
+                _timeline_run(revision=revision, stream_epoch=1, narrative_run_active=True),
+                fanout=revision,
+                with_event=True,
+            )
+        )
+        assert runtime.reduce_next() is not None
+        await writer.aclose()
+
+    files = list(tmp_path.glob("narrative-*.ndjson"))
+    assert len(files) == 2
+    for path in files:
+        rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+        assert [row["recordType"] for row in rows] == [
+            "manifest",
+            "context_applied",
+            "manifest_trailer",
+        ]
+        assert rows[1]["payload"]["schemaVersion"] == "context-applied/2"
+        assert _errors(rows[1]) == []
+        assert rows[2]["payload"]["complete"] is True
 
 
 @pytest.mark.asyncio

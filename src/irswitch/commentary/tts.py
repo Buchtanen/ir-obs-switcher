@@ -351,7 +351,9 @@ class ProcessTtsSink:
             self.settings.scheduler, "llm_past_framing", True
         )
         outcome: PolishOutcome | None = None
-        if self.settings.llm_polish:
+        # NarrativeRuntime has already generated and verified this line. The
+        # legacy polish endpoint would make a second request after selection.
+        if self.settings.llm_polish and utterance.event_type != "NARRATIVE_RUNTIME":
             polish_kwargs: dict[str, Any] = {
                 "past": past,
                 "driver_names": utterance.hero_names,

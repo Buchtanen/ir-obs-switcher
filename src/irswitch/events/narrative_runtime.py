@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 import time
 from collections import deque
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Mapping, Sequence
@@ -54,6 +55,8 @@ from irswitch.events.story_director import (
     DirectorWorld,
     StoryDirector,
 )
+
+logger = logging.getLogger(__name__)
 
 RuntimeState = Literal["disabled", "starting", "ready", "degraded", "stopping", "stopped"]
 LaneState = Literal["idle", "building", "committed", "speaking", "stopping"]
@@ -318,6 +321,7 @@ class NarrativeRuntime:
         realization_config_signature: Callable[[], str] | None = None,
         realization_wording_policy: Callable[[], str] | None = None,
         on_microplan_spoken: Callable[[Microplan], None] | None = None,
+        on_silence_due: Callable[[], None] | None = None,
     ) -> None:
         # Empty NarrativeMailbox is falsy via __len__; only replace on None so
         # ingress/shadow cutover can share one injected mailbox identity.
@@ -325,6 +329,7 @@ class NarrativeRuntime:
         self._realization_config_signature = realization_config_signature
         self._realization_wording_policy = realization_wording_policy
         self._on_microplan_spoken = on_microplan_spoken
+        self._on_silence_due = on_silence_due
         self._microplans: dict[tuple[int, int], Microplan] = {}
         self._current_microplans: dict[tuple[str, str], Microplan] = {}
         self._microplan_session: str | None = None
@@ -638,7 +643,44 @@ class NarrativeRuntime:
         self._loop_reduce_count += 1
         self._loop_last_reduce_mono_ms = int(time.monotonic() * 1000)
         self._append_command_journal(command, result)
+        self._capture_context_tape(command, result)
         return result
+
+    def _capture_context_tape(self, command: NarrativeCommand, result: ReduceResult) -> None:
+        """Queue admitted truth for later stream diagnosis without disk IO here."""
+        writer = self._tape_writer
+        part = command.context_part
+        if writer is None or part is None or command.kind != "APPLY_CONTEXT_BATCH":
+            return
+        try:
+            identity = writer.manifest_identity
+            payload = {"schemaVersion": "context-applied/2", **part.batch.to_dict()}
+            writer.submit(
+                {
+                    "schemaVersion": "narrative-tape-record/2",
+                    "recordId": f"record:context:{result.reducer_sequence}",
+                    "recordType": "context_applied",
+                    "processInstanceId": identity["processInstanceId"],
+                    "broadcastEpoch": identity["broadcastEpoch"],
+                    "streamEpoch": identity["streamEpoch"],
+                    "reducerSequence": int(result.reducer_sequence),
+                    "recordedMonoMs": int(command.enqueued_mono_ms),
+                    "recordedAtUtc": None,
+                    "purposeChannel": "flow",
+                    "recordPriority": (
+                        "critical" if part.batch.has_timeline_transition else "normal"
+                    ),
+                    "tapeChannel": None,
+                    "correlationIds": [],
+                    "effectiveConfigHash": identity["effectiveConfigHash"],
+                    "configApplySequence": identity["configApplySequence"],
+                    "payloadSchemaVersion": "context-applied/2",
+                    "payload": payload,
+                }
+            )
+        except Exception:
+            # Diagnostics must never stop commentary reduction.
+            logger.exception("narrative context tape capture failed")
 
     def _append_command_journal(self, command: NarrativeCommand, result: ReduceResult) -> None:
         """Best-effort live journal row; never fails the reduce path."""
@@ -954,6 +996,12 @@ class NarrativeRuntime:
                     ),
                     name=f"narrative-silence-{generation}",
                 )
+            elif effect == "effect:request_silence_fact":
+                if self._on_silence_due is not None:
+                    try:
+                        self._on_silence_due()
+                    except Exception:
+                        logger.exception("narrative silence fact request failed")
             elif effect == "effect:arm_validity_deadline":
                 await self._cancel_task("_validity_deadline_task")
                 generation = self._validity_generation
@@ -1833,6 +1881,33 @@ class NarrativeRuntime:
         if self._lane == "stopping":
             effects.append("ignored_while_stopping")
             return "handled", effects
+        if (
+            self._lane == "building"
+            and not part.batch.has_timeline_transition
+            and self._realization is not None
+            and isinstance(self._realization.get("microplan"), dict)
+        ):
+            incumbent = Microplan.from_dict(self._realization["microplan"])
+            new_plans = [
+                Microplan.from_dict(raw)
+                for event in part.batch.events
+                if isinstance((raw := event.payload.get("microplan")), dict)
+            ]
+            if (
+                incumbent.beat_id == "HUNTING"
+                and len(new_plans) == len(part.batch.events)
+                and all(
+                    plan.beat_id == "HUNTING" and plan.actors == incumbent.actors
+                    for plan in new_plans
+                )
+                and self._microplan_is_current(
+                    self._realization, now_ms=int(command.enqueued_mono_ms)
+                )
+            ):
+                # A new detector episode for the same named pair does not
+                # invalidate the still-current spoken facts in flight.
+                effects.append("building_retained_same_battle")
+                return "handled", effects
         open_reason: str | None = None
         if self._lane == "building":
             self._cancel_building(effects, reason="replaced_precommit")
@@ -1955,6 +2030,15 @@ class NarrativeRuntime:
             return "ignored_stale_or_inapplicable", ["stale_silence_generation"]
         self._silence_generation = generation
         effects = ["silence_armed"]
+        if self._on_silence_due is not None:
+            if (
+                self._lane == "idle"
+                and self._runtime in {"ready", "degraded"}
+                and self._narrative_run_active
+            ):
+                effects.append("effect:request_silence_fact")
+            self._rearm_silence_deadline(effects)
+            return "handled", effects
         if self._lane == "idle" and self._runtime in {"ready", "degraded"}:
             open_reason: str | None = None
             if self._plans_in_cycle == 0:
@@ -1962,6 +2046,10 @@ class NarrativeRuntime:
             elif self._plans_in_cycle >= MAX_PLANS_PER_CYCLE:
                 open_reason = "silence_after_exhausted"
             self._dispatch_plan(effects, open_cycle_reason=open_reason)
+            if self._lane == "idle":
+                # No eligible fresh fact: check again later instead of leaving
+                # the watchdog permanently disarmed after its first expiry.
+                self._rearm_silence_deadline(effects)
         return "handled", effects
 
     def _on_validity(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:

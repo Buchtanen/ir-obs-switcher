@@ -190,7 +190,6 @@ class ModelClient:
                 previous["session_id"] != plan.session_id
                 or previous["beat_id"] != "HUNTING"
                 or previous["actor_bindings"] != list(plan.actors)
-                or previous["correlation_id"] != plan.correlation_id
                 or not 1000 <= age_ms <= 60000
             ):
                 continue

@@ -7,11 +7,15 @@ so shutdown can flush/close the writer under actor ownership. Not exported from
 
 from __future__ import annotations
 
+import os
+import platform
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from uuid import uuid4
 
+from irswitch.build_identity import BUILD_IDENTITY
 from irswitch.commentary.tape_writer import CLOSE_REASONS, NarrativeTapeWriter
 from irswitch.contracts.command import NarrativeCommand
 
@@ -25,15 +29,16 @@ _HASH = "sha256:" + ("1" * 64)
 
 def default_narrative_tape_manifest(
     *,
-    process_instance_id: str = "process:race",
+    process_instance_id: str | None = None,
     broadcast_epoch: int = 0,
-    stream_epoch: int = 0,
+    stream_epoch: int | None = None,
     file_ordinal: int = 0,
     app_version: str = "0.0.0",
 ) -> dict[str, Any]:
     """Minimal valid narrative-tape-manifest/2 for race-owned writers."""
 
     now = datetime.now(tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    process_instance_id = process_instance_id or f"process:race:{os.getpid()}:{uuid4().hex[:8]}"
     return {
         "schemaVersion": "narrative-tape-manifest/2",
         "recordType": "manifest",
@@ -41,10 +46,10 @@ def default_narrative_tape_manifest(
         "processStartedAtUtc": now,
         "processMonotonicOriginMs": 0,
         "appVersion": str(app_version),
-        "gitRevision": "unknown",
-        "platform": "linux",
+        "gitRevision": BUILD_IDENTITY["commit"] or "unknown",
+        "platform": platform.system().lower(),
         "broadcastEpoch": int(broadcast_epoch),
-        "streamEpoch": int(stream_epoch),
+        "streamEpoch": None if stream_epoch is None else int(stream_epoch),
         "fileOrdinal": int(file_ordinal),
         "openedAtUtc": now,
         "catalogVersion": "narrative-catalog:2",

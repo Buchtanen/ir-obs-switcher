@@ -7,11 +7,17 @@ reduce, ignoring ``commentary.tape.enabled`` (default false).
 from __future__ import annotations
 
 from pathlib import Path
+from types import SimpleNamespace
 
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.events.narrative_ingress import project_runtime_status
 from irswitch.events.narrative_runtime import NarrativeRuntime
+from irswitch.overlay.bus import OverlayBus
+from irswitch.overlay.models import RaceState
+from irswitch.overlay.settings import OverlaySettings
 from irswitch.race.runtime import (
+    RaceRuntime,
+    _overlay_with_v2_commentary,
     commentary_live_enabled,
     commentary_llm_enabled,
     commentary_tape_enabled,
@@ -92,6 +98,48 @@ def test_commentary_live_and_llm_gates_read_v2_snapshot() -> None:
     assert commentary_llm_enabled(None) is False
     _Snap.values = {"commentary.enabled": True, "commentary.llm.enabled": True}
     assert commentary_llm_enabled(_Cfg()) is True
+
+
+def test_llm_generation_does_not_enable_legacy_tts_polish() -> None:
+    class _Snap:
+        values = {"commentary.enabled": True, "commentary.llm.enabled": True}
+
+    class _Cand:
+        valid = True
+        snapshot = _Snap()
+
+    class _Cfg:
+        commentary_v2 = _Cand()
+
+    settings = _overlay_with_v2_commentary(OverlaySettings(), _Cfg())
+    assert settings.commentary.llm_polish is False
+
+
+def test_silence_request_samples_current_race_position_and_lap() -> None:
+    class _Snap:
+        values = {"commentary.enabled": True}
+
+    class _Cand:
+        valid = True
+        snapshot = _Snap()
+
+    cfg = SimpleNamespace(overlay=OverlaySettings(), commentary_v2=_Cand())
+    runtime = RaceRuntime(lambda: cfg, None, OverlayBus())
+    state = RaceState(connected=True, overlay_mode="RACE", class_position=30, lap=4)
+    runtime._request_narrative_silence_fact()
+    records = runtime._collect_narrative_silence_fact(state, 100.0)
+    assert len(records) == 1
+    assert records[0].envelope.event_type == "FIELD_FACT"
+    assert records[0].envelope.metrics == {"fact": "position", "position": 30, "lap": 4}
+    assert runtime._collect_narrative_silence_fact(state, 101.0) == []
+    runtime._request_narrative_silence_fact()
+    assert (
+        runtime._collect_narrative_silence_fact(
+            RaceState(connected=True, overlay_mode="RACE", class_position=30, stale_for_ms=5000),
+            102.0,
+        )
+        == []
+    )
 
 
 def test_runtime_without_journal_path_does_not_create_journal_file(

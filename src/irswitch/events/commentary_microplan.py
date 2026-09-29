@@ -231,6 +231,8 @@ def plan_from_accepted(
         names = hero.get("speakable_names", [])
         subject = next((value for raw in names if (value := _name(raw))), None)
         subject = subject or _name(hero.get("display_name"))
+    if envelope.event_type == "SESSION_FLAG":
+        subject = "Race control"
     if subject is None:
         # Named subject is mandatory; never substitute a fixture or guess roster.
         return None
@@ -292,6 +294,68 @@ def plan_from_accepted(
             claims = (f"is approaching {target}", f"is getting closer to {target}")
         else:
             return None
+    elif kind in {"POSITION_GAINED", "POSITION_LOST"}:
+        old_position = _place(metrics.get("oldPosition"))
+        new_position = _place(metrics.get("newPosition"))
+        if old_position is None or new_position is None:
+            return None
+        if metrics.get("direction") != ("gain" if kind == "POSITION_GAINED" else "loss"):
+            return None
+        if kind == "POSITION_GAINED" and new_position >= old_position:
+            return None
+        if kind == "POSITION_LOST" and new_position <= old_position:
+            return None
+        claims = (f"moves from P{old_position} to P{new_position}",)
+    elif kind == "FINISH":
+        position = _place(metrics.get("position")) or _place(metrics.get("classPosition"))
+        if position is None:
+            return None
+        claims = (f"finishes in P{position}",)
+    elif kind == "FINAL_LAP":
+        lap_number = metrics.get("lap")
+        if (
+            isinstance(lap_number, bool)
+            or not isinstance(lap_number, int)
+            or not 1 <= lap_number <= 10000
+        ):
+            return None
+        claims = ("starts the final lap",)
+    elif kind == "FIELD_FACT":
+        position = _place(metrics.get("position"))
+        if metrics.get("fact") != "position" or position is None:
+            return None
+        lap_number = metrics.get("lap")
+        if (
+            isinstance(lap_number, bool)
+            or not isinstance(lap_number, int)
+            or not 1 <= lap_number <= 10000
+        ):
+            lap_number = None
+        claims = (
+            (
+                f"is running in P{position} on lap {lap_number}"
+                if lap_number is not None
+                else f"is running in P{position}"
+            ),
+        )
+    elif kind == "BACK_UNDER_WAY":
+        if metrics.get("kind") != "back_under_way":
+            return None
+        claims = ("is back under way",)
+    elif kind == "INCIDENT_AFTERMATH":
+        aftermath = metrics.get("kind")
+        if aftermath == "rolling":
+            claims = ("is moving after the incident",)
+        else:
+            # "stalled" can mean off-track or a pending tow; neither proves
+            # that the car has stopped or been towed.
+            return None
+    elif kind == "SESSION_FLAG":
+        flag = metrics.get("kind")
+        if flag not in {"yellow", "green", "checkered"}:
+            return None
+        subject = "Race control"
+        claims = (f"shows the {flag} flag",)
     elif kind == "INCIDENT":
         points = _incident_points(metrics.get("value"))
         total = _incident_points(metrics.get("total"))
@@ -319,18 +383,37 @@ def plan_from_accepted(
         input_fields.append(("lap_time", lap))
     if kind == "LAP_COMPLETE":
         best_lap = _positive(metrics.get("bestLap"))
-        delta = _positive(metrics.get("deltaToBest"))
+        raw_delta = metrics.get("deltaToBest")
+        delta = (
+            float(raw_delta)
+            if isinstance(raw_delta, (int, float))
+            and not isinstance(raw_delta, bool)
+            and math.isfinite(raw_delta)
+            else None
+        )
         if (
             lap_time is not None
             and best_lap is not None
             and delta is not None
+            and abs(delta) > 0.0005
             and abs((lap_time - best_lap) - delta) <= 0.015
         ):
-            delta_ms = round(delta * 1000)
+            delta_ms = round(abs(delta) * 1000)
             input_fields.append(("delta_to_best_seconds", delta_ms / 1000))
+            comparison = "slower" if delta > 0 else "quicker"
             fact_texts.append(
-                f"That lap is {delta_ms / 1000:.3f} seconds slower than {subject}'s best lap."
+                f"That lap is {delta_ms / 1000:.3f} seconds {comparison} than {subject}'s previous best lap."
             )
+    if kind in {"POSITION_GAINED", "POSITION_LOST"}:
+        input_fields.extend((("old_position", old_position), ("new_position", new_position)))
+    if kind == "FINISH":
+        input_fields.append(("finish_position", position))
+    if kind == "FINAL_LAP":
+        input_fields.append(("lap_number", lap_number))
+    if kind == "FIELD_FACT":
+        input_fields.append(("current_position", position))
+        if lap_number is not None:
+            input_fields.append(("lap_number", lap_number))
     if kind == "INCIDENT":
         assert points is not None and total is not None
         input_fields.extend((("incident_points_added", points), ("incident_points_total", total)))
@@ -405,7 +488,11 @@ def plan_from_accepted(
             if text.startswith(f"{subject} is ")
         )
     allowed = tuple(dict.fromkeys(text for text in allowed if len(text) <= 200))
-    actors: tuple[tuple[str, str], ...] = ((envelope.subject.car_id, subject),)
+    actors: tuple[tuple[str, str], ...] = (
+        (("race_control", subject),)
+        if kind == "SESSION_FLAG"
+        else ((envelope.subject.car_id, subject),)
+    )
     if target is not None and kind not in {"PERSONAL_BEST", "LAP_COMPLETE"}:
         target_id = envelope.target.car_id if envelope.target else "target"
         if target_id == envelope.subject.car_id:
