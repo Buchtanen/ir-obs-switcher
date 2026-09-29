@@ -1,6 +1,7 @@
 """Opt-in free wording must reach playback without claiming semantic verification."""
 
 import asyncio
+import json
 from dataclasses import replace
 from pathlib import Path
 
@@ -9,7 +10,7 @@ from test_remote_commentary_runtime import admit, current_batch, drain, reply, s
 
 from irswitch.contracts.config import parse_commentary_mapping
 from irswitch.events.commentary_microplan import plan_from_accepted
-from irswitch.events.commentary_model import ModelSettings
+from irswitch.events.commentary_model import ModelSettings, ModelSkip
 from irswitch.events.semantic_verifier import free_wording_reasons
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -112,6 +113,44 @@ async def test_free_policy_keeps_output_shape_and_fallback(monkeypatch, text):
     await drain(runtime, 50)
     assert sink.spoken[0].text == plan.allowed[0]
     assert not client.status()["lastAttempt"]["accepted"]
+    await client.close()
+
+
+@pytest.mark.asyncio
+async def test_valid_model_skip_does_not_fall_back_to_authored_speech(monkeypatch):
+    _, client, sink, runtime = setup(monkeypatch, wording_policy="experimental_free")
+    batch = current_batch()
+
+    async def post(*args):
+        return {
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "message": {
+                        "content": json.dumps(
+                            {"action": "skip", "used_fact_ids": [], "candidates": []}
+                        )
+                    },
+                }
+            ]
+        }
+
+    monkeypatch.setattr(client, "_post", post)
+    admit(runtime, batch)
+    effects = await drain(runtime, 50)
+    assert not sink.spoken
+    assert client.status()["lastReason"] == "model_skip"
+    assert not client.status()["recentSelections"]
+    assert "realization_skipped" in effects
+    assert "realization_failed" not in effects
+    assert "realization_deadline" not in effects
+    current = plan_from_accepted(batch.events[0], batch)
+    assert current is not None
+    assert isinstance(await client.realize(current), ModelSkip)
+    assert client.status()["totalAttempts"] == 1
+    other = replace(current, event_id="new-material-bundle")
+    assert isinstance(await client.realize(other), ModelSkip)
+    assert client.status()["totalAttempts"] == 2
     await client.close()
 
 

@@ -35,6 +35,24 @@ M1_SYSTEM = (
     "Use only the supplied current facts. No previous commentary is needed."
 )
 
+M2_SYSTEM = (
+    "You are an English motorsport commentator addressing stream viewers in the third person. "
+    "Use only current supplied structured facts; previous commentary is memory, not evidence of current state. "
+    "Keep actor roles, numbers, and units exact: position is a place, gap is time in seconds, "
+    "incident points are not a count of separate incidents. "
+    "Do not invent causes, overtakes, position changes, contact, damage, penalties, intentions, "
+    "race leadership, pit service, duration, or predictions. Unknown is not false. "
+    "Give one clear update that combines relevant supplied facts when useful. "
+    "When a current fact supplies a measured change since the last spoken update, prefer that change "
+    "over merely restating the current value. "
+    "Avoid repeating already spoken meaning; if nothing material changed, choose skip. "
+    "If valid_until_ms has passed, choose skip. One sentence, usually 8-28 words, at most 200 characters. "
+    'Return JSON only with exactly {"action":"speak" or "skip","used_fact_ids":[...],'
+    '"candidates":[{"style_id":"natural","text":"..."}]}. '
+    "For skip, candidates and used_fact_ids are empty arrays. For speak, use one candidate and "
+    "only IDs of supplied current facts; a cited ID is not permission to invent details."
+)
+
 
 def digest(value: object) -> str:
     encoded = json.dumps(
@@ -55,6 +73,7 @@ class Microplan:
     actors: tuple[tuple[str, str], ...]
     facts: tuple[tuple[str, str], ...]
     allowed: tuple[str, ...]
+    input_fields: tuple[tuple[str, str | int | float], ...] = ()
 
     @property
     def digest(self) -> str:
@@ -72,6 +91,7 @@ class Microplan:
             "actors": [list(x) for x in self.actors],
             "facts": [list(x) for x in self.facts],
             "allowed": list(self.allowed),
+            "input_fields": [list(x) for x in self.input_fields],
         }
 
     @classmethod
@@ -82,14 +102,38 @@ class Microplan:
                 "actors": tuple(tuple(x) for x in data["actors"]),
                 "facts": tuple(tuple(x) for x in data["facts"]),
                 "allowed": tuple(data["allowed"]),
+                "input_fields": tuple(tuple(x) for x in data.get("input_fields", ())),
             }
         )
 
-    def prompt_json(self) -> str:
+    def prompt_json(
+        self, *, now_ms: int | None = None, recent_commentary: tuple[dict[str, object], ...] = ()
+    ) -> str:
+        fields = dict(self.input_fields)
+        separate = {"gap_seconds", "gap_reduction_seconds", "delta_to_best_seconds"}
+        primary = {k: v for k, v in fields.items() if k not in separate}
+        facts = []
+        for index, (key, text) in enumerate(self.facts):
+            if index == 0:
+                item_fields = primary
+            elif index == 1:
+                item_fields = {
+                    k: fields[k] for k in ("gap_seconds", "delta_to_best_seconds") if k in fields
+                }
+            elif index == 2 and "gap_reduction_seconds" in fields:
+                item_fields = {"gap_reduction_seconds": fields["gap_reduction_seconds"]}
+            else:
+                item_fields = {}
+            facts.append({"id": key, "claim": text, "fields": item_fields})
         return json.dumps(
             {
                 "speech_decision": "speak",
-                "facts": [{"id": key, "text": text} for key, text in self.facts],
+                "now_ms": now_ms,
+                "valid_until_ms": self.expires_ms,
+                "event_type": self.beat_id,
+                "featured_driver": self.subject,
+                "facts": facts,
+                "recent_commentary": recent_commentary,
             },
             ensure_ascii=False,
             separators=(",", ":"),
@@ -126,6 +170,14 @@ def _positive(raw: object) -> float | None:
         return None
     value = float(raw)
     return value if math.isfinite(value) and 0 < value < 3600 else None
+
+
+def _place(raw: object) -> int | None:
+    return raw if isinstance(raw, int) and not isinstance(raw, bool) and 1 <= raw <= 200 else None
+
+
+def _incident_points(raw: object) -> int | None:
+    return raw if isinstance(raw, int) and not isinstance(raw, bool) and 1 <= raw <= 1000 else None
 
 
 def _spoken_number(value: int) -> str:
@@ -240,10 +292,52 @@ def plan_from_accepted(
             claims = (f"is approaching {target}", f"is getting closer to {target}")
         else:
             return None
+    elif kind == "INCIDENT":
+        points = _incident_points(metrics.get("value"))
+        total = _incident_points(metrics.get("total"))
+        if points is None or total is None or points > total:
+            return None
+        claims = (f"has gained {points} incident points, bringing the total to {total}",)
+    elif kind in {"PIT_ENTRY", "PIT_EXIT"}:
+        position_key = "entryPosition" if kind == "PIT_ENTRY" else "exitPosition"
+        position = _place(metrics.get(position_key))
+        action = "enters" if kind == "PIT_ENTRY" else "exits"
+        direction = "from" if kind == "PIT_ENTRY" else "in"
+        claims = (
+            (
+                f"{action} the pit lane {direction} P{position}"
+                if position is not None
+                else f"{action} the pit lane"
+            ),
+        )
     else:
         return None
     allowed = tuple(f"{subject} {claim}." for claim in claims)
     fact_texts = [allowed[0]]
+    input_fields: list[tuple[str, str | int | float]] = []
+    if kind in {"PERSONAL_BEST", "LAP_COMPLETE"}:
+        input_fields.append(("lap_time", lap))
+    if kind == "LAP_COMPLETE":
+        best_lap = _positive(metrics.get("bestLap"))
+        delta = _positive(metrics.get("deltaToBest"))
+        if (
+            lap_time is not None
+            and best_lap is not None
+            and delta is not None
+            and abs((lap_time - best_lap) - delta) <= 0.015
+        ):
+            delta_ms = round(delta * 1000)
+            input_fields.append(("delta_to_best_seconds", delta_ms / 1000))
+            fact_texts.append(
+                f"That lap is {delta_ms / 1000:.3f} seconds slower than {subject}'s best lap."
+            )
+    if kind == "INCIDENT":
+        assert points is not None and total is not None
+        input_fields.extend((("incident_points_added", points), ("incident_points_total", total)))
+    if kind in {"PIT_ENTRY", "PIT_EXIT"} and position is not None:
+        input_fields.append(
+            ("entry_position" if kind == "PIT_ENTRY" else "exit_position", position)
+        )
     if kind == "PERSONAL_BEST":
         allowed += tuple(
             f"{subject} {verb} a {new}personal best{noun} of {lap}."
@@ -279,6 +373,7 @@ def plan_from_accepted(
     gap = _positive(metrics.get("gap"))
     if kind == "HUNTING" and gap is not None:
         gap_text = f"{gap:.3f}".rstrip("0").rstrip(".")
+        input_fields.append(("gap_seconds", gap))
         fact_texts.append(f"The gap from {subject} to {target} ahead is {gap_text} seconds.")
         allowed = tuple(f"{subject} {claim}, with a gap of {gap_text} seconds." for claim in claims)
         allowed += tuple(
@@ -329,4 +424,5 @@ def plan_from_accepted(
             (f"{accepted.event_id}:claim:{index}", text) for index, text in enumerate(fact_texts)
         ),
         allowed=allowed,
+        input_fields=tuple(input_fields),
     )

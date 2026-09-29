@@ -2299,10 +2299,18 @@ class NarrativeRuntime:
         self._realization = None
         self._commit_token = None
         self._lane = "idle"
-        effects = ["realization_failed", "effect:cancel_realization_deadline"]
+        # The frozen result DTO has only succeeded/failed/cancelled. A valid
+        # model skip uses the reserved internal command ID and leaves this
+        # planning opportunity silent without charging a director failure.
+        model_skip = str(command.command_id).startswith("effect:rz-skip:")
+        effects = [
+            "realization_skipped" if model_skip else "realization_failed",
+            "effect:cancel_realization_deadline",
+        ]
         self._release_opportunity_attempt(effects)
         self._invalidate_episode(effects)
-        self._note_director_failure(effects)
+        if not model_skip:
+            self._note_director_failure(effects)
         return "handled", effects
 
     def _on_realization_deadline(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
