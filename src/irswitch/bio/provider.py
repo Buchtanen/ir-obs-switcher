@@ -232,8 +232,13 @@ class BleHeartRateProvider:
                 backoff = 1.0
             except asyncio.CancelledError:
                 raise
-            except Exception:
-                logger.warning("BLE heart-rate session failed", exc_info=True)
+            except Exception as exc:
+                logger.warning(
+                    "BLE heart-rate session failed: %s: %.256s",
+                    type(exc).__name__,
+                    str(exc),
+                    exc_info=True,
+                )
             if self._stop.is_set() or not self._settings.reconnect:
                 break
             self.set_status("reconnecting")

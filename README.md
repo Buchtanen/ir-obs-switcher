@@ -224,6 +224,10 @@ Aplikace vystavuje REST API a WebSocket pro programové ovládání.
 
 ## Troubleshooting
 
+### Bluetooth HR se nepřipojí při použití SuperTonic
+
+Pokud log opakovaně hlásí `Bleak` / `assert_mta` při Windows Bluetooth callbacku, zkontroluj běžící build a restartuj službu po aktualizaci. Na tomto stroji diagnostický import prokázal, že dřívější kontrola dostupnosti SuperTonic při startu importovala `sounddevice` v hlavním vlákně a změnila jeho COM apartment na STA; Bleak zde pro callback očekává MTA. Oprava kontroluje dostupnost balíku bez jeho importu a audio backend načítá až pracovní vlákno TTS. Samotná chyba `assert_mta` neprokazuje závadu nebo neobvyklý stav HR senzoru. Zda se HR po opravě znovu připojuje, je nutné ověřit v živém běhu.
+
 ### OBS se nepřipojuje
 
 **Příznaky**: V logu vidíš "Failed to connect to OBS" nebo "OBS: Disconnected"

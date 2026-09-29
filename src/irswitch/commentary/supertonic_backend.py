@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import logging
 import sys
 import threading
@@ -30,12 +31,18 @@ class _Stream(Protocol):
 
 
 def available() -> bool:
+    """Probe installation without initializing native audio on the asyncio thread.
+
+    Importing sounddevice initializes PortAudio and Windows STA COM. Doing that
+    here breaks Bleak's MTA callbacks on the service loop. Native imports belong
+    to the playback worker; this probe does not certify driver/model readiness.
+    """
     try:
-        import sounddevice  # type: ignore[import-not-found,unused-ignore]  # noqa: F401
-        import supertonic  # type: ignore[import-not-found,unused-ignore]  # noqa: F401
-    except ImportError:
+        return all(
+            importlib.util.find_spec(name) is not None for name in ("sounddevice", "supertonic")
+        )
+    except (ImportError, ValueError):
         return False
-    return True
 
 
 def list_voices() -> list[str]:

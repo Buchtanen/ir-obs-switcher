@@ -1,5 +1,11 @@
 # v2 narrative runtime — implementation handover
 
+## Windows BT HR / SuperTonic startup fix (2026-09-30)
+
+- Live service log repeatedly reached Bleak `assert_mta` in Windows Bluetooth callbacks. A same-process diagnostic showed the main COM apartment switched to STA after importing `sounddevice`; SuperTonic's availability check imported it on the event-loop thread during startup. This establishes a software startup conflict, not a sensor fault.
+- Replace that eager import with a module-availability probe (`find_spec`); actual SuperTonic audio imports remain deferred to the TTS worker. No INI migration or sensor pairing change is required by this fix.
+- Verification still required: targeted import/availability tests and a restarted Windows service with a successful BT HR connection/notification. Do not report live recovery from the code change alone.
+
 ## Current checkpoint: aftermath evidence and durable diagnostics (2026-09-30)
 
 - Continues `feat/commentary-grounded-input`, issue #389 / draft PR #390, from `bbd1f5b`. Keep draft pending the next observed stream; no master merge.
