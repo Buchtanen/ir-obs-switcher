@@ -702,18 +702,44 @@ async def _realize_microplan(token: dict[str, Any], client: ModelClient) -> Narr
             token, now, failure_reason="realization_invalid_response"
         )
     plan = Microplan.from_dict(raw)
-    if client.was_spoken(plan):
-        return _failed_realization_command(
-            token, now, failure_reason="realization_invalid_response"
-        )
-    if now >= plan.expires_ms:
-        return _failed_realization_command(token, now, failure_reason="realization_timeout")
-    # The reducer froze plan.verify_payload() on its own token before IO.
+    client.trace(
+        "realization_requested",
+        {
+            "requestId": token.get("requestId"),
+            "dispatchGeneration": token.get("dispatchGeneration"),
+            "eventId": plan.event_id,
+            "bundleHash": plan.digest,
+            "plan": plan.to_dict(),
+        },
+    )
     cfg = client.settings()
-    if not cfg.speech_enabled:
-        return _failed_realization_command(
-            token, now, failure_reason="realization_invalid_response"
+    reason = (
+        "already_spoken"
+        if client.was_spoken(plan)
+        else (
+            "expired"
+            if now >= plan.expires_ms
+            else "speech_disabled" if not cfg.speech_enabled else None
         )
+    )
+    if reason is not None:
+        client.trace(
+            "realization_not_attempted",
+            {
+                "requestId": token.get("requestId"),
+                "eventId": plan.event_id,
+                "bundleHash": plan.digest,
+                "reason": reason,
+            },
+        )
+        return _failed_realization_command(
+            token,
+            now,
+            failure_reason=(
+                "realization_timeout" if reason == "expired" else "realization_invalid_response"
+            ),
+        )
+    # The reducer froze plan.verify_payload() on its own token before IO.
     text = plan.allowed[0]
     backend = "authored"
     started = now

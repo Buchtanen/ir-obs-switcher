@@ -1,6 +1,17 @@
 # v2 narrative runtime — implementation handover
 
-## Current checkpoint — grounded live commentary follow-up (2026-09-30)
+## Current checkpoint: aftermath evidence and durable diagnostics (2026-09-30)
+
+- Continues `feat/commentary-grounded-input`, issue #389 / draft PR #390, from `bbd1f5b`. Keep draft pending the next observed stream; no master merge.
+- Separate stopped, rolling, off-track, rejoined and towing facts. BACK_UNDER_WAY requires a confirmed previous stop. Unknown/stale/restarted telemetry resets the episode.
+- SDK repair flags, pit stall/service status and repair durations flow through extraction and RaceState. Durations enter model facts only during active pit service. No inference of damaged parts/completed repair; no pyirsdk upgrade.
+- September 29 IBT excerpts are regression fixtures for moving off-track/rejoin and pending optional repair. Tow and active service cases use synthetic evidence; on-air frequency remains unverified.
+- Bounded `commentary-trace/1` NDJSON companion joins final accepted event IDs, director choices, structured model requests, outcomes/suppression reasons, selection and reducer TTS outcomes. Disk/queue/cap loss is explicit; restart starts a fresh journal. Status: `loop.supervisors.commentary_trace`.
+- Messages contain telemetry/driver names. Bearer values are redacted; headers, endpoint and raw responses are excluded. This audit journal does not replace SDK replay tape.
+- QA: full suite 2815 passed, 2 Windows symlink-privilege exclusions; Ruff and diff whitespace checks passed. Added trace lifecycle and suppression tests after audit.
+- Next evaluation: compare actual playback with opportunities and suppression reasons. Selection/playback acceptance alone does not prove stream audibility.
+
+## Previous checkpoint — grounded live commentary follow-up (2026-09-30)
 
 - Worktree: `C:\Users\richa\Documents\Codex\2026-09-25\z\work\commentary-grounded`; branch `feat/commentary-grounded-input`; base of this slice `75654e7`; implementation commit `285e1f2875c3069ed3f731b0e60fb8ad00caf2d7`.
 - Issue [#389](https://github.com/Buchtanen/ir-obs-switcher/issues/389); draft PR [#390](https://github.com/Buchtanen/ir-obs-switcher/pull/390). Keep the PR open for the next live driving test and evaluation; this checkpoint does not request a master merge.

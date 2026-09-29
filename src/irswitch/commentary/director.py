@@ -1486,7 +1486,10 @@ def _spoken_kind(value: object, *, cs: bool) -> str | None:
     key = str(value).strip().lower()
     if cs:
         mapping = {
-            "stalled": "stojí",
+            "stopped": "stojí",
+            "off_track": "mimo trať",
+            "rejoined": "zpět na trati",
+            "towing": "odtah",
             "rolling": "stále v pohybu",
             "back_under_way": "znovu jede",
             "session_wrap": "konec",
@@ -1497,7 +1500,10 @@ def _spoken_kind(value: object, *, cs: bool) -> str | None:
         }
     else:
         mapping = {
-            "stalled": "stalled",
+            "stopped": "stopped",
+            "off_track": "off the track",
+            "rejoined": "back on track",
+            "towing": "being towed",
             "rolling": "still rolling",
             "back_under_way": "back under way",
             "session_wrap": "wrap",

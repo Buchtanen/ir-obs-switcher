@@ -71,8 +71,13 @@ class ModelSkip:
 
 class ModelClient:
     def __init__(
-        self, settings: Callable[[], ModelSettings], *, clock: Callable[[], float] = time.monotonic
+        self,
+        settings: Callable[[], ModelSettings],
+        *,
+        clock: Callable[[], float] = time.monotonic,
+        trace: Callable[[str, dict[str, Any]], None] | None = None,
     ) -> None:
+        self._trace = trace
         self._settings = settings
         self._clock = clock
         self._busy = False
@@ -91,6 +96,13 @@ class ModelClient:
         self._total_attempts = 0
         self._selections: deque[dict[str, Any]] = deque(maxlen=100)
 
+    def trace(self, kind: str, payload: dict[str, Any]) -> None:
+        if self._trace is not None:
+            try:
+                self._trace(kind, payload)
+            except Exception:
+                pass  # A diagnostic callback cannot change speech decisions.
+
     def _speech_key(self, plan: Microplan) -> str:
         return digest((plan.session_id, plan.correlation_id, [text for _, text in plan.facts]))
 
@@ -99,6 +111,7 @@ class ModelClient:
 
     def note_spoken(self, plan: Microplan) -> None:
         """Only PLAYBACK_ACCEPTED may advance actual spoken fact memory."""
+        self.trace("playback_accepted", {"eventId": plan.event_id, "bundleHash": plan.digest})
         self._spoken.append(self._speech_key(plan))
         for row in reversed(self._selections):
             if row["bundleHash"] == plan.digest:
@@ -137,6 +150,8 @@ class ModelClient:
                 "selectedMonoMs": round(self._clock() * 1000),
             }
         )
+
+        self.trace("speech_selection", dict(self._selections[-1]))
 
     def status(self) -> dict[str, Any]:
         cfg = self._settings()
@@ -335,20 +350,36 @@ class ModelClient:
     async def realize(self, plan: Microplan) -> str | ModelSkip | None:
         cfg = self._settings()
         started = self._clock()
-        if self._closed or not cfg.enabled or self._busy:
-            return None
-        if plan.digest in self._skipped:
-            return ModelSkip()
-        if plan.digest in self._attempts:
-            return None
-        if (
+        reason = None
+        if self._closed:
+            reason = "closed"
+        elif not cfg.enabled:
+            reason = "disabled"
+        elif self._busy:
+            reason = "busy"
+        elif plan.digest in self._skipped:
+            reason = "previous_skip"
+        elif plan.digest in self._attempts:
+            reason = "duplicate_bundle"
+        elif (
             self._shadow is not None
             and not self._shadow.done()
             and asyncio.current_task() is not self._shadow
         ):
-            return None
-        if started * 1000 >= plan.expires_ms:
-            return None
+            reason = "shadow_in_flight"
+        elif started * 1000 >= plan.expires_ms:
+            reason = "expired"
+        if reason is not None:
+            self.trace(
+                "model_not_attempted",
+                {
+                    "eventId": plan.event_id,
+                    "bundleHash": plan.digest,
+                    "sessionId": plan.session_id,
+                    "reason": reason,
+                },
+            )
+            return ModelSkip() if reason == "previous_skip" else None
         self._attempts.append(plan.digest)
         self._total_attempts += 1
         self._busy = True
@@ -378,6 +409,17 @@ class ModelClient:
             request_plan = self._request_plan(plan) if cfg.provider == "remote" else plan
             body = self._body(cfg, request_plan)
             row["promptHash"] = digest(body)
+            self.trace(
+                "model_input",
+                {
+                    "eventId": plan.event_id,
+                    "bundleHash": plan.digest,
+                    "sessionId": plan.session_id,
+                    "correlationId": plan.correlation_id,
+                    "promptHash": row["promptHash"],
+                    "request": body,
+                },
+            )
             row["facts"] = [{"id": key, "text": text} for key, text in request_plan.facts]
             budget = min(cfg.timeout_s, (plan.expires_ms - started * 1000) / 1000)
             async with asyncio.timeout(budget):
@@ -437,6 +479,7 @@ class ModelClient:
             )
             self._last = row
             self._history.append(row)
+            self.trace("model_outcome", dict(row))
             self._busy = False
         return None
 

@@ -78,7 +78,7 @@ def test_position_finish_and_field_fact_have_current_speakable_inputs():
     assert flag is not None and flag.subject == "Race control"
     assert flag.allowed[0] == "Race control shows the yellow flag."
     assert plan("INCIDENT_AFTERMATH", {"kind": "stalled", "tow": False}) is None
-    assert plan("INCIDENT_AFTERMATH", {"kind": "rolling"}) is not None
+    assert plan("INCIDENT_AFTERMATH", {"kind": "rolling", "motionVerified": True}) is not None
 
 
 def test_improving_lap_delta_is_supplied_without_declaring_personal_best():

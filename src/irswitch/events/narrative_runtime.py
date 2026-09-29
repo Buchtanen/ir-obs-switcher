@@ -13,7 +13,7 @@ import logging
 import time
 from collections import deque
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Literal, TypedDict
 
@@ -23,7 +23,7 @@ from irswitch.contracts.catalog_loader import NarrativeCatalog
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.context import ContextBatchPart
 from irswitch.contracts.runtime_catalog import load_runtime_catalog as load_narrative_catalog
-from irswitch.events.commentary_microplan import Microplan
+from irswitch.events.commentary_microplan import Microplan, digest
 from irswitch.events.detector_bank import DetectorBank
 from irswitch.events.episode_registry import EpisodeIntent, EpisodeRegistry
 from irswitch.events.exposure_store import ExposureIntent, ExposureStore
@@ -322,6 +322,7 @@ class NarrativeRuntime:
         realization_wording_policy: Callable[[], str] | None = None,
         on_microplan_spoken: Callable[[Microplan], None] | None = None,
         on_silence_due: Callable[[], None] | None = None,
+        on_trace: Callable[[str, dict[str, Any]], None] | None = None,
     ) -> None:
         # Empty NarrativeMailbox is falsy via __len__; only replace on None so
         # ingress/shadow cutover can share one injected mailbox identity.
@@ -330,6 +331,7 @@ class NarrativeRuntime:
         self._realization_wording_policy = realization_wording_policy
         self._on_microplan_spoken = on_microplan_spoken
         self._on_silence_due = on_silence_due
+        self._on_trace = on_trace
         self._microplans: dict[tuple[int, int], Microplan] = {}
         self._current_microplans: dict[tuple[str, str], Microplan] = {}
         self._microplan_session: str | None = None
@@ -639,12 +641,43 @@ class NarrativeRuntime:
         command = self._mailbox.dequeue()
         if command is None:
             return None
+        prior_request = dict(self._realization or {})
         result = self._reduce(command)
+        self._trace_reduction(command, result, prior_request)
         self._loop_reduce_count += 1
         self._loop_last_reduce_mono_ms = int(time.monotonic() * 1000)
         self._append_command_journal(command, result)
         self._capture_context_tape(command, result)
         return result
+
+    def _trace_reduction(
+        self, command: NarrativeCommand, result: ReduceResult, prior: dict[str, Any]
+    ) -> None:
+        if self._on_trace is None:
+            return
+        try:
+            payload = command.payload
+            if command.kind == "CONFIG_UPDATE":
+                payload = {}  # Configuration may contain endpoints or operator values.
+            elif command.kind == "APPLY_CONTEXT_BATCH":
+                payload = {"timeline": payload.get("timeline"), "events": payload.get("events", [])}
+            self._on_trace(
+                "runtime_reduction",
+                {
+                    "commandId": str(command.command_id),
+                    "kind": command.kind,
+                    "token": command.token,
+                    "payload": payload,
+                    "priorRequestId": prior.get("requestId"),
+                    "priorBundleHash": (
+                        digest(prior["microplan"]) if prior.get("microplan") else None
+                    ),
+                    "dispatchRequestId": (self._realization or {}).get("requestId"),
+                    "result": asdict(result),
+                },
+            )
+        except Exception:
+            logger.warning("Commentary reduction trace failed")
 
     def _capture_context_tape(self, command: NarrativeCommand, result: ReduceResult) -> None:
         """Queue admitted truth for later stream diagnosis without disk IO here."""
@@ -1660,6 +1693,11 @@ class NarrativeRuntime:
             at_mono_ms=at_mono_ms,
         )
         self._decision_ring.append(entry)
+        if self._on_trace is not None:
+            try:
+                self._on_trace("director_decision", dict(entry))
+            except Exception:
+                logger.warning("Commentary decision trace failed")
         if decision.selected is not None and decision.speech == "speak":
             effects.append("director_selected")
             self._director_selected_beat_id = decision.selected.beat_id

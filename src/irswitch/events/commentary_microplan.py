@@ -320,6 +320,17 @@ def plan_from_accepted(
         ):
             return None
         claims = ("starts the final lap",)
+    elif kind == "FIELD_FACT" and metrics.get("fact") == "repairs":
+        mandatory = metrics.get("mandatoryRepairRequired") is True
+        optional = metrics.get("optionalRepairRequired") is True
+        if not mandatory and not optional:
+            return None
+        requirement = (
+            "mandatory and optional"
+            if mandatory and optional
+            else ("mandatory" if mandatory else "optional")
+        )
+        claims = (f"needs {requirement} repairs",)
     elif kind == "FIELD_FACT":
         position = _place(metrics.get("position"))
         if metrics.get("fact") != "position" or position is None:
@@ -339,16 +350,26 @@ def plan_from_accepted(
             ),
         )
     elif kind == "BACK_UNDER_WAY":
-        if metrics.get("kind") != "back_under_way":
+        if metrics.get("kind") != "back_under_way" or metrics.get("previouslyStopped") is not True:
             return None
         claims = ("is back under way",)
     elif kind == "INCIDENT_AFTERMATH":
         aftermath = metrics.get("kind")
-        if aftermath == "rolling":
+        if aftermath == "rolling" and metrics.get("motionVerified") is True:
             claims = ("is moving after the incident",)
+        elif aftermath == "stopped" and metrics.get("motionVerified") is True:
+            claims = ("has stopped after the incident",)
+        elif (
+            aftermath == "off_track" and metrics.get("surface") == 0 and metrics.get("tow") is False
+        ):
+            claims = ("is off the track after the incident",)
+        elif (
+            aftermath == "rejoined" and metrics.get("surface") == 3 and metrics.get("tow") is False
+        ):
+            claims = ("has returned to the track",)
+        elif aftermath == "towing" and metrics.get("tow") is True:
+            claims = ("is being towed",)
         else:
-            # "stalled" can mean off-track or a pending tow; neither proves
-            # that the car has stopped or been towed.
             return None
     elif kind == "SESSION_FLAG":
         flag = metrics.get("kind")
@@ -410,10 +431,32 @@ def plan_from_accepted(
         input_fields.append(("finish_position", position))
     if kind == "FINAL_LAP":
         input_fields.append(("lap_number", lap_number))
-    if kind == "FIELD_FACT":
+    if kind == "FIELD_FACT" and metrics.get("fact") == "position":
         input_fields.append(("current_position", position))
         if lap_number is not None:
             input_fields.append(("lap_number", lap_number))
+    if kind == "FIELD_FACT" and metrics.get("fact") == "repairs":
+        input_fields.extend(
+            (
+                ("mandatory_repair_required", int(mandatory)),
+                ("optional_repair_required", int(optional)),
+            )
+        )
+        if metrics.get("repairServiceActive") is True:
+            for key, field, label in (
+                ("mandatoryRepairSeconds", "mandatory_repair_seconds", "mandatory"),
+                ("optionalRepairSeconds", "optional_repair_seconds", "optional"),
+            ):
+                seconds_left = _positive(metrics.get(key))
+                if seconds_left is not None and seconds_left < 86400:
+                    input_fields.append((field, seconds_left))
+                    fact_texts.append(
+                        f"{subject} has {seconds_left:g} seconds of {label} repairs remaining during pit service."
+                    )
+    if kind == "INCIDENT_AFTERMATH":
+        input_fields.append(("aftermath_state", str(metrics.get("kind"))))
+    if kind == "BACK_UNDER_WAY":
+        input_fields.append(("previously_stopped", 1))
     if kind == "INCIDENT":
         assert points is not None and total is not None
         input_fields.extend((("incident_points_added", points), ("incident_points_total", total)))

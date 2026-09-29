@@ -104,6 +104,30 @@ def free_grounding_reasons(text: str, plan: Microplan) -> list[str]:
     reasons: list[str] = []
     if _CAUSAL_OR_UNSUPPORTED.search(text):
         reasons.append("unsupported_claim")
+    state = fields.get("aftermath_state")
+    if re.search(r"\b(?:stopped|stationary|stalled)\b", text, re.I) and state != "stopped":
+        reasons.append("stop_unprovided")
+    if (
+        re.search(
+            r"\b(?:back under\s?way|resumes? (?:driving|racing)|gets? going again)\b", text, re.I
+        )
+        and fields.get("previously_stopped") != 1
+    ):
+        reasons.append("recovery_unprovided")
+    if re.search(r"\btow(?:ed|ing)?\b", text, re.I) and state != "towing":
+        reasons.append("tow_unprovided")
+    if (
+        re.search(r"\bmandatory repairs?\b", text, re.I)
+        and fields.get("mandatory_repair_required") != 1
+    ):
+        reasons.append("repair_unprovided")
+    if (
+        re.search(r"\boptional repairs?\b", text, re.I)
+        and fields.get("optional_repair_required") != 1
+    ):
+        reasons.append("repair_unprovided")
+    if re.search(r"\brepairs? (?:completed|finished)|\bfully repaired\b", text, re.I):
+        reasons.append("repair_completion_unprovided")
     if _COUNTED_INCIDENTS.search(text):
         reasons.append("incident_points_as_events")
 

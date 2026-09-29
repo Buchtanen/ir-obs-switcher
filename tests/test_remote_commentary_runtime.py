@@ -169,13 +169,45 @@ async def test_real_admitted_bundle_paraphrase_reaches_tts_and_spoken_memory(mon
 
 
 @pytest.mark.asyncio
-async def test_finish_fact_reaches_model_and_tts(monkeypatch):
+@pytest.mark.parametrize(
+    "event_type,metrics,expected",
+    [
+        ("FINISH", {"position": 30}, "Buchtanen finishes in P30."),
+        (
+            "INCIDENT_AFTERMATH",
+            {"kind": "off_track", "surface": 0, "tow": False},
+            "Buchtanen is off the track after the incident.",
+        ),
+        (
+            "INCIDENT_AFTERMATH",
+            {"kind": "rejoined", "surface": 3, "tow": False},
+            "Buchtanen has returned to the track.",
+        ),
+        (
+            "INCIDENT_AFTERMATH",
+            {"kind": "stopped", "motionVerified": True},
+            "Buchtanen has stopped after the incident.",
+        ),
+        ("INCIDENT_AFTERMATH", {"kind": "towing", "tow": True}, "Buchtanen is being towed."),
+        (
+            "BACK_UNDER_WAY",
+            {"kind": "back_under_way", "previouslyStopped": True},
+            "Buchtanen is back under way.",
+        ),
+        (
+            "FIELD_FACT",
+            {"fact": "repairs", "optionalRepairRequired": True},
+            "Buchtanen needs optional repairs.",
+        ),
+    ],
+)
+async def test_current_fact_reaches_model_and_tts(monkeypatch, event_type, metrics, expected):
     _, client, sink, runtime = setup(monkeypatch)
     batch = _batch()
     envelope = thaw_envelope(batch.events[0].envelope)
-    envelope.event_type = "FINISH"
+    envelope.event_type = event_type
     envelope.subject = EventSubject(car_id="player", display_name="Buchtanen")
-    envelope.metrics = {"position": 30}
+    envelope.metrics = metrics
     accepted = freeze_accepted_event(
         envelope, audiences=("commentary",), source="event_engine", source_ordinal=0
     )
@@ -184,13 +216,13 @@ async def test_finish_fact_reaches_model_and_tts(monkeypatch):
     assert current is not None
 
     async def post(*args):
-        return reply("Buchtanen finishes in P30.", current)
+        return reply(expected, current)
 
     monkeypatch.setattr(client, "_post", post)
     admit(runtime, batch)
     effects = await drain(runtime, 50)
     assert "realization_committed" in effects
-    assert sink.spoken and sink.spoken[0].text == "Buchtanen finishes in P30."
+    assert sink.spoken and sink.spoken[0].text == expected
     await client.close()
     await runtime.wait_effects_idle()
 
