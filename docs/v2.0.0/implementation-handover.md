@@ -1,5 +1,13 @@
 # v2 narrative runtime — implementation handover
 
+## Warmup chapters / overlay and Windows native startup (2026-09-30)
+
+- The 02:18:50–02:23:31 live run had one `Stream start` chapter. iRacing reported `SessionType=Warmup` throughout; the chapter trigger admitted only Practice/Qualify/Race, while the overlay tape likewise excluded Warmup. The `LOBBY → RACE` log entry was driving mode, not a session-type transition. A separate narrative adapter's `stage=race` is synthetic and must not be used as evidence of an SDK Race session.
+- User policy: treat SDK Warmup as Practice for live chapter title/`chapter.session_type`, deduplicating adjacent Practice/Warmup, and as `PRACTICE` for overlay/tape. Keep raw SDK type and session number in status. The frozen session-plan contract is unchanged; adding a second Practice stage would need separate contract work.
+- The same run reproduced native process exit `0xC0000005` on first ONNX Runtime import after WinRT Bluetooth scan. The startup change preloads ONNX Runtime off the event loop before BLE and other runtime workers; the SuperTonic availability probe still avoids importing `sounddevice` on the loop. No claim of sensor failure follows from the crash.
+- QA: full suite 2824 passed, two Windows symlink-privilege tests excluded; final focused suite 25 passed including per-utterance result reuse. Black/Ruff/diff checks and verifier GREEN. Actual Windows concurrent probe completed two SuperTonic WASAPI plays through CABLE Input while receiving 3 and 7 HR samples; clean process exit. Evidence remains local in `outputs/concurrent-hr-speech.log`.
+- Acceptance requires a restarted live process that stays up through BLE connection, active simulation, ONNX/TTS use and stream shutdown, plus observable HR notifications, Practice chapter/overlay tape for Warmup and actual TTS completion. `model_outcome.accepted`, `speech_selection` and `PLAYBACK_ACCEPTED` alone do not establish an audible finished comment.
+
 ## Windows BT HR / SuperTonic startup fix (2026-09-30)
 
 - Live service log repeatedly reached Bleak `assert_mta` in Windows Bluetooth callbacks. A same-process diagnostic showed the main COM apartment switched to STA after importing `sounddevice`; SuperTonic's availability check imported it on the event-loop thread during startup. This establishes a software startup conflict, not a sensor fault.

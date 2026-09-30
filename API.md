@@ -120,7 +120,7 @@ Získání aktuálního stavu služby.
 - `stream_privacy_status` (string | null) - privacy YouTube broadcastu
 - `youtube_quota_exceeded` (boolean) - zda byla překročena YouTube API kvóta
 - `youtube_api_key_missing` (boolean) - zda chybí YouTube API klíč
-- `stream_chapters` (array, pouze když `[stream_chapters] enabled = true`) - in-memory kapitoly aktuálního streamu; každá položka: `title`, `offset_seconds`, `session_type`, `created_at_ms`. Když je feature vypnutá, pole chybí. Při `youtube_vod = true` se stejný seznam po skončení streamu (fail-soft, s retry) zapisuje do YouTube description VOD.
+- `stream_chapters` (array, pouze když `[stream_chapters] enabled = true`) - in-memory kapitoly aktuálního streamu; každá položka: `title`, `offset_seconds`, `session_type`, `created_at_ms`. SDK `Warmup` vytváří Practice kapitolu (`session_type="Practice"`, Practice title) a sousední Practice/Warmup se deduplikují; původní SDK `session_type` ve statusu zůstává Warmup. Když je feature vypnutá, pole chybí. Při `youtube_vod = true` se stejný seznam po skončení streamu (fail-soft, s retry) zapisuje do YouTube description VOD.
 
 **YouTube status auto-refresh**: při hraně OBS streamu (start / stop) služba force-refreshe `liveBroadcasts` (title/status/privacy) a pushne aktualizovaný status na `WS /ws`. Po stopu ještě jednou po ~45 s (`obs_stream_stopped_delayed`), protože YouTube často krátce drží `live` → `complete`. Vyžaduje OAuth; chyby se logují a main loop nespadne. Manuální `POST /stream/reinit` zůstává.
 
@@ -1407,7 +1407,7 @@ Frontend (`overlay.js`) snapshoty inkrementálně reconciliuje. Leased karta nep
 
 ### Overlay session tape (JSONL)
 
-Když je `[overlay] session_tape = true` (výchozí), při PRACTICE/QUALIFYING/RACE vzniká soubor `recordings/overlay-<utc>-<subsession>-<sessionNum>.jsonl`. Overlay `overlay_mode` i switcher `session_type` berou z téhož `extract_session_type()`: aktivní řádek `SessionInfo.Sessions[SessionNum]` (YAML). Live telemetry `SessionType` v moderním irsdk chybí; `WeekendInfo.EventType` je produkt víkendu (často Race), ne aktuální session — proto se nepoužívá.
+Když je `[overlay] session_tape = true` (výchozí), při PRACTICE/QUALIFYING/RACE vzniká soubor `recordings/overlay-<utc>-<subsession>-<sessionNum>.jsonl`. SDK `Warmup` se pro overlay/tape mapuje na `PRACTICE`, ale původní `session_type=Warmup` a číslo session zůstávají v iRacing statusu. Zdroj typu je aktivní řádek `SessionInfo.Sessions[SessionNum]` (YAML) přes `extract_session_type()`; live telemetry `SessionType` v moderním irsdk chybí. `WeekendInfo.EventType` je produkt víkendu (často Race), ne aktuální session — proto se nepoužívá.
 
 Každý řádek má hodiny v sekundách:
 

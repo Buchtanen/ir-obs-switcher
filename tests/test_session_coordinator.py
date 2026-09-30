@@ -19,7 +19,7 @@ def test_overlay_mode_mapping() -> None:
     assert overlay_mode_from_session_type("Practice") == MODE_PRACTICE
     assert overlay_mode_from_session_type("Qualify") == MODE_QUALIFYING
     assert overlay_mode_from_session_type("Race") == MODE_RACE
-    assert overlay_mode_from_session_type("Warmup") == MODE_GENERIC
+    assert overlay_mode_from_session_type("Warmup") == MODE_PRACTICE
     assert overlay_mode_from_session_type(None) == MODE_GENERIC
     assert overlay_mode_from_session_type("SomethingElse") == MODE_GENERIC
 

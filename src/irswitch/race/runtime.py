@@ -393,6 +393,7 @@ class RaceRuntime:
             tts_effect = build_tts_effect(
                 self.commentary_consumer.director.sink,
                 locale=locale,
+                backend=self._overlay_settings().commentary.tts_backend,
             )
             self._speech_draft_cache = SpeechDraftCache()
             opportunity_queue = OpportunityQueue()
@@ -1093,6 +1094,10 @@ class RaceRuntime:
         return resolve_component_hz(s.default_hz, s.system_hz)
 
     async def run(self) -> None:
+        from irswitch.commentary.supertonic_backend import prepare_native_runtime
+
+        # Must finish before any producer, speech worker or WinRT BLE task starts.
+        await asyncio.to_thread(prepare_native_runtime)
         self._runtime_loop = asyncio.get_running_loop()
         overlay = self._overlay_settings()
         if not overlay.enabled:

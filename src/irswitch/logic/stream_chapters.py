@@ -65,7 +65,7 @@ def _normalize_session_type(session_type: str | None) -> str | None:
     text = str(session_type).strip()
     if not text or text.lower() == "test":
         return None
-    return text
+    return "Practice" if text.lower() == "warmup" else text
 
 
 def _offset_seconds(duration_current: float | None) -> int:

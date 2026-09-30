@@ -23,7 +23,7 @@ _SESSION_TYPE_TO_MODE: dict[str, str] = {
     "qualify": MODE_QUALIFYING,
     "qualifying": MODE_QUALIFYING,
     "race": MODE_RACE,
-    "warmup": MODE_GENERIC,
+    "warmup": MODE_PRACTICE,
     "test": MODE_GENERIC,
 }
 
