@@ -2041,6 +2041,67 @@ def test_story_director_silence_skips_dispatch() -> None:
     assert runtime.current_realization_token() is None
 
 
+def test_silence_watchdog_rearms_when_no_fresh_candidate_exists() -> None:
+    runtime = NarrativeRuntime(story_director=StoryDirector(), silence_deadline_delay_s=33.0)
+    runtime.enable()
+    runtime.seed_director_for_test(
+        world=_director_world(lane="idle", impulse="timer"), candidates=()
+    )
+    runtime.admit(
+        NarrativeCommand.deadline(
+            "silence:empty",
+            "LONG_SILENCE_ELAPSED",
+            33_000,
+            generation=0,
+            deadline_mono_ms=33_000,
+        )
+    )
+    result = runtime.reduce_next()
+    assert result is not None
+    assert "director_silenced" in result.effects
+    assert "silence_deadline_rearmed" in result.effects
+    assert "effect:arm_silence_deadline" in result.effects
+
+
+@pytest.mark.asyncio
+async def test_live_silence_requests_fresh_fact_and_rearms() -> None:
+    requested: list[str] = []
+    runtime = NarrativeRuntime(
+        on_silence_due=lambda: requested.append("fresh"),
+        silence_deadline_delay_s=33.0,
+    )
+    runtime.enable()
+    runtime.admit(
+        _context_with_timeline(
+            "silence:open",
+            _timeline_run(revision=40, stream_epoch=1, narrative_run_active=True),
+            fanout=40,
+        )
+    )
+    opened = runtime.reduce_next()
+    assert opened is not None
+    await runtime.apply_effects(opened.effects)
+    generation = runtime._silence_generation
+    runtime.admit(
+        NarrativeCommand.deadline(
+            "silence:due",
+            "LONG_SILENCE_ELAPSED",
+            33_000,
+            generation=generation,
+            deadline_mono_ms=33_000,
+        )
+    )
+    due = runtime.reduce_next()
+    assert due is not None
+    assert "effect:request_silence_fact" in due.effects
+    assert "silence_deadline_rearmed" in due.effects
+    await runtime.apply_effects(due.effects)
+    assert requested == ["fresh"]
+    await runtime.apply_effects(
+        ("effect:cancel_silence_deadline", "effect:cancel_validity_deadline")
+    )
+
+
 def test_story_director_notes_failure_on_realization_failed() -> None:
     director = StoryDirector()
     runtime = NarrativeRuntime(story_director=director)

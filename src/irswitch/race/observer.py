@@ -483,13 +483,18 @@ class RaceObserver:
             return "Weather update: " + ", ".join(str(p) for p in parts) + "."
 
         if envelope.event_type == "INCIDENT_AFTERMATH":
-            if kind == "stalled":
-                return (
-                    "Stojí. Čeká se, až se znovu rozjede."
-                    if cs
-                    else "He's stalled. Waiting to get going again."
-                )
-            return "Incident a pořád v pohybu." if cs else "Incident there, and he's still rolling."
+            phrases = {
+                "stopped": ("Po incidentu stojí.", "He has stopped after the incident."),
+                "off_track": (
+                    "Po incidentu je mimo trať.",
+                    "He is off the track after the incident.",
+                ),
+                "rejoined": ("Vrátil se na trať.", "He has returned to the track."),
+                "towing": ("Probíhá odtah.", "He is being towed."),
+                "rolling": ("Po incidentu je stále v pohybu.", "He is moving after the incident."),
+            }
+            pair = phrases.get(str(kind))
+            return None if pair is None else pair[0 if cs else 1]
 
         if envelope.event_type == "BACK_UNDER_WAY" or kind == "back_under_way":
             return "Znovu jede." if cs else "He's back under way."

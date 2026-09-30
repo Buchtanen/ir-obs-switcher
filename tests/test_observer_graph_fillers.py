@@ -57,11 +57,11 @@ def test_slot_bindings_observer_fields() -> None:
         mode="RACE",
         priority=72,
         monotonic_ms=1,
-        metrics={"kind": "stalled", "position": 4},
+        metrics={"kind": "stopped", "position": 4},
     )
     en = slot_bindings(aftermath, "unknown", language="en")
     cs = slot_bindings(aftermath, "unknown", language="cs")
-    assert en["kind"] == "stalled"
+    assert en["kind"] == "stopped"
     assert cs["kind"] == "stojí"
     assert en["position"] == 4
 

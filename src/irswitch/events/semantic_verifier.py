@@ -8,6 +8,7 @@ and does not activate the live narrative actor.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -124,6 +125,7 @@ class VerifyIntent:
     stale_bundle: bool = False
     external_failure: bool = False
     allowed_sentences: tuple[str, ...] = ()
+    experimental_free_wording: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -214,6 +216,21 @@ def _shape_reasons(text: str) -> list[str]:
     return reasons
 
 
+def free_wording_reasons(text: str) -> list[str]:
+    """Speech shape only, deliberately no claim/wording or language verification.
+
+    Non-ASCII driver names do not imply non-English speech. This experiment
+    never asserts that a sentence's facts have been independently verified.
+    """
+    text = " ".join(text.split())
+    reasons = [reason for reason in _shape_reasons(text) if reason != "non_en_contract"]
+    if re.search(r"[.!?]\s", text) and "sentence_count" not in reasons:
+        reasons.append("sentence_count")
+    if len(text) > 200 and "too_long" not in reasons:
+        reasons.append("too_long")
+    return reasons
+
+
 class SemanticVerifier:
     """Accepts one visible sentence against one frozen family claim frame."""
 
@@ -234,16 +251,20 @@ class SemanticVerifier:
         if _lexicon_invalid(intent):
             return _failed("realization_input_invalid")
 
-        claims = (f"required-frame:{intent.family}",)
-        reasons = _shape_reasons(intent.text)
-        if intent.allowed_sentences:
+        claims = () if intent.experimental_free_wording else (f"required-frame:{intent.family}",)
+        reasons = (
+            free_wording_reasons(intent.text)
+            if intent.experimental_free_wording
+            else _shape_reasons(intent.text)
+        )
+        if intent.allowed_sentences and not intent.experimental_free_wording:
             # These are input-derived complete realizations, supplied before IO.
             # Names may contain accents; this does not change the EN grammar.
             if intent.text.casefold() in {text.casefold() for text in intent.allowed_sentences}:
                 reasons = [reason for reason in reasons if reason != "non_en_contract"]
             else:
                 reasons.append("required_missing")
-        if not reasons:
+        if not reasons and not intent.experimental_free_wording:
             reasons = (
                 []
                 if intent.allowed_sentences

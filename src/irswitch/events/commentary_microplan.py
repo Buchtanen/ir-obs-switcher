@@ -35,6 +35,24 @@ M1_SYSTEM = (
     "Use only the supplied current facts. No previous commentary is needed."
 )
 
+M2_SYSTEM = (
+    "You are an English motorsport commentator addressing stream viewers in the third person. "
+    "Use only current supplied structured facts; previous commentary is memory, not evidence of current state. "
+    "Keep actor roles, numbers, and units exact: position is a place, gap is time in seconds, "
+    "incident points are not a count of separate incidents. "
+    "Do not invent causes, overtakes, position changes, contact, damage, penalties, intentions, "
+    "race leadership, pit service, duration, or predictions. Unknown is not false. "
+    "Give one clear update that combines relevant supplied facts when useful. "
+    "When a current fact supplies a measured change since the last spoken update, prefer that change "
+    "over merely restating the current value. "
+    "Avoid repeating already spoken meaning; if nothing material changed, choose skip. "
+    "If valid_until_ms has passed, choose skip. One sentence, usually 8-28 words, at most 200 characters. "
+    'Return JSON only with exactly {"action":"speak" or "skip","used_fact_ids":[...],'
+    '"candidates":[{"style_id":"natural","text":"..."}]}. '
+    "For skip, candidates and used_fact_ids are empty arrays. For speak, use one candidate and "
+    "only IDs of supplied current facts; a cited ID is not permission to invent details."
+)
+
 
 def digest(value: object) -> str:
     encoded = json.dumps(
@@ -55,6 +73,7 @@ class Microplan:
     actors: tuple[tuple[str, str], ...]
     facts: tuple[tuple[str, str], ...]
     allowed: tuple[str, ...]
+    input_fields: tuple[tuple[str, str | int | float], ...] = ()
 
     @property
     def digest(self) -> str:
@@ -72,6 +91,7 @@ class Microplan:
             "actors": [list(x) for x in self.actors],
             "facts": [list(x) for x in self.facts],
             "allowed": list(self.allowed),
+            "input_fields": [list(x) for x in self.input_fields],
         }
 
     @classmethod
@@ -82,14 +102,38 @@ class Microplan:
                 "actors": tuple(tuple(x) for x in data["actors"]),
                 "facts": tuple(tuple(x) for x in data["facts"]),
                 "allowed": tuple(data["allowed"]),
+                "input_fields": tuple(tuple(x) for x in data.get("input_fields", ())),
             }
         )
 
-    def prompt_json(self) -> str:
+    def prompt_json(
+        self, *, now_ms: int | None = None, recent_commentary: tuple[dict[str, object], ...] = ()
+    ) -> str:
+        fields = dict(self.input_fields)
+        separate = {"gap_seconds", "gap_reduction_seconds", "delta_to_best_seconds"}
+        primary = {k: v for k, v in fields.items() if k not in separate}
+        facts = []
+        for index, (key, text) in enumerate(self.facts):
+            if index == 0:
+                item_fields = primary
+            elif index == 1:
+                item_fields = {
+                    k: fields[k] for k in ("gap_seconds", "delta_to_best_seconds") if k in fields
+                }
+            elif index == 2 and "gap_reduction_seconds" in fields:
+                item_fields = {"gap_reduction_seconds": fields["gap_reduction_seconds"]}
+            else:
+                item_fields = {}
+            facts.append({"id": key, "claim": text, "fields": item_fields})
         return json.dumps(
             {
                 "speech_decision": "speak",
-                "facts": [{"id": key, "text": text} for key, text in self.facts],
+                "now_ms": now_ms,
+                "valid_until_ms": self.expires_ms,
+                "event_type": self.beat_id,
+                "featured_driver": self.subject,
+                "facts": facts,
+                "recent_commentary": recent_commentary,
             },
             ensure_ascii=False,
             separators=(",", ":"),
@@ -126,6 +170,14 @@ def _positive(raw: object) -> float | None:
         return None
     value = float(raw)
     return value if math.isfinite(value) and 0 < value < 3600 else None
+
+
+def _place(raw: object) -> int | None:
+    return raw if isinstance(raw, int) and not isinstance(raw, bool) and 1 <= raw <= 200 else None
+
+
+def _incident_points(raw: object) -> int | None:
+    return raw if isinstance(raw, int) and not isinstance(raw, bool) and 1 <= raw <= 1000 else None
 
 
 def _spoken_number(value: int) -> str:
@@ -179,6 +231,8 @@ def plan_from_accepted(
         names = hero.get("speakable_names", [])
         subject = next((value for raw in names if (value := _name(raw))), None)
         subject = subject or _name(hero.get("display_name"))
+    if envelope.event_type == "SESSION_FLAG":
+        subject = "Race control"
     if subject is None:
         # Named subject is mandatory; never substitute a fixture or guess roster.
         return None
@@ -240,10 +294,176 @@ def plan_from_accepted(
             claims = (f"is approaching {target}", f"is getting closer to {target}")
         else:
             return None
+    elif kind in {"POSITION_GAINED", "POSITION_LOST"}:
+        old_position = _place(metrics.get("oldPosition"))
+        new_position = _place(metrics.get("newPosition"))
+        if old_position is None or new_position is None:
+            return None
+        if metrics.get("direction") != ("gain" if kind == "POSITION_GAINED" else "loss"):
+            return None
+        if kind == "POSITION_GAINED" and new_position >= old_position:
+            return None
+        if kind == "POSITION_LOST" and new_position <= old_position:
+            return None
+        claims = (f"moves from P{old_position} to P{new_position}",)
+    elif kind == "FINISH":
+        position = _place(metrics.get("position")) or _place(metrics.get("classPosition"))
+        if position is None:
+            return None
+        claims = (f"finishes in P{position}",)
+    elif kind == "FINAL_LAP":
+        lap_number = metrics.get("lap")
+        if (
+            isinstance(lap_number, bool)
+            or not isinstance(lap_number, int)
+            or not 1 <= lap_number <= 10000
+        ):
+            return None
+        claims = ("starts the final lap",)
+    elif kind == "FIELD_FACT" and metrics.get("fact") == "repairs":
+        mandatory = metrics.get("mandatoryRepairRequired") is True
+        optional = metrics.get("optionalRepairRequired") is True
+        if not mandatory and not optional:
+            return None
+        requirement = (
+            "mandatory and optional"
+            if mandatory and optional
+            else ("mandatory" if mandatory else "optional")
+        )
+        claims = (f"needs {requirement} repairs",)
+    elif kind == "FIELD_FACT":
+        position = _place(metrics.get("position"))
+        if metrics.get("fact") != "position" or position is None:
+            return None
+        lap_number = metrics.get("lap")
+        if (
+            isinstance(lap_number, bool)
+            or not isinstance(lap_number, int)
+            or not 1 <= lap_number <= 10000
+        ):
+            lap_number = None
+        claims = (
+            (
+                f"is running in P{position} on lap {lap_number}"
+                if lap_number is not None
+                else f"is running in P{position}"
+            ),
+        )
+    elif kind == "BACK_UNDER_WAY":
+        if metrics.get("kind") != "back_under_way" or metrics.get("previouslyStopped") is not True:
+            return None
+        claims = ("is back under way",)
+    elif kind == "INCIDENT_AFTERMATH":
+        aftermath = metrics.get("kind")
+        if aftermath == "rolling" and metrics.get("motionVerified") is True:
+            claims = ("is moving after the incident",)
+        elif aftermath == "stopped" and metrics.get("motionVerified") is True:
+            claims = ("has stopped after the incident",)
+        elif (
+            aftermath == "off_track" and metrics.get("surface") == 0 and metrics.get("tow") is False
+        ):
+            claims = ("is off the track after the incident",)
+        elif (
+            aftermath == "rejoined" and metrics.get("surface") == 3 and metrics.get("tow") is False
+        ):
+            claims = ("has returned to the track",)
+        elif aftermath == "towing" and metrics.get("tow") is True:
+            claims = ("is being towed",)
+        else:
+            return None
+    elif kind == "SESSION_FLAG":
+        flag = metrics.get("kind")
+        if flag not in {"yellow", "green", "checkered"}:
+            return None
+        subject = "Race control"
+        claims = (f"shows the {flag} flag",)
+    elif kind == "INCIDENT":
+        points = _incident_points(metrics.get("value"))
+        total = _incident_points(metrics.get("total"))
+        if points is None or total is None or points > total:
+            return None
+        claims = (f"has gained {points} incident points, bringing the total to {total}",)
+    elif kind in {"PIT_ENTRY", "PIT_EXIT"}:
+        position_key = "entryPosition" if kind == "PIT_ENTRY" else "exitPosition"
+        position = _place(metrics.get(position_key))
+        action = "enters" if kind == "PIT_ENTRY" else "exits"
+        direction = "from" if kind == "PIT_ENTRY" else "in"
+        claims = (
+            (
+                f"{action} the pit lane {direction} P{position}"
+                if position is not None
+                else f"{action} the pit lane"
+            ),
+        )
     else:
         return None
     allowed = tuple(f"{subject} {claim}." for claim in claims)
     fact_texts = [allowed[0]]
+    input_fields: list[tuple[str, str | int | float]] = []
+    if kind in {"PERSONAL_BEST", "LAP_COMPLETE"}:
+        input_fields.append(("lap_time", lap))
+    if kind == "LAP_COMPLETE":
+        best_lap = _positive(metrics.get("bestLap"))
+        raw_delta = metrics.get("deltaToBest")
+        delta = (
+            float(raw_delta)
+            if isinstance(raw_delta, (int, float))
+            and not isinstance(raw_delta, bool)
+            and math.isfinite(raw_delta)
+            else None
+        )
+        if (
+            lap_time is not None
+            and best_lap is not None
+            and delta is not None
+            and abs(delta) > 0.0005
+            and abs((lap_time - best_lap) - delta) <= 0.015
+        ):
+            delta_ms = round(abs(delta) * 1000)
+            input_fields.append(("delta_to_best_seconds", delta_ms / 1000))
+            comparison = "slower" if delta > 0 else "quicker"
+            fact_texts.append(
+                f"That lap is {delta_ms / 1000:.3f} seconds {comparison} than {subject}'s previous best lap."
+            )
+    if kind in {"POSITION_GAINED", "POSITION_LOST"}:
+        input_fields.extend((("old_position", old_position), ("new_position", new_position)))
+    if kind == "FINISH":
+        input_fields.append(("finish_position", position))
+    if kind == "FINAL_LAP":
+        input_fields.append(("lap_number", lap_number))
+    if kind == "FIELD_FACT" and metrics.get("fact") == "position":
+        input_fields.append(("current_position", position))
+        if lap_number is not None:
+            input_fields.append(("lap_number", lap_number))
+    if kind == "FIELD_FACT" and metrics.get("fact") == "repairs":
+        input_fields.extend(
+            (
+                ("mandatory_repair_required", int(mandatory)),
+                ("optional_repair_required", int(optional)),
+            )
+        )
+        if metrics.get("repairServiceActive") is True:
+            for key, field, label in (
+                ("mandatoryRepairSeconds", "mandatory_repair_seconds", "mandatory"),
+                ("optionalRepairSeconds", "optional_repair_seconds", "optional"),
+            ):
+                seconds_left = _positive(metrics.get(key))
+                if seconds_left is not None and seconds_left < 86400:
+                    input_fields.append((field, seconds_left))
+                    fact_texts.append(
+                        f"{subject} has {seconds_left:g} seconds of {label} repairs remaining during pit service."
+                    )
+    if kind == "INCIDENT_AFTERMATH":
+        input_fields.append(("aftermath_state", str(metrics.get("kind"))))
+    if kind == "BACK_UNDER_WAY":
+        input_fields.append(("previously_stopped", 1))
+    if kind == "INCIDENT":
+        assert points is not None and total is not None
+        input_fields.extend((("incident_points_added", points), ("incident_points_total", total)))
+    if kind in {"PIT_ENTRY", "PIT_EXIT"} and position is not None:
+        input_fields.append(
+            ("entry_position" if kind == "PIT_ENTRY" else "exit_position", position)
+        )
     if kind == "PERSONAL_BEST":
         allowed += tuple(
             f"{subject} {verb} a {new}personal best{noun} of {lap}."
@@ -279,6 +499,7 @@ def plan_from_accepted(
     gap = _positive(metrics.get("gap"))
     if kind == "HUNTING" and gap is not None:
         gap_text = f"{gap:.3f}".rstrip("0").rstrip(".")
+        input_fields.append(("gap_seconds", gap))
         fact_texts.append(f"The gap from {subject} to {target} ahead is {gap_text} seconds.")
         allowed = tuple(f"{subject} {claim}, with a gap of {gap_text} seconds." for claim in claims)
         allowed += tuple(
@@ -310,7 +531,11 @@ def plan_from_accepted(
             if text.startswith(f"{subject} is ")
         )
     allowed = tuple(dict.fromkeys(text for text in allowed if len(text) <= 200))
-    actors: tuple[tuple[str, str], ...] = ((envelope.subject.car_id, subject),)
+    actors: tuple[tuple[str, str], ...] = (
+        (("race_control", subject),)
+        if kind == "SESSION_FLAG"
+        else ((envelope.subject.car_id, subject),)
+    )
     if target is not None and kind not in {"PERSONAL_BEST", "LAP_COMPLETE"}:
         target_id = envelope.target.car_id if envelope.target else "target"
         if target_id == envelope.subject.car_id:
@@ -329,4 +554,5 @@ def plan_from_accepted(
             (f"{accepted.event_id}:claim:{index}", text) for index, text in enumerate(fact_texts)
         ),
         allowed=allowed,
+        input_fields=tuple(input_fields),
     )

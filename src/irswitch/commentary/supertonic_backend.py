@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import importlib
+import importlib.util
 import logging
 import sys
 import threading
@@ -19,6 +21,7 @@ _INTER_THREADS = 2
 _COINIT_APARTMENTTHREADED = 0x2
 _engine_lock = threading.Lock()
 _engine: Any = None
+_native_runtime_error: str | None = None
 
 
 class PlaybackInterrupted(Exception):
@@ -30,12 +33,39 @@ class _Stream(Protocol):
 
 
 def available() -> bool:
-    try:
-        import sounddevice  # type: ignore[import-not-found,unused-ignore]  # noqa: F401
-        import supertonic  # type: ignore[import-not-found,unused-ignore]  # noqa: F401
-    except ImportError:
+    """Probe installation without initializing native audio on the asyncio thread.
+
+    Importing sounddevice initializes PortAudio and Windows STA COM. Doing that
+    here breaks Bleak's MTA callbacks on the service loop. Native imports belong
+    to the playback worker; this probe does not certify driver/model readiness.
+    """
+    if _native_runtime_error is not None:
         return False
-    return True
+    try:
+        return all(
+            importlib.util.find_spec(name) is not None for name in ("sounddevice", "supertonic")
+        )
+    except (ImportError, ValueError):
+        return False
+
+
+def prepare_native_runtime() -> None:
+    """Load ONNX before WinRT/BLE starts; never initialize PortAudio here.
+
+    On the installed Windows runtime, first importing ONNX from the speech
+    worker after WinRT initialization causes a native access violation. The
+    race runtime awaits this off-loop bootstrap before starting its workers.
+    """
+    global _native_runtime_error
+    if sys.platform == "win32" and available():
+        logger.info("tts native bootstrap: loading ONNX before BLE")
+        try:
+            importlib.import_module("onnxruntime")
+        except Exception as exc:
+            _native_runtime_error = type(exc).__name__
+            logger.error("SuperTonic disabled: ONNX bootstrap failed (%s)", _native_runtime_error)
+            return
+        logger.info("tts native bootstrap: ONNX ready")
 
 
 def list_voices() -> list[str]:

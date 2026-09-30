@@ -305,3 +305,23 @@ def test_speak_timeout_exempts_stream_start_from_global_cap() -> None:
         tts=TtsLimits(max_chars=220, max_seconds=16.0),
     )
     assert speak_timeout_s(settings, event_type="STREAM_START", node=stream_node) == 26.0
+
+
+def test_serial_worker_result_is_not_reused_after_early_return(monkeypatch):
+    from irswitch.commentary.tts import TtsResult
+
+    sink = ProcessTtsSink(CommentarySettings(tts_backend="null"))
+    utterance = _sample_utterance()
+
+    def success(*args):
+        sink.last_result = TtsResult(backend="null", spoken=True)
+
+    monkeypatch.setattr(sink, "_speak", success)
+    sink.enqueue(utterance)
+    assert sink.wait_idle(2)
+    assert sink.result_for(utterance.event_id).spoken is True
+    monkeypatch.setattr(sink, "_speak", lambda *args: None)
+    sink.enqueue(utterance)
+    assert sink.wait_idle(2)
+    assert sink.result_for(utterance.event_id).spoken is False
+    sink.close()

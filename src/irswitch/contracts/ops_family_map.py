@@ -469,8 +469,8 @@ _STATIC: dict[str, _StaticSource] = {
         en_forbidden_tokens=("back under way", "invents damage", "wins the race", "checkered"),
         tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
-            "Aftermath update (stalled|rolling). Tow/off-track keep stalled; must not claim "
-            "recovery or damage. Tow/teleport invalidate motion claims; ambiguous aftermath "
+            "Aftermath distinguishes stopped, rolling, off_track, rejoined and towing. "
+            "Off-track does not prove stopped; tow/teleport invalidate motion claims. Ambiguous aftermath "
             "stays unknown — never invent recovery. Same-tick director prefers INCIDENT."
         ),
     ),
@@ -516,7 +516,7 @@ _STATIC: dict[str, _StaticSource] = {
         ),
         tts_slot_formats=("subjectSurface", "requiredClaimSurface"),
         notes=(
-            "Recovery closure after stalled aftermath; must not claim no-damage. Tow/teleport "
+            "Recovery closure after a verified stop; must not claim no-damage. Tow/teleport "
             "block recovery speech; missing motion evidence stays stalled/unknown (no invention)."
         ),
     ),

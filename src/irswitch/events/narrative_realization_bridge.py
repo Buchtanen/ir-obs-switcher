@@ -25,7 +25,7 @@ from irswitch.contracts.authored_pack import (
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.narrative import NarrativeEvent
 from irswitch.events.commentary_microplan import Microplan
-from irswitch.events.commentary_model import ModelClient
+from irswitch.events.commentary_model import ModelClient, ModelSkip
 from irswitch.events.narrative_shadow_consumer import AdaptedPublication
 from irswitch.events.narrative_verify_frame import (
     VerifyFrame,
@@ -547,9 +547,10 @@ def _failed_realization_command(
     *,
     failure_reason: str,
     backend: str = "qwen_compiled",
+    model_skip: bool = False,
 ) -> NarrativeCommand:
     return NarrativeCommand.realization_result(
-        f"effect:rz-fail:{token['requestId']}",
+        f"effect:rz-{'skip' if model_skip else 'fail'}:{token['requestId']}",
         "REALIZATION_FAILED",
         mono_ms,
         request_id=str(token["requestId"]),
@@ -557,7 +558,7 @@ def _failed_realization_command(
         dispatch_generation=int(token["dispatchGeneration"]),
         result={
             "schemaVersion": "realization-result/2",
-            "resultId": f"result-fail:{token['requestId']}",
+            "resultId": f"result-{'skip' if model_skip else 'fail'}:{token['requestId']}",
             "requestId": str(token["requestId"]),
             "requestOrdinal": int(token["requestOrdinal"]),
             "dispatchGeneration": int(token["dispatchGeneration"]),
@@ -701,18 +702,44 @@ async def _realize_microplan(token: dict[str, Any], client: ModelClient) -> Narr
             token, now, failure_reason="realization_invalid_response"
         )
     plan = Microplan.from_dict(raw)
-    if client.was_spoken(plan):
-        return _failed_realization_command(
-            token, now, failure_reason="realization_invalid_response"
-        )
-    if now >= plan.expires_ms:
-        return _failed_realization_command(token, now, failure_reason="realization_timeout")
-    # The reducer froze plan.verify_payload() on its own token before IO.
+    client.trace(
+        "realization_requested",
+        {
+            "requestId": token.get("requestId"),
+            "dispatchGeneration": token.get("dispatchGeneration"),
+            "eventId": plan.event_id,
+            "bundleHash": plan.digest,
+            "plan": plan.to_dict(),
+        },
+    )
     cfg = client.settings()
-    if not cfg.speech_enabled:
-        return _failed_realization_command(
-            token, now, failure_reason="realization_invalid_response"
+    reason = (
+        "already_spoken"
+        if client.was_spoken(plan)
+        else (
+            "expired"
+            if now >= plan.expires_ms
+            else "speech_disabled" if not cfg.speech_enabled else None
         )
+    )
+    if reason is not None:
+        client.trace(
+            "realization_not_attempted",
+            {
+                "requestId": token.get("requestId"),
+                "eventId": plan.event_id,
+                "bundleHash": plan.digest,
+                "reason": reason,
+            },
+        )
+        return _failed_realization_command(
+            token,
+            now,
+            failure_reason=(
+                "realization_timeout" if reason == "expired" else "realization_invalid_response"
+            ),
+        )
+    # The reducer froze plan.verify_payload() on its own token before IO.
     text = plan.allowed[0]
     backend = "authored"
     started = now
@@ -721,6 +748,15 @@ async def _realize_microplan(token: dict[str, Any], client: ModelClient) -> Narr
             client.submit_shadow(plan)
         else:
             candidate = await client.realize(plan)
+            if isinstance(candidate, ModelSkip):
+                return _failed_realization_command(
+                    token,
+                    int(time.monotonic() * 1000),
+                    # The frozen realization contract has no skip outcome.
+                    # ModelClient retains the precise model_skip diagnostic.
+                    failure_reason="realization_invalid_response",
+                    model_skip=True,
+                )
             if candidate is not None:
                 text, backend = candidate, "qwen_compiled"
     completed = int(time.monotonic() * 1000)

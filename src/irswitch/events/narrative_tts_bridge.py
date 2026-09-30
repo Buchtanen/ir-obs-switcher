@@ -64,7 +64,7 @@ def _bridge_utterance(text: str, token: dict[str, Any], *, locale: str) -> Comme
 
 
 def _resolve_backend(explicit: str | None) -> str:
-    if explicit is not None and str(explicit).strip():
+    if explicit is not None and str(explicit).strip().lower() not in {"", "auto"}:
         return str(explicit).strip().lower()
     return str(detect_backend() or "null").strip().lower() or "null"
 
@@ -190,11 +190,28 @@ def build_tts_effect(
                             worker_sequence=2,
                         )
                         return
-                # Null / non-waiting sinks complete immediately after accept.
+                # Process sinks report actual backend failure even after becoming idle.
+                result_for = getattr(sink, "result_for", None)
+                if callable(result_for):
+                    result = result_for(str(token["utteranceId"]))
+                    if result is None:
+                        yield _tts_callback(
+                            "SPEECH_FAILED",
+                            token,
+                            mono_ms=int(time.monotonic() * 1000),
+                            backend=resolved_backend,
+                            worker_sequence=2,
+                        )
+                        return
+                else:
+                    result = getattr(sink, "last_result", None)
             else:
-                await asyncio.to_thread(speak_text, text, locale=locale)
+                result = await asyncio.to_thread(
+                    speak_text, text, locale=locale, backend=resolved_backend
+                )
+            failed = result is not None and not result.spoken
             yield _tts_callback(
-                "SPEECH_COMPLETED",
+                "SPEECH_FAILED" if failed else "SPEECH_COMPLETED",
                 token,
                 mono_ms=int(time.monotonic() * 1000),
                 backend=resolved_backend,

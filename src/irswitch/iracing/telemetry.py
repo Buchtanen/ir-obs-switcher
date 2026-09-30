@@ -62,6 +62,11 @@ TELEMETRY_VARS: tuple[str, ...] = (
     "SplitTimeInfo",
     "PlayerTrackSurface",
     "PlayerCarTowTime",
+    "EngineWarnings",
+    "PlayerCarInPitStall",
+    "PlayerCarPitSvStatus",
+    "PitRepairLeft",
+    "PitOptRepairLeft",
     # Live weather for commentary session briefs (H3/H4).
     "Skies",
     "AirTemp",
@@ -219,5 +224,10 @@ def extract_telemetry(data: Mapping[str, object], timestamp: float) -> Telemetry
         data_quality=str(data.get("data_quality") or "ok"),
         player_track_surface=_player_track_surface(data, player_idx),
         player_tow_time=as_float(data.get("PlayerCarTowTime")),
+        engine_warnings=as_non_negative_int(data.get("EngineWarnings")),
+        player_in_pit_stall=as_bool(data.get("PlayerCarInPitStall")),
+        pit_service_status=as_non_negative_int(data.get("PlayerCarPitSvStatus")),
+        pit_repair_left=as_elapsed_seconds(data.get("PitRepairLeft")),
+        pit_opt_repair_left=as_elapsed_seconds(data.get("PitOptRepairLeft")),
         sector_start_pcts=sector_start_pcts(data.get("SplitTimeInfo")),
     )

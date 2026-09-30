@@ -157,9 +157,15 @@ async def test_external_failure_never_retries_or_exposes_error(monkeypatch, fail
         "secret",
     ],
 )
-async def test_protocol_edges_cannot_reach_speech(monkeypatch, kind):
+@pytest.mark.parametrize("wording_policy", ["strict", "experimental_free"])
+async def test_protocol_edges_cannot_reach_speech(monkeypatch, kind, wording_policy):
     monkeypatch.setenv("IRSWITCH_LLM_API_KEY", "unit-secret")
-    cfg = ModelSettings(enabled=True, provider="remote", base_url="https://llm.buchtovo.cz/v1")
+    cfg = ModelSettings(
+        enabled=True,
+        provider="remote",
+        base_url="https://llm.buchtovo.cz/v1",
+        wording_policy=wording_policy,
+    )
     client = ModelClient(lambda: cfg)
     current = plan()
     response = reply(current.allowed[0], current)

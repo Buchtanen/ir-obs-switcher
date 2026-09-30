@@ -168,3 +168,15 @@ youtube_vod = true
 """)
     settings = load_stream_chapters_settings(parser)
     assert settings.youtube_vod is True
+
+
+def test_warmup_uses_practice_chapter_and_deduplication():
+    tracker = StreamChapterTracker(_enabled(session_titles={"practice": "Practice"}))
+    tracker.update(streaming=True, duration_current_seconds=0, session_type=None)
+    created = tracker.update(streaming=True, duration_current_seconds=3, session_type="Warmup")
+    assert [(c.title, c.session_type, c.offset_seconds) for c in created] == [
+        ("Practice", "Practice", 3)
+    ]
+    assert tracker.update(streaming=True, duration_current_seconds=4, session_type="Practice") == []
+    race = tracker.update(streaming=True, duration_current_seconds=300, session_type="Race")
+    assert len(race) == 1 and race[0].title == "Race"

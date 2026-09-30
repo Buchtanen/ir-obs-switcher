@@ -296,4 +296,6 @@ def test_tape_opens_when_session_type_comes_from_session_name(tmp_path: Path) ->
         extract_telemetry({"PlayerCarIdx": 0, "SessionName": "Warmup"}, 1.0)
     )
     tape.observe(warmup, 11.0, _settings(tmp_path))
-    assert tape.path is None
+    assert warmup.session_type == "Warmup"
+    assert warmup.overlay_mode == "PRACTICE"
+    assert tape.path is not None

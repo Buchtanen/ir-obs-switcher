@@ -12,6 +12,21 @@ families; unsupported inputs remain silent.
 
 ## Configuration and operation
 
+### Grounded-input follow-up — #389
+
+Topic `feat/commentary-grounded-input` replaces the remote prompt profile with
+`M2/1`: readable fact claims gain typed values/units, event identity and expiry,
+plus up to three same-session commentary entries from the last 60 seconds that
+reached `PLAYBACK_ACCEPTED`. A valid model skip deliberately stays silent.
+`INCIDENT`, `PIT_ENTRY` and `PIT_EXIT` join the seven existing input families.
+The experimental wording path adds a partial grounding guard and diagnostic
+reasons; passing it does not prove factual correctness. There are no new INI keys
+or sampling changes. This topic has no live validation yet. See the
+[current input contract](v2.0.0/remote-commentary-microplan.md#runtime-boundary).
+
+The configuration and free-wording notes below record the earlier M1 deployment
+and experiment; their unchanged-family/prompt statements describe that earlier slice.
+
 Remote provider, mode and api_key_env are INI settings, not Studio overlay Settings
 fields. Use `[commentary.llm]` with provider=remote, mode=live,
 base_url=https://llm.buchtovo.cz/v1 and model=openai/gpt-oss-120b for this test.
@@ -25,6 +40,21 @@ provider, mode, preflight, attempts and selections. Browser voice settings do no
 configure the server's Supertonic voice. Manual server speech checks the sound
 path, not model generation. `played` indicates acceptance by the sink; check the
 terminal speech result and audio logs for completion.
+
+### Planned free-wording live experiment
+
+The `feat/remote-free-wording` extension adds `[commentary.llm] wording_policy`:
+`strict` by default, or `experimental_free` for remote generation only. The requested
+next test uses `mode=live`, `wording_policy=experimental_free`, `timeout_s=3.0`.
+This is a planned configuration, not a deployment result. Local providers remain
+strict. The seven input families and M1 prompt/sampling remain unchanged.
+
+Free wording keeps shape/length and freshness/config/cancellation/deadline checks,
+but neither whole-sentence grammar check blocks generated text. Diagnostics record
+`wordingPolicy`, `semanticCheck=not_enforced` and `strictWouldAccept`; acceptance
+does not establish factual accuracy. Restore `wording_policy=strict` for grammar
+enforcement or disable model generation for authored fallback. See the
+[test contract and review steps](v2.0.0/remote-commentary-microplan.md#experimental-free-wording-live-test).
 
 ## Packaged deployment
 

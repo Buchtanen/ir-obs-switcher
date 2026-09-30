@@ -84,3 +84,28 @@ def test_race_wires_tts_effect_and_drops_speech_mirror() -> None:
     assert "legacy_stream_handler=self.commentary_consumer.handle" not in race
     assert "cache_mirrored_context" not in race
     assert "_narrative_subscription_cutover = True" in race
+
+
+@pytest.mark.asyncio
+async def test_idle_sink_with_failed_backend_does_not_claim_completed():
+    from irswitch.commentary.tts import TtsResult
+
+    class FailedSink:
+        last_result = TtsResult(backend="supertonic", spoken=False, error="synthesis failed")
+
+        def enqueue(self, utterance):
+            pass
+
+        def wait_idle(self, timeout):
+            return True
+
+    effect = build_tts_effect(FailedSink(), backend="supertonic")
+    token = {
+        "utteranceId": "failed",
+        "utteranceOrdinal": 1,
+        "backendGeneration": 1,
+        "dispatchGeneration": 1,
+        "text": "Test speech.",
+    }
+    produced = await _collect_effect(effect, token)
+    assert [c.kind for c in produced] == ["PLAYBACK_ACCEPTED", "SPEECH_FAILED"]

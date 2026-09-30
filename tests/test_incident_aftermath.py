@@ -49,13 +49,13 @@ def test_rolling_aftermath_after_incident_while_moving() -> None:
     assert fsm._phase == "idle"
 
 
-def test_stalled_then_back_under_way() -> None:
+def test_off_track_then_rejoined_without_claiming_a_stop() -> None:
     fsm = IncidentAftermathFsm()
     fsm.tick(_state(incidents=1, surface=ON_TRACK, dist=0.40), 1.0)
     out = fsm.tick(_state(incidents=3, surface=OFF_TRACK, dist=0.40), 1.1)
     assert len(out) == 1
-    assert out[0].metrics["kind"] == "stalled"
-    assert fsm._phase == "stalled"
+    assert out[0].metrics["kind"] == "off_track"
+    assert fsm._phase == "off_track"
 
     # Still off-track — no recovery.
     assert fsm.tick(_state(incidents=3, surface=OFF_TRACK, dist=0.40), 2.0) == []
@@ -66,15 +66,16 @@ def test_stalled_then_back_under_way() -> None:
 
     recovered = fsm.tick(_state(incidents=3, surface=ON_TRACK, dist=0.403), 3.4)
     assert len(recovered) == 1
-    assert recovered[0].event_type == "BACK_UNDER_WAY"
+    assert recovered[0].event_type == "INCIDENT_AFTERMATH"
+    assert recovered[0].metrics["kind"] == "rejoined"
     assert fsm._phase == "idle"
 
 
-def test_tow_counts_as_stalled() -> None:
+def test_tow_is_explicit_and_not_stopped() -> None:
     fsm = IncidentAftermathFsm()
     fsm.tick(_state(incidents=0, dist=0.2), 1.0)
     out = fsm.tick(_state(incidents=2, surface=ON_TRACK, dist=0.2, tow=8.0), 1.2)
-    assert out[0].metrics["kind"] == "stalled"
+    assert out[0].metrics["kind"] == "towing"
     assert out[0].metrics["tow"] is True
 
 
@@ -101,7 +102,7 @@ def test_observer_formatter_and_derived_drain() -> None:
     assert derived[0].event_type == "INCIDENT_AFTERMATH"
     text = observer.format_filler_text(derived[0], locale="en")
     assert text is not None
-    assert "stalled" in text.lower() or "waiting" in text.lower()
+    assert "off the track" in text.lower()
 
 
 def test_director_speaks_aftermath_via_formatter() -> None:
@@ -134,7 +135,7 @@ def test_reset_clears_aftermath_phase() -> None:
     fsm = IncidentAftermathFsm()
     fsm.tick(_state(incidents=1), 1.0)
     fsm.tick(_state(incidents=3, surface=OFF_TRACK), 1.1)
-    assert fsm._phase == "stalled"
+    assert fsm._phase == "off_track"
     fsm.reset()
     assert fsm._phase == "idle"
     assert fsm.take_pending() == []
@@ -144,11 +145,11 @@ def test_on_track_speed_zero_stalled_then_back_under_way() -> None:
     fsm = IncidentAftermathFsm()
     fsm.tick(_state(incidents=1, dist=0.40, speed_mps=0.0), 1.0)
     assert fsm.tick(_state(incidents=3, dist=0.40, speed_mps=0.0), 1.1) == []
-    assert fsm.tick(_state(incidents=3, dist=0.40, speed_mps=0.0), 1.8) == []
+    stopped = fsm.tick(_state(incidents=3, dist=0.40, speed_mps=0.0), 1.8)
+    assert stopped[0].metrics["kind"] == "stopped"
     stalled = fsm.tick(_state(incidents=3, dist=0.40, speed_mps=0.0), 2.4)
-    assert len(stalled) == 1
-    assert stalled[0].metrics["kind"] == "stalled"
-    assert fsm._phase == "stalled"
+    assert stalled == []
+    assert fsm._phase == "stopped"
 
     fsm.tick(_state(incidents=3, dist=0.40, speed_mps=15.0), 2.5)
     recovered = fsm.tick(_state(incidents=3, dist=0.40, speed_mps=15.0), 3.2)
@@ -157,19 +158,20 @@ def test_on_track_speed_zero_stalled_then_back_under_way() -> None:
     assert fsm._phase == "idle"
 
 
-def test_off_track_with_speed_stays_stalled_then_one_back_under_way() -> None:
+def test_off_track_with_speed_returns_to_track_without_false_restart() -> None:
     fsm = IncidentAftermathFsm()
     fsm.tick(_state(incidents=1, dist=0.40, speed_mps=15.0), 1.0)
     out = fsm.tick(_state(incidents=3, surface=OFF_TRACK, dist=0.40, speed_mps=15.0), 1.1)
     assert len(out) == 1
-    assert out[0].metrics["kind"] == "stalled"
-    assert fsm._phase == "stalled"
+    assert out[0].metrics["kind"] == "off_track"
+    assert fsm._phase == "off_track"
     assert fsm.tick(_state(incidents=3, surface=OFF_TRACK, dist=0.41, speed_mps=15.0), 2.0) == []
 
     fsm.tick(_state(incidents=3, surface=ON_TRACK, dist=0.40, speed_mps=15.0), 2.5)
     recovered = fsm.tick(_state(incidents=3, surface=ON_TRACK, dist=0.40, speed_mps=15.0), 3.2)
     assert len(recovered) == 1
-    assert recovered[0].event_type == "BACK_UNDER_WAY"
+    assert recovered[0].event_type == "INCIDENT_AFTERMATH"
+    assert recovered[0].metrics["kind"] == "rejoined"
 
 
 def test_director_same_tick_speaks_incident_not_aftermath() -> None:
@@ -204,7 +206,7 @@ def test_director_same_tick_speaks_incident_not_aftermath() -> None:
     assert second is None
 
 
-def test_practice_recovery_keeps_back_under_way_name() -> None:
+def test_practice_rejoin_is_not_a_restart() -> None:
     fsm = IncidentAftermathFsm()
     fsm.tick(_state(incidents=1, overlay_mode="PRACTICE"), 1.0)
     fsm.tick(_state(incidents=3, surface=OFF_TRACK, overlay_mode="PRACTICE"), 1.1)
@@ -213,7 +215,8 @@ def test_practice_recovery_keeps_back_under_way_name() -> None:
         _state(incidents=3, surface=ON_TRACK, dist=0.403, overlay_mode="PRACTICE"),
         3.4,
     )
-    assert recovered[0].event_type == "BACK_UNDER_WAY"
+    assert recovered[0].event_type == "INCIDENT_AFTERMATH"
+    assert recovered[0].metrics["kind"] == "rejoined"
     assert recovered[0].mode == "PRACTICE"
 
 

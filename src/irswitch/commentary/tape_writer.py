@@ -447,6 +447,20 @@ class NarrativeTapeWriter:
         return self._task
 
     @property
+    def manifest_identity(self) -> dict[str, Any]:
+        """File identity needed by live record producers; no mutable manifest access."""
+        return {
+            key: self._manifest[key]
+            for key in (
+                "processInstanceId",
+                "broadcastEpoch",
+                "streamEpoch",
+                "effectiveConfigHash",
+                "configApplySequence",
+            )
+        }
+
+    @property
     def health_latch(self) -> CaptureHealthLatch:
         return self._queue.health_latch
 

@@ -193,6 +193,12 @@ class ProcessTtsSink:
     _interrupt_generation: int = field(default=0, init=False, repr=False)
     _closed: bool = field(default=False, init=False, repr=False)
     _sentinel: object = field(default_factory=object, init=False, repr=False)
+    _results: dict[str, TtsResult] = field(default_factory=dict, init=False, repr=False)
+
+    def result_for(self, event_id: str) -> TtsResult | None:
+        """Return only the terminal result belonging to this utterance."""
+        with self._idle:
+            return self._results.get(event_id)
 
     def enqueue(self, utterance: CommentaryUtterance) -> None:
         """Accept a validated line. Must not block the race loop.
@@ -209,6 +215,7 @@ class ProcessTtsSink:
         accepted = True
         replaced: CommentaryUtterance | None = None
         with self._idle:
+            self._results.pop(utterance.event_id, None)
             waiters = self._pending - (1 if self._speaking else 0)
             if waiters >= 1:
                 try:
@@ -319,12 +326,18 @@ class ProcessTtsSink:
             with self._idle:
                 self._speaking = True
                 generation = self._interrupt_generation
+                self.last_result = None
             try:
                 self._speak(utterance, generation)
             except Exception:
                 logger.exception("tts serial worker failed")
             finally:
                 with self._idle:
+                    self._results[utterance.event_id] = self.last_result or TtsResult(
+                        backend=self.settings.tts_backend, spoken=False, error="not played"
+                    )
+                    while len(self._results) > 32:
+                        self._results.pop(next(iter(self._results)))
                     self._speaking = False
                     self._pending = max(0, self._pending - 1)
                     if self._pending == 0:
@@ -351,7 +364,9 @@ class ProcessTtsSink:
             self.settings.scheduler, "llm_past_framing", True
         )
         outcome: PolishOutcome | None = None
-        if self.settings.llm_polish:
+        # NarrativeRuntime has already generated and verified this line. The
+        # legacy polish endpoint would make a second request after selection.
+        if self.settings.llm_polish and utterance.event_type != "NARRATIVE_RUNTIME":
             polish_kwargs: dict[str, Any] = {
                 "past": past,
                 "driver_names": utterance.hero_names,

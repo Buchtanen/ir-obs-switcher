@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from irswitch.commentary.composer import build_skeleton
 from irswitch.commentary.director import CommentaryDirector, slot_bindings
 from irswitch.commentary.graph import load_sequence_graph
@@ -102,6 +104,31 @@ def test_process_sink_polish_fail_speaks_skeleton(monkeypatch) -> None:
     )
     assert spoken
     assert "thirty" in spoken[0].lower() or "30" in spoken[0]
+
+
+def test_narrative_runtime_speech_does_not_call_legacy_polish(monkeypatch) -> None:
+    from irswitch.events.narrative_tts_bridge import _bridge_utterance
+
+    spoken: list[str] = []
+    monkeypatch.setattr(
+        "irswitch.commentary.tts.polish_skeleton",
+        lambda *args, **kwargs: pytest.fail(
+            "legacy polish was called for verified narrative speech"
+        ),
+    )
+    monkeypatch.setattr(
+        "irswitch.commentary.tts.speak_text",
+        lambda text, **kwargs: (
+            spoken.append(text)
+            or type("R", (), {"backend": "null", "spoken": True, "error": None})()
+        ),
+    )
+    sink = ProcessTtsSink(settings=CommentarySettings(llm_polish=True, tts_backend="null"))
+    sink._speak(
+        _bridge_utterance("Buchtanen finishes in P30.", {"utteranceId": "u:1"}, locale="en")
+    )
+    assert len(spoken) == 1
+    assert "Buchtanen" in spoken[0]
 
 
 def test_director_decision_hook_survives_ring_buffer() -> None:

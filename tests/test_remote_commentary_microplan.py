@@ -49,6 +49,75 @@ def test_no_unknown_or_invalid_fact_becomes_speech():
     assert plan(metrics={"lapTime": -1}) is None
 
 
+def test_position_finish_and_field_fact_have_current_speakable_inputs():
+    gained = plan(
+        "POSITION_GAINED", {"oldPosition": 30, "newPosition": 28, "direction": "gain", "delta": 2}
+    )
+    assert gained is not None
+    assert dict(gained.input_fields)["new_position"] == 28
+    assert "P30" in gained.prompt_json() and "P28" in gained.prompt_json()
+    assert "overtakes" not in gained.prompt_json()
+    assert plan("POSITION_GAINED", {"oldPosition": 28, "newPosition": 30}) is None
+    assert (
+        plan("POSITION_GAINED", {"oldPosition": 30, "newPosition": 28, "direction": "loss"}) is None
+    )
+
+    finish = plan("FINISH", {"position": 30})
+    assert finish is not None
+    assert "finishes" in finish.facts[0][1]
+    assert dict(finish.input_fields)["finish_position"] == 30
+
+    field = plan("FIELD_FACT", {"fact": "position", "position": 29})
+    assert field is not None
+    assert "P29" in field.facts[0][1]
+    field_with_lap = plan("FIELD_FACT", {"fact": "position", "position": 29, "lap": 4})
+    assert field_with_lap is not None
+    assert "P29 on lap 4" in field_with_lap.facts[0][1]
+    assert plan("FIELD_FACT", {"fact": "leader", "leaderName": "Rossi"}) is None
+    flag = plan("SESSION_FLAG", {"kind": "yellow"})
+    assert flag is not None and flag.subject == "Race control"
+    assert flag.allowed[0] == "Race control shows the yellow flag."
+    assert plan("INCIDENT_AFTERMATH", {"kind": "stalled", "tow": False}) is None
+    assert plan("INCIDENT_AFTERMATH", {"kind": "rolling", "motionVerified": True}) is not None
+
+
+def test_improving_lap_delta_is_supplied_without_declaring_personal_best():
+    current = plan("LAP_COMPLETE", {"lapTime": 91.055, "bestLap": 91.350, "deltaToBest": -0.295})
+    assert current is not None
+    assert "0.295 seconds quicker" in current.prompt_json()
+    assert "personal best" not in current.prompt_json()
+
+
+def test_gap_change_uses_played_same_pair_across_detector_episodes():
+    now = [100.0]
+    client = ModelClient(lambda: ModelSettings(), clock=lambda: now[0])
+    first = Microplan(
+        event_id="event:1",
+        beat_id="HUNTING",
+        revision=1,
+        session_id="session:1",
+        correlation_id="battle:1",
+        expires_ms=105000,
+        subject="Buchtanen",
+        actors=(("player", "Buchtanen"), ("9", "Rossi")),
+        facts=(("fact:1", "Buchtanen is closing on Rossi."),),
+        allowed=("Buchtanen is closing on Rossi.",),
+        input_fields=(("gap_seconds", 1.7),),
+    )
+    client.note_selection(first, first.allowed[0], generated=False)
+    client.note_spoken(first)
+    now[0] = 108.0
+    second = replace(
+        first,
+        event_id="event:2",
+        correlation_id="battle:2",
+        expires_ms=113000,
+        input_fields=(("gap_seconds", 1.4),),
+    )
+    requested = client._request_plan(second)
+    assert dict(requested.input_fields)["gap_reduction_seconds"] == 0.3
+
+
 @pytest.mark.parametrize(
     "completion", ["completes the lap in", "has completed the lap with a time of"]
 )

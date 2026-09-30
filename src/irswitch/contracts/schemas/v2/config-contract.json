@@ -137,7 +137,8 @@
     "commentary.tts.voice": "",
     "commentary.llm.provider": "local",
     "commentary.llm.mode": "live",
-    "commentary.llm.api_key_env": "IRSWITCH_LLM_API_KEY"
+    "commentary.llm.api_key_env": "IRSWITCH_LLM_API_KEY",
+    "commentary.llm.wording_policy": "strict"
   },
   "keyDefinitions": [
     {
@@ -1177,6 +1178,25 @@
       "sensitive": false,
       "unit": null,
       "valueType": "string"
+    },
+    {
+      "key": "commentary.llm.wording_policy",
+      "keyClass": "static",
+      "default": "strict",
+      "defaultSource": "literal",
+      "applyBoundary": "next_request",
+      "boundaryNote": "Changes invalidate in-flight microplans before speech",
+      "boundaryOwner": "narrative_actor",
+      "constraints": {
+        "values": [
+          "strict",
+          "experimental_free"
+        ]
+      },
+      "preflightComponent": null,
+      "sensitive": false,
+      "unit": null,
+      "valueType": "enum"
     }
   ],
   "ledgerContract": {

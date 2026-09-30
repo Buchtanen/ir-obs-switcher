@@ -70,6 +70,11 @@ class TelemetrySnapshot:
     data_quality: str = "ok"  # ok/degraded/stale
     player_track_surface: int | None = None
     player_tow_time: float | None = None
+    engine_warnings: int | None = None
+    player_in_pit_stall: bool | None = None
+    pit_service_status: int | None = None
+    pit_repair_left: float | None = None
+    pit_opt_repair_left: float | None = None
     sector_start_pcts: tuple[float, ...] = ()
 
     @classmethod
@@ -136,6 +141,11 @@ class RaceState:
     data_quality: str = "ok"
     player_track_surface: int | None = None
     player_tow_time: float | None = None
+    engine_warnings: int | None = None
+    player_in_pit_stall: bool | None = None
+    pit_service_status: int | None = None
+    pit_repair_left: float | None = None
+    pit_opt_repair_left: float | None = None
     speed_mps: float | None = None
     session_flags: int | None = None
     session_flag_names: tuple[str, ...] = ()

@@ -16,6 +16,7 @@ GOLDENS = json.loads((ROOT / "docs/v2.0.0/machine/config-goldens.json").read_tex
 MODEL_EXTENSION = {
     "commentary.llm.provider": "local",
     "commentary.llm.mode": "live",
+    "commentary.llm.wording_policy": "strict",
     "commentary.llm.api_key_env": "IRSWITCH_LLM_API_KEY",
 }
 

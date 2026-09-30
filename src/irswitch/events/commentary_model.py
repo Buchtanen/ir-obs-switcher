@@ -12,12 +12,14 @@ import os
 import time
 from collections import deque
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 import aiohttp
 
-from irswitch.events.commentary_microplan import M1_SYSTEM, Microplan, digest
+from irswitch.events.commentary_grounding import free_grounding_reasons
+from irswitch.events.commentary_microplan import M2_SYSTEM, Microplan, digest
+from irswitch.events.semantic_verifier import free_wording_reasons
 
 
 @dataclass(frozen=True)
@@ -26,6 +28,7 @@ class ModelSettings:
     speech_enabled: bool = True
     provider: str = "local"
     mode: str = "live"
+    wording_policy: str = "strict"
     base_url: str = "http://127.0.0.1:11434/v1"
     model: str = "qwen3:4b-instruct-2507-q4_K_M"
     api_key_env: str = "IRSWITCH_LLM_API_KEY"
@@ -47,21 +50,41 @@ class ModelSettings:
     def signature(self) -> str:
         return digest(self.__dict__)
 
+    @property
+    def effective_wording_policy(self) -> str:
+        if (
+            self.enabled
+            and self.provider == "remote"
+            and self.wording_policy == "experimental_free"
+        ):
+            return "experimental_free"
+        return "strict"
+
 
 class ModelFailure(Exception):
     """A safe diagnostic code; never carries a URL, credential or response body."""
 
 
+class ModelSkip:
+    """A valid model decision to stay silent, distinct from transport fallback."""
+
+
 class ModelClient:
     def __init__(
-        self, settings: Callable[[], ModelSettings], *, clock: Callable[[], float] = time.monotonic
+        self,
+        settings: Callable[[], ModelSettings],
+        *,
+        clock: Callable[[], float] = time.monotonic,
+        trace: Callable[[str, dict[str, Any]], None] | None = None,
     ) -> None:
+        self._trace = trace
         self._settings = settings
         self._clock = clock
         self._busy = False
         self._closed = False
         self._shadow: asyncio.Task[None] | None = None
         self._attempts: deque[str] = deque(maxlen=256)
+        self._skipped: deque[str] = deque(maxlen=256)
         self._history: deque[dict[str, Any]] = deque(maxlen=100)
         self._generation = 0
         self._signature = ""
@@ -69,8 +92,16 @@ class ModelClient:
         self._preflight = "not_requested"
         self._preflight_signature = ""
         self._spoken: deque[str] = deque(maxlen=128)
+        self._played_context: deque[dict[str, Any]] = deque(maxlen=8)
         self._total_attempts = 0
         self._selections: deque[dict[str, Any]] = deque(maxlen=100)
+
+    def trace(self, kind: str, payload: dict[str, Any]) -> None:
+        if self._trace is not None:
+            try:
+                self._trace(kind, payload)
+            except Exception:
+                pass  # A diagnostic callback cannot change speech decisions.
 
     def _speech_key(self, plan: Microplan) -> str:
         return digest((plan.session_id, plan.correlation_id, [text for _, text in plan.facts]))
@@ -80,10 +111,23 @@ class ModelClient:
 
     def note_spoken(self, plan: Microplan) -> None:
         """Only PLAYBACK_ACCEPTED may advance actual spoken fact memory."""
+        self.trace("playback_accepted", {"eventId": plan.event_id, "bundleHash": plan.digest})
         self._spoken.append(self._speech_key(plan))
         for row in reversed(self._selections):
             if row["bundleHash"] == plan.digest:
                 row.update(played=True, playedMonoMs=round(self._clock() * 1000))
+                self._played_context.append(
+                    {
+                        "session_id": plan.session_id,
+                        "played_mono_ms": round(self._clock() * 1000),
+                        "text": row["text"],
+                        "actors": [name for _, name in plan.actors],
+                        "actor_bindings": list(plan.actors),
+                        "correlation_id": plan.correlation_id,
+                        "beat_id": plan.beat_id,
+                        "input_fields": list(plan.input_fields),
+                    }
+                )
                 break
 
     def note_selection(self, plan: Microplan, text: str, *, generated: bool) -> None:
@@ -96,9 +140,18 @@ class ModelClient:
                 "model": cfg.model if generated else None,
                 "text": text,
                 "played": False,
+                "wordingPolicy": cfg.effective_wording_policy,
+                "semanticCheck": (
+                    "not_enforced"
+                    if generated and cfg.effective_wording_policy == "experimental_free"
+                    else "strict"
+                ),
+                "strictWouldAccept": plan.accepts(text),
                 "selectedMonoMs": round(self._clock() * 1000),
             }
         )
+
+        self.trace("speech_selection", dict(self._selections[-1]))
 
     def status(self) -> dict[str, Any]:
         cfg = self._settings()
@@ -106,7 +159,9 @@ class ModelClient:
             "provider": cfg.provider,
             "mode": cfg.mode,
             "model": cfg.model,
-            "profile": "M1/1" if cfg.provider == "remote" else "tight/1",
+            "profile": "M2/1" if cfg.provider == "remote" else "tight/1",
+            "wordingPolicy": cfg.effective_wording_policy,
+            "timeoutSeconds": cfg.timeout_s,
             "enabled": cfg.enabled,
             "speechEnabled": cfg.speech_enabled,
             "busy": self._busy,
@@ -136,20 +191,70 @@ class ModelClient:
             headers["Authorization"] = f"Bearer {token}"
         return headers
 
+    def _request_plan(self, plan: Microplan) -> Microplan:
+        """Add only a deterministic comparison to an actually played same-target update."""
+        if plan.beat_id != "HUNTING" or len(plan.actors) < 2:
+            return plan
+        current_gap = dict(plan.input_fields).get("gap_seconds")
+        if not isinstance(current_gap, (int, float)):
+            return plan
+        now_ms = round(self._clock() * 1000)
+        for previous in reversed(self._played_context):
+            age_ms = now_ms - previous["played_mono_ms"]
+            if (
+                previous["session_id"] != plan.session_id
+                or previous["beat_id"] != "HUNTING"
+                or previous["actor_bindings"] != list(plan.actors)
+                or not 1000 <= age_ms <= 60000
+            ):
+                continue
+            old_gap = dict(previous["input_fields"]).get("gap_seconds")
+            if not isinstance(old_gap, (int, float)):
+                continue
+            reduction_ms = round((old_gap - current_gap) * 1000)
+            if reduction_ms < 100:
+                return plan
+            reduction = reduction_ms / 1000
+            target = plan.actors[1][1]
+            fact = (
+                f"{plan.event_id}:context:gap-change",
+                f"Since the last spoken update, the gap from "
+                f"{plan.subject} to {target} decreased by {reduction:.3f} seconds.",
+            )
+            return replace(
+                plan,
+                facts=(*plan.facts, fact),
+                input_fields=(*plan.input_fields, ("gap_reduction_seconds", reduction)),
+            )
+        return plan
+
     def _body(self, cfg: ModelSettings, plan: Microplan) -> dict[str, Any]:
         if cfg.provider == "remote":
-            system = M1_SYSTEM
+            system = M2_SYSTEM
+            now_ms = round(self._clock() * 1000)
+            recent = tuple(
+                {
+                    "age_seconds": round((now_ms - row["played_mono_ms"]) / 1000, 1),
+                    "text": row["text"],
+                    "actors": row["actors"],
+                }
+                for row in self._played_context
+                if row["session_id"] == plan.session_id
+                and 0 <= now_ms - row["played_mono_ms"] <= 60000
+            )[-3:]
+            user = plan.prompt_json(now_ms=now_ms, recent_commentary=recent)
         else:
             system = (
                 "Write exactly one of the following independently approved sentences. "
                 "Output only that sentence, without quotes or explanation.\n"
                 + "\n".join(plan.allowed)
             )
+            user = plan.prompt_json()
         return {
             "model": cfg.model,
             "messages": [
                 {"role": "system", "content": system},
-                {"role": "user", "content": plan.prompt_json()},
+                {"role": "user", "content": user},
             ],
             "stream": False,
             "temperature": 0.3 if cfg.provider == "remote" else 0.2,
@@ -198,7 +303,9 @@ class ModelClient:
                     raise ModelFailure("response_shape")
                 return result
 
-    def _text(self, cfg: ModelSettings, response: dict[str, Any], plan: Microplan) -> str:
+    def _text(
+        self, cfg: ModelSettings, response: dict[str, Any], plan: Microplan
+    ) -> str | ModelSkip:
         try:
             choices = response["choices"]
             if len(choices) != 1 or choices[0]["finish_reason"] != "stop":
@@ -213,9 +320,20 @@ class ModelClient:
                 data = json.loads(content)
                 if set(data) != {"action", "used_fact_ids", "candidates"}:
                     raise ModelFailure("response_shape")
+                if data["action"] == "skip":
+                    if data["used_fact_ids"] != [] or data["candidates"] != []:
+                        raise ModelFailure("response_shape")
+                    return ModelSkip()
                 if data["action"] != "speak":
-                    raise ModelFailure("model_skip")
-                if data["used_fact_ids"] != [key for key, _ in plan.facts]:
+                    raise ModelFailure("response_shape")
+                used = data["used_fact_ids"]
+                allowed = {key for key, _ in plan.facts}
+                if (
+                    not isinstance(used, list)
+                    or not used
+                    or any(not isinstance(key, str) or key not in allowed for key in used)
+                    or len(used) != len(set(used))
+                ):
                     raise ModelFailure("fact_ids_mismatch")
                 candidates = data["candidates"]
                 if len(candidates) != 1 or set(candidates[0]) != {"style_id", "text"}:
@@ -229,19 +347,39 @@ class ModelClient:
         except (KeyError, TypeError, ValueError, IndexError):
             raise ModelFailure("response_shape") from None
 
-    async def realize(self, plan: Microplan) -> str | None:
+    async def realize(self, plan: Microplan) -> str | ModelSkip | None:
         cfg = self._settings()
         started = self._clock()
-        if self._closed or not cfg.enabled or self._busy or plan.digest in self._attempts:
-            return None
-        if (
+        reason = None
+        if self._closed:
+            reason = "closed"
+        elif not cfg.enabled:
+            reason = "disabled"
+        elif self._busy:
+            reason = "busy"
+        elif plan.digest in self._skipped:
+            reason = "previous_skip"
+        elif plan.digest in self._attempts:
+            reason = "duplicate_bundle"
+        elif (
             self._shadow is not None
             and not self._shadow.done()
             and asyncio.current_task() is not self._shadow
         ):
-            return None
-        if started * 1000 >= plan.expires_ms:
-            return None
+            reason = "shadow_in_flight"
+        elif started * 1000 >= plan.expires_ms:
+            reason = "expired"
+        if reason is not None:
+            self.trace(
+                "model_not_attempted",
+                {
+                    "eventId": plan.event_id,
+                    "bundleHash": plan.digest,
+                    "sessionId": plan.session_id,
+                    "reason": reason,
+                },
+            )
+            return ModelSkip() if reason == "previous_skip" else None
         self._attempts.append(plan.digest)
         self._total_attempts += 1
         self._busy = True
@@ -254,16 +392,35 @@ class ModelClient:
             "revision": plan.revision,
             "bundleHash": plan.digest,
             "configHash": cfg.signature,
+            "facts": [{"id": key, "text": text} for key, text in plan.facts],
+            "fallbackText": plan.allowed[0],
             "generation": self._generation,
             "mode": cfg.mode,
             "model": cfg.model,
             "startedMonoMs": round(started * 1000),
             "accepted": False,
+            "wordingPolicy": cfg.effective_wording_policy,
+            "semanticCheck": (
+                "not_enforced" if cfg.effective_wording_policy == "experimental_free" else "strict"
+            ),
         }
         try:
             headers = self._headers(cfg)
-            body = self._body(cfg, plan)
+            request_plan = self._request_plan(plan) if cfg.provider == "remote" else plan
+            body = self._body(cfg, request_plan)
             row["promptHash"] = digest(body)
+            self.trace(
+                "model_input",
+                {
+                    "eventId": plan.event_id,
+                    "bundleHash": plan.digest,
+                    "sessionId": plan.session_id,
+                    "correlationId": plan.correlation_id,
+                    "promptHash": row["promptHash"],
+                    "request": body,
+                },
+            )
+            row["facts"] = [{"id": key, "text": text} for key, text in request_plan.facts]
             budget = min(cfg.timeout_s, (plan.expires_ms - started * 1000) / 1000)
             async with asyncio.timeout(budget):
                 response = await self._post(body, headers, budget)
@@ -271,16 +428,38 @@ class ModelClient:
                 raise ModelFailure("expired")
             if cfg.signature != self._settings().signature:
                 raise ModelFailure("config_changed")
-            text = self._text(cfg, response, plan)
+            text = self._text(cfg, response, request_plan)
             secret = headers.get("Authorization", "").removeprefix("Bearer ")
             if secret and secret in json.dumps(response):
                 raise ModelFailure("credential_echo")
+            if isinstance(text, ModelSkip):
+                self._skipped.append(plan.digest)
+                row.update(accepted=True, reason="model_skip", action="skip")
+                return text
             # Keep candidate for shadow audit only after bounded JSON shape validation.
             row["text"] = text
             row["modelReported"] = str(response.get("model", ""))[:128]
-            if not plan.accepts(text):
+            row["strictWouldAccept"] = plan.accepts(text)
+            if cfg.effective_wording_policy == "experimental_free":
+                shape_reasons = free_wording_reasons(text)
+                if shape_reasons:
+                    row["shapeReasons"] = shape_reasons
+                    raise ModelFailure("speech_shape_rejected")
+                grounding_reasons = free_grounding_reasons(text, request_plan)
+                row["groundingGuard"] = "passed" if not grounding_reasons else "rejected"
+                if grounding_reasons:
+                    row["groundingReasons"] = grounding_reasons
+                    raise ModelFailure("grounding_rejected")
+            elif not row["strictWouldAccept"]:
                 raise ModelFailure("semantic_rejected")
-            row.update(accepted=True, reason="accepted")
+            row.update(
+                accepted=True,
+                reason=(
+                    "accepted_experimental_free"
+                    if cfg.effective_wording_policy == "experimental_free"
+                    else "accepted"
+                ),
+            )
             return text
         except asyncio.CancelledError:
             row["reason"] = "cancelled"
@@ -300,6 +479,7 @@ class ModelClient:
             )
             self._last = row
             self._history.append(row)
+            self.trace("model_outcome", dict(row))
             self._busy = False
         return None
 

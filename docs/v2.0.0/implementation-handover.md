@@ -1,5 +1,39 @@
 # v2 narrative runtime — implementation handover
 
+## Warmup chapters / overlay and Windows native startup (2026-09-30)
+
+- The 02:18:50–02:23:31 live run had one `Stream start` chapter. iRacing reported `SessionType=Warmup` throughout; the chapter trigger admitted only Practice/Qualify/Race, while the overlay tape likewise excluded Warmup. The `LOBBY → RACE` log entry was driving mode, not a session-type transition. A separate narrative adapter's `stage=race` is synthetic and must not be used as evidence of an SDK Race session.
+- User policy: treat SDK Warmup as Practice for live chapter title/`chapter.session_type`, deduplicating adjacent Practice/Warmup, and as `PRACTICE` for overlay/tape. Keep raw SDK type and session number in status. The frozen session-plan contract is unchanged; adding a second Practice stage would need separate contract work.
+- The same run reproduced native process exit `0xC0000005` on first ONNX Runtime import after WinRT Bluetooth scan. The startup change preloads ONNX Runtime off the event loop before BLE and other runtime workers; the SuperTonic availability probe still avoids importing `sounddevice` on the loop. No claim of sensor failure follows from the crash.
+- QA: full suite 2824 passed, two Windows symlink-privilege tests excluded; final focused suite 25 passed including per-utterance result reuse. Black/Ruff/diff checks and verifier GREEN. Actual Windows concurrent probe completed two SuperTonic WASAPI plays through CABLE Input while receiving 3 and 7 HR samples; clean process exit. Evidence remains local in `outputs/concurrent-hr-speech.log`.
+- Acceptance requires a restarted live process that stays up through BLE connection, active simulation, ONNX/TTS use and stream shutdown, plus observable HR notifications, Practice chapter/overlay tape for Warmup and actual TTS completion. `model_outcome.accepted`, `speech_selection` and `PLAYBACK_ACCEPTED` alone do not establish an audible finished comment.
+
+## Windows BT HR / SuperTonic startup fix (2026-09-30)
+
+- Live service log repeatedly reached Bleak `assert_mta` in Windows Bluetooth callbacks. A same-process diagnostic showed the main COM apartment switched to STA after importing `sounddevice`; SuperTonic's availability check imported it on the event-loop thread during startup. This establishes a software startup conflict, not a sensor fault.
+- Replace that eager import with a module-availability probe (`find_spec`); actual SuperTonic audio imports remain deferred to the TTS worker. No INI migration or sensor pairing change is required by this fix.
+- Verification still required: targeted import/availability tests and a restarted Windows service with a successful BT HR connection/notification. Do not report live recovery from the code change alone.
+
+## Current checkpoint: aftermath evidence and durable diagnostics (2026-09-30)
+
+- Continues `feat/commentary-grounded-input`, issue #389 / draft PR #390, from `bbd1f5b`. Keep draft pending the next observed stream; no master merge.
+- Separate stopped, rolling, off-track, rejoined and towing facts. BACK_UNDER_WAY requires a confirmed previous stop. Unknown/stale/restarted telemetry resets the episode.
+- SDK repair flags, pit stall/service status and repair durations flow through extraction and RaceState. Durations enter model facts only during active pit service. No inference of damaged parts/completed repair; no pyirsdk upgrade.
+- September 29 IBT excerpts are regression fixtures for moving off-track/rejoin and pending optional repair. Tow and active service cases use synthetic evidence; on-air frequency remains unverified.
+- Bounded `commentary-trace/1` NDJSON companion joins final accepted event IDs, director choices, structured model requests, outcomes/suppression reasons, selection and reducer TTS outcomes. Disk/queue/cap loss is explicit; restart starts a fresh journal. Status: `loop.supervisors.commentary_trace`.
+- Messages contain telemetry/driver names. Bearer values are redacted; headers, endpoint and raw responses are excluded. This audit journal does not replace SDK replay tape.
+- QA: full suite 2815 passed, 2 Windows symlink-privilege exclusions; Ruff and diff whitespace checks passed. Added trace lifecycle and suppression tests after audit.
+- Next evaluation: compare actual playback with opportunities and suppression reasons. Selection/playback acceptance alone does not prove stream audibility.
+
+## Previous checkpoint — grounded live commentary follow-up (2026-09-30)
+
+- Worktree: `C:\Users\richa\Documents\Codex\2026-09-25\z\work\commentary-grounded`; branch `feat/commentary-grounded-input`; base of this slice `75654e7`; implementation commit `285e1f2875c3069ed3f731b0e60fb8ad00caf2d7`.
+- Issue [#389](https://github.com/Buchtanen/ir-obs-switcher/issues/389); draft PR [#390](https://github.com/Buchtanen/ir-obs-switcher/pull/390). Keep the PR open for the next live driving test and evaluation; this checkpoint does not request a master merge.
+- Live speech now accepts validated position changes, finish, final lap, current position fact, race restart and safe flag/incident subsets. The HUNTING request survives a newer same-pair update. The 33-second configured silence watchdog asks for a fresh current-position fact after telemetry and warmup rather than replaying a stale candidate. Narrative speech bypasses legacy TTS polish.
+- Tape uses the configured output directory and a unique process identity, and writes `context_applied` rows with actual session/epoch from the payload. It does **not** yet record every model attempt, director decision, or TTS outcome; API runtime ring, logs and overlay tape remain necessary for a complete next-stream audit.
+- QA: focused 186 passed; full suite 2792 passed, 2 Windows symlink-privilege cases deselected; Black, Ruff and `git diff --check` passed. Verifier GREEN after reviewing the stale-silence and tape fixes. Docs impact recorded in `remote-commentary-microplan.md` and `dokumentace/domeny/events.md`.
+- Next actions: publish this checkpoint to PR #390, update the issue diary, run the branch in the local service for an observed stream, then compare tape, model attempts and actual TTS playback. Do not infer on-air speech count from selected events alone.
+
 ## Current checkpoint — remote commentary microplan (2026-09-25)
 
 - Worktree: `C:\Users\richa\Documents\Codex\2026-09-25\z\work\ir-obs-switcher`; branch `feat/remote-commentary-microplan`; remote `https://github.com/Buchtanen/ir-obs-switcher.git`; base `master@a381307611a5aaf633f61ed048c9bee066b77a24`.

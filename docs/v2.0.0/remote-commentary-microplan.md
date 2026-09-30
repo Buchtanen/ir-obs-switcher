@@ -1,20 +1,46 @@
-# Current-fact commentary and remote M1
+# Current-fact commentary and remote M2
 
-**Status (2026-09-25):** implementation on `feat/remote-commentary-microplan`, based on `master@a381307`. This is an opt-in test path, not evidence of a successful OBS/iRacing stream or TTS listening test. The server's model ID is an alias; an OpenAI-compatible wire format does not establish the server's model implementation or operator.
+**Current topic: [#389](https://github.com/Buchtanen/ir-obs-switcher/issues/389), `feat/commentary-grounded-input`.** Remote `M2/1` adds typed fact fields, a bounded history of playback-accepted speech, explicit model skip and a partial experimental grounding guard. The 29 September stream supplied live diagnostic evidence of sparse commentary; the follow-up changes below still need another audible stream test. The M1 benchmark and earlier deployment notes below are historical evidence, not verification of this follow-up.
+
+**Historical M1 status (2026-09-25):** the original implementation was on `feat/remote-commentary-microplan`, based on `master@a381307`. The server's model ID is an alias; an OpenAI-compatible wire format does not establish the server's model implementation or operator.
+
+**Wording-policy extension:** `feat/remote-free-wording` added the remote-only `experimental_free` option. The 29 September stream used this option and a three-second timeout. Missing `wording_policy` remains `strict`.
 
 ## Runtime boundary
 
 `narrative_shadow_adapter.py` projects an accepted event and its coherent context into an immutable `Microplan` (`commentary_microplan.py`). The selected plan carries event/session identity, revision, actors, input facts, a digest and expiry. The event's original monotonic timestamp sets a five-second TTL; arrival time does not renew it. Missing or unsupported input produces silence.
 
-Initial supported inputs are named-driver `PERSONAL_BEST` and `LAP_COMPLETE` with a finite positive `lapTime`, plus `HUNTING` (front), `HUNTED` (rear), `APPROACH` (front), `ATTACK_RANGE` (front) and `SIDE_BY_SIDE` with distinct named actors. Other families are not promoted by this change. This narrow allowlist also limits authored fallback on the new live path.
+Initial M1 inputs were named-driver `PERSONAL_BEST` and `LAP_COMPLETE` with a finite positive `lapTime`, plus `HUNTING` (front), `HUNTED` (rear), `APPROACH` (front), `ATTACK_RANGE` (front) and `SIDE_BY_SIDE` with distinct named actors.
+
+M2 added `INCIDENT`, `PIT_ENTRY` and `PIT_EXIT`. The #389 follow-up adds typed speech plans for `POSITION_GAINED`/`POSITION_LOST` with validated old/new positions and direction, `FINISH` with a valid finishing position, `FINAL_LAP` with a valid lap number, `FIELD_FACT` for current position and optional current lap or independently reported repair requirements, `BACK_UNDER_WAY`, `INCIDENT_AFTERMATH` and `SESSION_FLAG` for yellow, green or checkered. The aftermath states are separate: `rolling` and `stopped` require verified motion, `off_track` requires the OffTrack surface, `towing` requires an active tow indication, and `rejoined` requires a confirmed return to OnTrack. `BACK_UNDER_WAY` requires an earlier verified stop. Missing or contradictory evidence stays silent. A selected event still needs a valid plan and current facts before it can reach model generation or authored fallback. Position change does not by itself prove an overtake; aftermath never infers contact, damage or its cause.
+
+Incident `value` and `total` must be positive integer point counts, with added points no greater than total; they do not represent a count of separate incidents or establish contact, damage or cause. Pit entry/exit may include a valid `entryPosition`/`exitPosition`; missing or invalid position yields a generic pit-lane update. Repair requirements come from the SDK `EngineWarnings` mandatory/optional repair bits. Remaining mandatory/optional repair seconds are offered only when `PlayerCarInPitStall=true` and `PlayerCarPitSvStatus=1` confirms active pit service. A cleared warning does not establish that all damage is repaired, and the model receives no repair-completed claim. Pit strategy and intervening overtakes are not supplied.
 
 `commentary_model.py` owns cancellable async aiohttp requests. It uses one active request and no waiting queue, one generation attempt per bundle, bounded response bytes and at most 100 diagnostic attempt records. There is no synchronous network call in construction. Optional asynchronous preflight uses the same endpoint, authentication and ordinary timeout. The old 45-second cold-load and first-call eight-second allowances do not apply to this path.
 
-Remote `M1/1` uses the measured M1 system prompt with current facts only: `temperature=0.3`, `top_p=1`, `max_tokens=192`, `reasoning_effort=none`, `n=1`, `stream=false`. The response is prompt-requested JSON containing one candidate; no `response_format`, Ollama `options` or untested server extension is sent. Local `tight/1` uses `temperature=0.2`, `top_p=0.8` and configured `max_tokens`. Public `max_profile` cannot promote a family or change the fixed M1 profile.
+Remote `M2/1` uses a structured-fact prompt with the existing sampling: `temperature=0.3`, `top_p=1`, `max_tokens=192`, `reasoning_effort=none`, `n=1`, `stream=false`. The response is prompt-requested JSON containing one candidate or an explicit skip; no `response_format`, Ollama `options` or untested server extension is sent. Local `tight/1` uses `temperature=0.2`, `top_p=0.8` and configured `max_tokens`. Public `max_profile` cannot promote a family or change the fixed M2 profile.
 
-Before any request, the application derives a finite set of allowed complete sentences from input facts. Whitespace/case normalization is allowed; extra claims, actor swaps, changed numbers and unreviewed paraphrases are rejected. Model-reported fact IDs are checked for shape/provenance but are not semantic proof. This intentionally rejects some factually correct M1 paraphrases. Shadow records help identify concrete additions to the audited grammar; adding prose freedom without corresponding positive and negative tests is not a promotion mechanism.
+The request contains `event_type`, `featured_driver`, monotonic `now_ms`/`valid_until_ms` and facts with `id`, readable `claim` and typed `fields`. Fields distinguish lap time, gap seconds, incident points, pit position, aftermath state, repair requirement/remaining seconds and validated positions/lap numbers. Readable claim strings remain; this is an enrichment of the existing input, not a complete removal of authored sentence anchors. `LAP_COMPLETE` can supply a positive or negative delta to the driver's previous best when `lapTime`, `bestLap` and `deltaToBest` agree within 0.015 seconds. A negative delta means a quicker lap than the supplied previous best; it is not by itself an official personal-best event. Absent/inconsistent comparisons are omitted.
 
-The new path supplies an input-derived verification frame rather than interpreting model output as its own authority. The current source session/correlation revision, configuration signature (including the global commentary kill switch) and expiry are checked before speech commitment. A failed live attempt may use an authored sentence from the same still-current bundle; otherwise it is silent. Rejected or shadow candidates never enter TTS or spoken exposure history. An accepted model candidate in diagnostics is not proof that playback occurred.
+Remote requests include at most three recent commentary entries from the same session, aged at most 60 seconds, selected from a buffer of eight. Each entry includes age, text and actors. Entries are added only after `PLAYBACK_ACCEPTED`; unused candidates and shadow outputs are excluded. This is sink acceptance, not proof of completed or physically audible playback. The prompt treats this memory as repetition context, never evidence that a previous state is still current.
+
+For `HUNTING`, the application can add a deterministic gap reduction relative to the latest eligible playback-accepted hunting update in the same session with the same ordered actor bindings (IDs and names), even when the detector starts a new correlation episode. The prior update must be 1–60 seconds old and the supplied gap must have decreased by at least 0.100 seconds. Comparison uses the prior bundle's numeric gap, not a number parsed from its spoken text. No reduction is added for a different rival, an increase or a smaller change. A new episode for the same actor pair also retains the in-flight model request instead of cancelling it solely because its correlation ID changed; session, actor, freshness and configuration guards still apply before speech. Gap reduction is not a prediction of a pass or evidence of its cause.
+
+### Live speech, silence and diagnostics
+
+The selected narrative plan flows through model realization and then directly to the TTS sink. The old LLM polish pass is disabled in live race settings and bypassed for `NARRATIVE_RUNTIME` utterances, so a model sentence is not sent to a second model for rewriting. Other commentary paths retain their own settings.
+
+The live race supplies `[commentary.director] long_silence_s` (33 seconds in the example configuration) to the narrative silence deadline. At expiry it requests a fresh position and lap sample from the next race tick, which enters the regular accepted-event and speech path. The deadline rearms for another full interval even if no safe sample is available. The same position/lap claim is suppressed after it has been accepted for playback, so the watchdog cannot guarantee a new spoken line every 33 seconds.
+
+With `[commentary.tape] enabled=true`, the live narrative writer uses `[commentary.tape] output_dir` and a distinct file per process. Its versioned NarrativeTape records `context_applied` rows for incoming narrative context. A separate `commentary-trace-<id>.ndjson` file in the same directory records the accepted source event, narrative reduction and director decision, selected plan, structured model request, bounded model outcome, speech selection and `PLAYBACK_ACCEPTED`. Correlate rows by event/request ID and bundle hash; a selected or accepted model candidate alone does not establish playback. The companion trace has a 2,048-record queue, 256 KiB record limit and 128 MiB file limit per run. It writes a close trailer and exposes `drops`, `error` and `complete` in `loop.supervisors.commentary_trace`; any loss makes the trace incomplete. Request messages are recorded without endpoint or headers, and the active credential is redacted from text. The companion format is diagnostic `commentary-trace/1`, not the versioned NarrativeTape replay schema. An older empty `recordings/narrative-tape` file does not prove that no context reached the new writer.
+
+Before any request, the application derives a finite set of allowed complete sentences from input facts. Under the default `strict` wording policy, whitespace/case normalization is allowed; extra claims, actor swaps, changed numbers and unreviewed paraphrases are rejected. Model-reported fact IDs are checked for shape/provenance but are not semantic proof. This intentionally rejects some factually correct M1 paraphrases. Shadow records help identify concrete additions to the audited grammar.
+
+Remote `experimental_free` records the grammar result but does not let either whole-sentence membership check block generated wording. It still requires the response shape and one sentence of at most 200 characters and 32 words. M2 also applies `commentary_grounding.py`: a partial guard for selected unprovided claims, unit/number mismatches, incident points misread as event counts and a missing named subject. It is not a complete semantic verifier: a passing result does not establish correct actor roles, complete meaning or the absence of all unsupported claims. It can also reject valid phrasing. Local generation remains effectively `strict`, regardless of the configured policy.
+
+Diagnostics expose `groundingGuard=passed|rejected`, with `groundingReasons` and terminal `grounding_rejected` on rejection. `semanticCheck=not_enforced` continues to refer to the unenforced full sentence grammar; it does not mean that the partial guard was skipped. Rejection uses the same still-current authored fallback as other generation failures. A valid model `action=skip` with empty `used_fact_ids` and `candidates` deliberately stays silent and does not trigger authored fallback. A spoken candidate may cite a nonempty, duplicate-free subset of current fact IDs; those IDs are not proof of its claims.
+
+The new path supplies an input-derived verification frame rather than interpreting model output as its own authority. Wording policy is frozen before I/O and included in the configuration signature; an old completion cannot acquire permission from a later policy change. The current source session/correlation revision, configuration signature (including the global commentary kill switch) and expiry are checked before speech commitment under both policies. Cancellation and deadlines also remain enforced. A failed live attempt may use an authored sentence from the same still-current bundle; otherwise it is silent. Rejected or shadow candidates never enter TTS or spoken exposure history. An accepted model candidate in diagnostics is not proof that playback occurred or that free wording is factually correct.
 
 ## Configuration and migration
 
@@ -25,12 +51,13 @@ New optional keys under `[commentary.llm]`:
 | `provider` | `local` | `local` retains local/LAN address policy; `remote` explicitly permits a remote HTTPS endpoint. |
 | `mode` | `live` | `live` can supply validated speech; `shadow` evaluates asynchronously while the current valid authored sentence is available immediately. |
 | `api_key_env` | `IRSWITCH_LLM_API_KEY` | Environment variable containing the remote Bearer token; this setting is its name, never its value. |
+| `wording_policy` | `strict` | `strict` enforces the input-derived sentence grammar; remote-only `experimental_free` observes it without blocking generated wording. Local effective policy is always strict. |
 
-`enabled=false` disables model requests and uses the supported authored path. Existing local configurations need no new keys, but live realization now fails closed for unsupported inputs; test coverage and audible coverage are separate concerns. Cold local models may miss the ordinary timeout and require an external warmup before a stream. `max_tokens` configures local `tight/1`; remote `M1/1` fixes its measured budget at 192.
+`enabled=false` disables model requests and uses the supported authored path. Existing configurations need no new keys for M2; the remote profile and input behavior change on this topic. Live realization still fails closed for unsupported inputs; test coverage and audible coverage are separate concerns. Cold local models may miss the ordinary timeout and require an external warmup before a stream. `max_tokens` configures local `tight/1`; remote `M2/1` fixes its budget at 192.
 
 Remote URLs require HTTPS, no userinfo/query/fragment, and exactly `/v1` (an optional trailing slash is normalized). Nested paths such as `/api/v1` are not remote endpoints in this contract. Redirects and environment proxies are disabled; the credential is sent only in the Authorization header. Missing/invalid credentials cause a bounded failure. Do not put tokens in INI, command-line arguments, issue comments or recordings.
 
-The live adapter reads the current validated configuration for requests and compares its signature again before speech. Changes to provider, mode or credential-variable name apply on the next request and invalidate old-config completions. Existing ConfigLedger boundaries remain documented in [public contracts](public-contracts.md). Environment changes must reach the running process: a value set in a new PowerShell window is not inherited by an already running service. Restart the relevant process after changing its environment.
+The live adapter reads the current validated configuration for requests and compares its signature again before speech. Changes to provider, mode, wording policy or credential-variable name apply on the next request and invalidate old-config completions. Existing ConfigLedger boundaries remain documented in [public contracts](public-contracts.md). Environment changes must reach the running process: a value set in a new PowerShell window is not inherited by an already running service. Restart the relevant process after changing its environment.
 
 This `commentary.llm.mode=shadow` is a new model-evaluation setting. It does not restore the removed legacy commentary runtime values `legacy|shadow|active`.
 
@@ -50,6 +77,7 @@ Set the following in your existing configuration, retaining the rest of the comm
 enabled = true
 provider = remote
 mode = shadow
+wording_policy = strict
 api_key_env = IRSWITCH_LLM_API_KEY
 base_url = https://llm.buchtovo.cz/v1
 model = openai/gpt-oss-120b
@@ -65,9 +93,38 @@ Inspect `GET /api/commentary/runtime` → `loop.supervisors.commentary_model`. C
 
 After reviewing shadow evidence, set `mode=live` for an audible test of the supported families. Immediate rollback is `enabled=false`; returning to local also requires `provider=local` plus your original local URL/model. Keep TTS voice and settings fixed for comparisons.
 
+### Experimental free wording live test
+
+For the requested experiment, retain the existing remote endpoint, model, credential
+environment and TTS settings, and change these keys under `[commentary.llm]`:
+
+```ini
+provider = remote
+mode = live
+wording_policy = experimental_free
+timeout_s = 3.0
+```
+
+The 29 September stream used these settings. The three-second transport budget is still limited by the original event expiry;
+it does not renew the five-second TTL. Before evaluating results, confirm the
+running build in Studio and `wordingPolicy` in model diagnostics. Free generated
+text records `semanticCheck=not_enforced` and `strictWouldAccept`. A candidate
+accepted with `strictWouldAccept=false` measures grammar exclusion; it does not
+prove that the wording is accurate or better. Review actors, facts, numbers,
+latency and actual playback separately.
+
+Set `wording_policy=strict` to restore grammar enforcement for subsequent requests,
+or `enabled=false` to stop model generation and return to the supported authored
+path. A policy/config change rejects old-config completions. The #389 follow-up
+expands the input coverage described above; its audible quality remains to be checked in the next stream.
+
 ## Verification and stream gates
 
 Focused regression tests live in `tests/test_remote_commentary_microplan.py`, `tests/test_remote_commentary_runtime.py` and `tests/test_remote_commentary_transport.py`: fact projection and independent semantics, config/endpoint policy, async transport failure/cancellation, stale context/config, and shadow isolation. Run with the project's pytest environment; the implementation handover records commands and measured results. Legacy frozen transport/actor tests remain regression evidence, not proof that the live path uses fixture prompts.
+
+M2 regression cases are in `tests/test_remote_grounded_context.py`: structured fields, played-history bounds, added family inputs, known grounding errors and skip behavior. Test presence is not a claim that the current diff has passed verification. Real replay/stream review must establish coverage, skip/fallback rates, latency and whether the partial guard misses errors or rejects useful valid commentary.
+
+The 29 September live trace had 38 model attempts (21 accepted, 16 cancelled, one grounding rejection), 22 selected outputs and 18 TTS playback starts across the stream. The race overlay tape held 11 final commentary rows. A burst of short `HUNTING` correlation episodes repeatedly displaced in-flight work, and selected position/finish/field facts lacked the then-supported speech plans. These counts motivated the follow-up; they do not measure the effectiveness of its new code. The next stream should compare selected events, supported plans, attempts, cancellations, playback and periods of silence, using both the runtime diagnostics and available tapes.
 
 Before a live stream test:
 
@@ -80,4 +137,4 @@ Before a live stream test:
 Unfinished promotion gates include real replay/shadow coverage, TTS listening, fair preference comparisons and family-specific grammar expansion. The earlier 661 standalone generations informed M1 selection; they do not validate this new runtime end to end.
 
 
-[Implementation verification and 27 real endpoint probes](remote-commentary-verification.md). The held-out grammar acceptance was 5/9; shadow review and further audited grammar coverage are required before live promotion.
+[Implementation verification and 27 real endpoint probes](remote-commentary-verification.md). The held-out strict grammar acceptance was 5/9; that is historical strict-policy evidence, not a quality score or acceptance result for experimental free wording.

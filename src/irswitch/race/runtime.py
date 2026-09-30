@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+import os
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import asdict, replace
@@ -15,6 +16,7 @@ from irswitch.commentary.bridge import merge_speech_envelopes, speech_envelope_f
 from irswitch.commentary.consumer import CommentaryConsumer
 from irswitch.commentary.director import CommentaryDirector
 from irswitch.commentary.in_car import InCarDetector
+from irswitch.commentary.live_trace import LiveCommentaryTrace
 from irswitch.commentary.mailbox import NarrativeMailbox
 from irswitch.commentary.session_briefs import SessionBriefsDetector
 from irswitch.commentary.tts import build_tts_sink
@@ -225,7 +227,9 @@ def _overlay_with_v2_commentary(overlay: OverlaySettings, config: object | None)
             duck_fade_ms=int(values.get("commentary.tts.duck_fade_ms") or current.duck_fade_ms),
             driver_name=str(values.get("commentary.driver_name") or ""),
             driver_nickname=str(values.get("commentary.driver_nickname") or ""),
-            llm_polish=bool(values.get("commentary.llm.enabled", False)),
+            # commentary.llm.enabled controls the owned ModelClient generation.
+            # It must not also enable the older second-pass HTTP polish in TTS.
+            llm_polish=False,
             llm_base_url=str(values.get("commentary.llm.base_url") or current.llm_base_url),
             llm_model=str(values.get("commentary.llm.model") or current.llm_model),
             llm_timeout_s=float(values.get("commentary.llm.timeout_s") or current.llm_timeout_s),
@@ -296,6 +300,7 @@ class RaceRuntime:
         self._pending_stream_records: list[AcceptedRecord] = []
         self._last_situation_phase: str | None = None
         self._last_situation_fact_at = 0.0
+        self._narrative_silence_requested = False
         self._tape = OverlaySessionTape()
         self._tape_decision_cursor = 0
         self._stories_sig: tuple[tuple[object, ...], ...] | None = None
@@ -372,6 +377,7 @@ class RaceRuntime:
         self._narrative_qwen_service = None
         self._narrative_llm_component = None
         self._commentary_model = None
+        self._live_trace = None
         if self._narrative_shadow_enabled:
             self._narrative_shadow_subscription = self._event_fanout.subscribe(
                 "narrative_shadow", capacity=64
@@ -387,6 +393,7 @@ class RaceRuntime:
             tts_effect = build_tts_effect(
                 self.commentary_consumer.director.sink,
                 locale=locale,
+                backend=self._overlay_settings().commentary.tts_backend,
             )
             self._speech_draft_cache = SpeechDraftCache()
             opportunity_queue = OpportunityQueue()
@@ -394,7 +401,8 @@ class RaceRuntime:
             # One owned async client for local tight and remote M1. Constructors
             # do no network IO; shadow is a separate single-flight task.
             model_client = ModelClient(
-                lambda: ModelSettings.from_values(_commentary_v2_values(self._get_config()) or {})
+                lambda: ModelSettings.from_values(_commentary_v2_values(self._get_config()) or {}),
+                trace=self._record_trace,
             )
             self._commentary_model = model_client
             realization_effect = build_realization_effect(
@@ -403,20 +411,26 @@ class RaceRuntime:
                 model_client=model_client,
             )
             cfg = self._get_config()
-            journal_dir = Path(
-                getattr(getattr(self, "_tape", None), "directory", None)
-                or getattr(cfg, "recordings_dir", None)
-                or "recordings"
+            commentary_values = _commentary_v2_values(cfg) or {}
+            tape_dir = Path(
+                str(commentary_values.get("commentary.tape.output_dir") or "recordings/commentary")
+            )
+            silence_seconds = float(
+                commentary_values.get("commentary.director.long_silence_s", 33.0)
             )
             # #349 Slice 5: narrative tape is a medium gated by commentary.tape.enabled.
             # Sync command journal stays off the live reduce hot path (library-only).
             tape_effect = None
             tape_writer = None
             if commentary_tape_enabled(cfg):
+                self._live_trace = LiveCommentaryTrace(
+                    tape_dir,
+                    secrets=lambda: [os.environ.get(model_client.settings().api_key_env, "")],
+                )
                 try:
                     app_version = str(getattr(cfg, "version", None) or "0.0.0")
                     tape_writer = open_narrative_tape_writer(
-                        journal_dir / "narrative-tape",
+                        tape_dir,
                         shutdown_flush_timeout_s=2.0,
                         app_version=app_version,
                     )
@@ -435,13 +449,17 @@ class RaceRuntime:
                 mailbox=mailbox,
                 realization_effect=realization_effect,
                 tts_effect=tts_effect,
+                silence_deadline_delay_s=silence_seconds,
                 story_director=StoryDirector(),
                 opportunity_queue=opportunity_queue,
                 episode_registry=EpisodeRegistry(),
                 exposure_store=exposure_store,
                 freshness_gate=FreshnessGate(opportunity_queue),
                 realization_config_signature=lambda: model_client.settings().signature,
+                realization_wording_policy=lambda: model_client.settings().effective_wording_policy,
                 on_microplan_spoken=model_client.note_spoken,
+                on_silence_due=self._request_narrative_silence_fact,
+                on_trace=self._record_trace,
                 command_journal_path=None,
                 semantic_verifier=SemanticVerifier(),
                 tape_effect=tape_effect,
@@ -449,6 +467,8 @@ class RaceRuntime:
             )
             runtime.enable()
             runtime.attach_supervisor_heartbeat("commentary_model", model_client.status)
+            if self._live_trace is not None:
+                runtime.attach_supervisor_heartbeat("commentary_trace", self._live_trace.status)
             self.narrative_runtime = runtime
             set_narrative_runtime(runtime)
             # #284 EventSubscription full replace: no CommentaryConsumer stream
@@ -923,7 +943,53 @@ class RaceRuntime:
         self.pipeline.reset_session(session_id, reason="context_bootstrap")
         self._capture_context(self._last_race, now, hud=self._current_hud())
 
+    def _record_trace(self, kind: str, payload: dict[str, Any]) -> None:
+        trace = getattr(self, "_live_trace", None)
+        if trace is not None:
+            trace.submit(kind, payload)
+
+    def _request_narrative_silence_fact(self) -> None:
+        """Let the next race tick sample fresh state outside the narrative actor."""
+        self._narrative_silence_requested = True
+
+    def _collect_narrative_silence_fact(self, state: RaceState, now: float) -> list[AcceptedRecord]:
+        if self._narrative_silence_requested:
+            self._narrative_silence_requested = False
+            position = state.class_position or state.position
+            if (
+                commentary_live_enabled(self._get_config())
+                and state.connected
+                and state.overlay_mode == "RACE"
+                and not state.mute_field
+                and state.data_quality == "ok"
+                and (state.stale_for_ms is None or state.stale_for_ms <= 2000)
+                and isinstance(position, int)
+                and 1 <= position <= 200
+            ):
+                metrics: dict[str, Any] = {"fact": "position", "position": position}
+                if isinstance(state.lap, int) and 1 <= state.lap <= 10000:
+                    metrics["lap"] = state.lap
+                envelope = make_envelope(
+                    event_type="FIELD_FACT",
+                    phase="RESULT",
+                    mode="RACE",
+                    session_id=self.pipeline.session_id,
+                    priority=28,
+                    monotonic_ms=int(now * 1000),
+                    correlation_id="silence:position",
+                    metrics=metrics,
+                )
+                return [AcceptedRecord(envelope, "filler")]
+        return []
+
     def _collect_filler_response(self, now: float) -> list[AcceptedRecord]:
+        if self._narrative_silence_requested:
+            # Narrative owns the next fresh filler. Drain a possible legacy
+            # request so two field facts cannot race into the model lane.
+            pending = self.commentary_consumer.take_filler_request()
+            if pending is not None:
+                self.commentary_consumer.complete_filler(FillerResult(pending.request_id, "stale"))
+            return []
         request = self.commentary_consumer.take_filler_request()
         if request is None:
             return []
@@ -1028,6 +1094,10 @@ class RaceRuntime:
         return resolve_component_hz(s.default_hz, s.system_hz)
 
     async def run(self) -> None:
+        from irswitch.commentary.supertonic_backend import prepare_native_runtime
+
+        # Must finish before any producer, speech worker or WinRT BLE task starts.
+        await asyncio.to_thread(prepare_native_runtime)
         self._runtime_loop = asyncio.get_running_loop()
         overlay = self._overlay_settings()
         if not overlay.enabled:
@@ -1135,6 +1205,9 @@ class RaceRuntime:
         state = runtime.status().runtime_state
         if state in {"stopped", "disabled", "stopping"}:
             runtime.enable()
+        trace = getattr(self, "_live_trace", None)
+        if trace is not None:
+            trace.start()
         model_client = self._commentary_model
         if model_client is not None:
             model_client.start()
@@ -1143,6 +1216,8 @@ class RaceRuntime:
         finally:
             if model_client is not None:
                 await model_client.close()
+            if trace is not None:
+                await trace.close()
 
     async def _request_narrative_shutdown(self, *, reason: str = "application_exit") -> None:
         """Admit SHUTDOWN so owned tape_effect can flush before worker cancel."""
@@ -1263,6 +1338,7 @@ class RaceRuntime:
             self._capture_context(state, now, hud=self._current_hud())
             return
         records = await self._emit_from_race(state, now)
+        records.extend(self._collect_narrative_silence_fact(state, now))
         for envelope in self._pending_derived_speech:
             records.append(AcceptedRecord(envelope, _derived_source(envelope.event_type)))
         self._pending_derived_speech = []
@@ -1284,6 +1360,15 @@ class RaceRuntime:
             accepted_monotonic_ms=int(time.monotonic() * 1000),
             poll_interval_ms=self._poll_interval_ms(),
         )
+        for record in records:
+            self._record_trace(
+                "accepted_source",
+                {
+                    "sessionId": self.pipeline.session_id,
+                    "source": record.source,
+                    "event": record.envelope.to_dict(),
+                },
+            )
 
     async def _read_telemetry(self) -> TelemetrySnapshot:
         read_fn = getattr(self._reader, "read_telemetry", None)

@@ -13,6 +13,7 @@ from irswitch.commentary.tts import NullTtsSink
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.events.commentary_microplan import plan_from_accepted
 from irswitch.events.commentary_model import ModelClient, ModelSettings
+from irswitch.events.envelope import EventSubject
 from irswitch.events.freshness_commit import FreshnessGate
 from irswitch.events.narrative import partition_context_batches
 from irswitch.events.narrative_realization_bridge import build_realization_effect
@@ -35,6 +36,43 @@ def current_batch():
     return replace(batch, events=(event,))
 
 
+def hunting_batch(sequence: int, gap: float):
+    batch = _batch(stream_sequence=sequence, event_sequence=sequence)
+    envelope = thaw_envelope(batch.events[0].envelope)
+    envelope.event_type = "HUNTING"
+    envelope.subject = EventSubject(car_id="player", display_name="Buchtanen")
+    envelope.target = EventSubject(car_id="9", display_name="Rossi")
+    envelope.metrics = {"direction": "front", "gap": gap}
+    envelope.correlation_id = f"battle:{sequence}"
+    envelope.event_id = f"event:battle:{sequence}"
+    event = freeze_accepted_event(
+        envelope, audiences=("commentary",), source="event_engine", source_ordinal=0
+    )
+    return replace(batch, events=(event,))
+
+
+def test_same_pair_update_does_not_cancel_inflight_hunting(monkeypatch):
+    _, _, _, runtime = setup(monkeypatch)
+    admit(runtime, hunting_batch(1, 1.7))
+    first = runtime.reduce_next()
+    assert first is not None and runtime.current_realization_token() is not None
+    first_request = runtime.current_realization_token()["requestId"]
+
+    publication = adapt_batch_for_shadow(hunting_batch(2, 1.4), narrative_run_active=True)
+    assert publication is not None
+    part = partition_context_batches(
+        timeline=publication.timeline,
+        fact_view=publication.fact_view,
+        events=publication.events,
+        fanout_stream_sequence=publication.fanout_stream_sequence,
+    )[0]
+    runtime.admit(NarrativeCommand.context_batch("context:2", int(time.monotonic() * 1000), part))
+    second = runtime.reduce_next()
+    assert second is not None
+    assert "building_retained_same_battle" in second.effects
+    assert runtime.current_realization_token()["requestId"] == first_request
+
+
 def reply(text, plan):
     return {
         "model": "provider-reported-model",
@@ -55,12 +93,13 @@ def reply(text, plan):
     }
 
 
-def setup(monkeypatch, mode="live"):
+def setup(monkeypatch, mode="live", wording_policy="strict"):
     monkeypatch.setenv("IRSWITCH_LLM_API_KEY", "unit-secret")
     cfg = ModelSettings(
         enabled=True,
         provider="remote",
         mode=mode,
+        wording_policy=wording_policy,
         warmup=False,
         base_url="https://llm.buchtovo.cz/v1",
         model="openai/gpt-oss-120b",
@@ -77,6 +116,7 @@ def setup(monkeypatch, mode="live"):
         tts_effect=build_tts_effect(sink, locale="en", backend="null"),
         semantic_verifier=SemanticVerifier(),
         realization_config_signature=lambda: client.settings().signature,
+        realization_wording_policy=lambda: client.settings().effective_wording_policy,
         on_microplan_spoken=client.note_spoken,
     )
     runtime.enable()
@@ -129,8 +169,68 @@ async def test_real_admitted_bundle_paraphrase_reaches_tts_and_spoken_memory(mon
 
 
 @pytest.mark.asyncio
-async def test_shadow_does_not_wait_or_speak_model_output(monkeypatch):
-    _, client, sink, runtime = setup(monkeypatch, "shadow")
+@pytest.mark.parametrize(
+    "event_type,metrics,expected",
+    [
+        ("FINISH", {"position": 30}, "Buchtanen finishes in P30."),
+        (
+            "INCIDENT_AFTERMATH",
+            {"kind": "off_track", "surface": 0, "tow": False},
+            "Buchtanen is off the track after the incident.",
+        ),
+        (
+            "INCIDENT_AFTERMATH",
+            {"kind": "rejoined", "surface": 3, "tow": False},
+            "Buchtanen has returned to the track.",
+        ),
+        (
+            "INCIDENT_AFTERMATH",
+            {"kind": "stopped", "motionVerified": True},
+            "Buchtanen has stopped after the incident.",
+        ),
+        ("INCIDENT_AFTERMATH", {"kind": "towing", "tow": True}, "Buchtanen is being towed."),
+        (
+            "BACK_UNDER_WAY",
+            {"kind": "back_under_way", "previouslyStopped": True},
+            "Buchtanen is back under way.",
+        ),
+        (
+            "FIELD_FACT",
+            {"fact": "repairs", "optionalRepairRequired": True},
+            "Buchtanen needs optional repairs.",
+        ),
+    ],
+)
+async def test_current_fact_reaches_model_and_tts(monkeypatch, event_type, metrics, expected):
+    _, client, sink, runtime = setup(monkeypatch)
+    batch = _batch()
+    envelope = thaw_envelope(batch.events[0].envelope)
+    envelope.event_type = event_type
+    envelope.subject = EventSubject(car_id="player", display_name="Buchtanen")
+    envelope.metrics = metrics
+    accepted = freeze_accepted_event(
+        envelope, audiences=("commentary",), source="event_engine", source_ordinal=0
+    )
+    batch = replace(batch, events=(accepted,))
+    current = plan_from_accepted(accepted, batch)
+    assert current is not None
+
+    async def post(*args):
+        return reply(expected, current)
+
+    monkeypatch.setattr(client, "_post", post)
+    admit(runtime, batch)
+    effects = await drain(runtime, 50)
+    assert "realization_committed" in effects
+    assert sink.spoken and sink.spoken[0].text == expected
+    await client.close()
+    await runtime.wait_effects_idle()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("wording_policy", ["strict", "experimental_free"])
+async def test_shadow_does_not_wait_or_speak_model_output(monkeypatch, wording_policy):
+    _, client, sink, runtime = setup(monkeypatch, "shadow", wording_policy)
     entered = asyncio.Event()
     cancelled = asyncio.Event()
 
@@ -213,8 +313,9 @@ async def test_client_restart_after_supervisor_close(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_expired_bundle_never_speaks_fallback(monkeypatch):
-    _, client, sink, runtime = setup(monkeypatch)
+@pytest.mark.parametrize("wording_policy", ["strict", "experimental_free"])
+async def test_expired_bundle_never_speaks_fallback(monkeypatch, wording_policy):
+    _, client, sink, runtime = setup(monkeypatch, wording_policy=wording_policy)
     batch = current_batch()
     envelope = thaw_envelope(batch.events[0].envelope)
     envelope.monotonic_ms -= 6000

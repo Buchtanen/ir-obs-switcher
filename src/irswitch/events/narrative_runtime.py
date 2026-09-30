@@ -9,10 +9,11 @@ from __future__ import annotations
 
 import asyncio
 import inspect
+import logging
 import time
 from collections import deque
 from collections.abc import AsyncIterator, Awaitable, Callable, Iterator, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Literal, TypedDict
 
@@ -22,7 +23,7 @@ from irswitch.contracts.catalog_loader import NarrativeCatalog
 from irswitch.contracts.command import NarrativeCommand
 from irswitch.contracts.context import ContextBatchPart
 from irswitch.contracts.runtime_catalog import load_runtime_catalog as load_narrative_catalog
-from irswitch.events.commentary_microplan import Microplan
+from irswitch.events.commentary_microplan import Microplan, digest
 from irswitch.events.detector_bank import DetectorBank
 from irswitch.events.episode_registry import EpisodeIntent, EpisodeRegistry
 from irswitch.events.exposure_store import ExposureIntent, ExposureStore
@@ -54,6 +55,8 @@ from irswitch.events.story_director import (
     DirectorWorld,
     StoryDirector,
 )
+
+logger = logging.getLogger(__name__)
 
 RuntimeState = Literal["disabled", "starting", "ready", "degraded", "stopping", "stopped"]
 LaneState = Literal["idle", "building", "committed", "speaking", "stopping"]
@@ -316,13 +319,19 @@ class NarrativeRuntime:
         tape_writer: NarrativeTapeWriter | None = None,
         shutdown_flush_timeout_s: float = 2.0,
         realization_config_signature: Callable[[], str] | None = None,
+        realization_wording_policy: Callable[[], str] | None = None,
         on_microplan_spoken: Callable[[Microplan], None] | None = None,
+        on_silence_due: Callable[[], None] | None = None,
+        on_trace: Callable[[str, dict[str, Any]], None] | None = None,
     ) -> None:
         # Empty NarrativeMailbox is falsy via __len__; only replace on None so
         # ingress/shadow cutover can share one injected mailbox identity.
         self._mailbox = mailbox if mailbox is not None else NarrativeMailbox()
         self._realization_config_signature = realization_config_signature
+        self._realization_wording_policy = realization_wording_policy
         self._on_microplan_spoken = on_microplan_spoken
+        self._on_silence_due = on_silence_due
+        self._on_trace = on_trace
         self._microplans: dict[tuple[int, int], Microplan] = {}
         self._current_microplans: dict[tuple[str, str], Microplan] = {}
         self._microplan_session: str | None = None
@@ -632,11 +641,79 @@ class NarrativeRuntime:
         command = self._mailbox.dequeue()
         if command is None:
             return None
+        prior_request = dict(self._realization or {})
         result = self._reduce(command)
+        self._trace_reduction(command, result, prior_request)
         self._loop_reduce_count += 1
         self._loop_last_reduce_mono_ms = int(time.monotonic() * 1000)
         self._append_command_journal(command, result)
+        self._capture_context_tape(command, result)
         return result
+
+    def _trace_reduction(
+        self, command: NarrativeCommand, result: ReduceResult, prior: dict[str, Any]
+    ) -> None:
+        if self._on_trace is None:
+            return
+        try:
+            payload = command.payload
+            if command.kind == "CONFIG_UPDATE":
+                payload = {}  # Configuration may contain endpoints or operator values.
+            elif command.kind == "APPLY_CONTEXT_BATCH":
+                payload = {"timeline": payload.get("timeline"), "events": payload.get("events", [])}
+            self._on_trace(
+                "runtime_reduction",
+                {
+                    "commandId": str(command.command_id),
+                    "kind": command.kind,
+                    "token": command.token,
+                    "payload": payload,
+                    "priorRequestId": prior.get("requestId"),
+                    "priorBundleHash": (
+                        digest(prior["microplan"]) if prior.get("microplan") else None
+                    ),
+                    "dispatchRequestId": (self._realization or {}).get("requestId"),
+                    "result": asdict(result),
+                },
+            )
+        except Exception:
+            logger.warning("Commentary reduction trace failed")
+
+    def _capture_context_tape(self, command: NarrativeCommand, result: ReduceResult) -> None:
+        """Queue admitted truth for later stream diagnosis without disk IO here."""
+        writer = self._tape_writer
+        part = command.context_part
+        if writer is None or part is None or command.kind != "APPLY_CONTEXT_BATCH":
+            return
+        try:
+            identity = writer.manifest_identity
+            payload = {"schemaVersion": "context-applied/2", **part.batch.to_dict()}
+            writer.submit(
+                {
+                    "schemaVersion": "narrative-tape-record/2",
+                    "recordId": f"record:context:{result.reducer_sequence}",
+                    "recordType": "context_applied",
+                    "processInstanceId": identity["processInstanceId"],
+                    "broadcastEpoch": identity["broadcastEpoch"],
+                    "streamEpoch": identity["streamEpoch"],
+                    "reducerSequence": int(result.reducer_sequence),
+                    "recordedMonoMs": int(command.enqueued_mono_ms),
+                    "recordedAtUtc": None,
+                    "purposeChannel": "flow",
+                    "recordPriority": (
+                        "critical" if part.batch.has_timeline_transition else "normal"
+                    ),
+                    "tapeChannel": None,
+                    "correlationIds": [],
+                    "effectiveConfigHash": identity["effectiveConfigHash"],
+                    "configApplySequence": identity["configApplySequence"],
+                    "payloadSchemaVersion": "context-applied/2",
+                    "payload": payload,
+                }
+            )
+        except Exception:
+            # Diagnostics must never stop commentary reduction.
+            logger.exception("narrative context tape capture failed")
 
     def _append_command_journal(self, command: NarrativeCommand, result: ReduceResult) -> None:
         """Best-effort live journal row; never fails the reduce path."""
@@ -952,6 +1029,12 @@ class NarrativeRuntime:
                     ),
                     name=f"narrative-silence-{generation}",
                 )
+            elif effect == "effect:request_silence_fact":
+                if self._on_silence_due is not None:
+                    try:
+                        self._on_silence_due()
+                    except Exception:
+                        logger.exception("narrative silence fact request failed")
             elif effect == "effect:arm_validity_deadline":
                 await self._cancel_task("_validity_deadline_task")
                 generation = self._validity_generation
@@ -1610,6 +1693,11 @@ class NarrativeRuntime:
             at_mono_ms=at_mono_ms,
         )
         self._decision_ring.append(entry)
+        if self._on_trace is not None:
+            try:
+                self._on_trace("director_decision", dict(entry))
+            except Exception:
+                logger.warning("Commentary decision trace failed")
         if decision.selected is not None and decision.speech == "speak":
             effects.append("director_selected")
             self._director_selected_beat_id = decision.selected.beat_id
@@ -1732,6 +1820,9 @@ class NarrativeRuntime:
             self._realization.update(self._selected_microplan.verify_payload())
         if self._realization_config_signature is not None:
             self._realization["configSignature"] = self._realization_config_signature()
+        if self._realization_wording_policy is not None:
+            # Application-owned policy frozen before IO, never from model output.
+            self._realization["wordingPolicy"] = self._realization_wording_policy()
         self._utterance = None
         if self._freshness_gate is not None:
             self._commit_token = self._default_commit_token()
@@ -1828,6 +1919,33 @@ class NarrativeRuntime:
         if self._lane == "stopping":
             effects.append("ignored_while_stopping")
             return "handled", effects
+        if (
+            self._lane == "building"
+            and not part.batch.has_timeline_transition
+            and self._realization is not None
+            and isinstance(self._realization.get("microplan"), dict)
+        ):
+            incumbent = Microplan.from_dict(self._realization["microplan"])
+            new_plans = [
+                Microplan.from_dict(raw)
+                for event in part.batch.events
+                if isinstance((raw := event.payload.get("microplan")), dict)
+            ]
+            if (
+                incumbent.beat_id == "HUNTING"
+                and len(new_plans) == len(part.batch.events)
+                and all(
+                    plan.beat_id == "HUNTING" and plan.actors == incumbent.actors
+                    for plan in new_plans
+                )
+                and self._microplan_is_current(
+                    self._realization, now_ms=int(command.enqueued_mono_ms)
+                )
+            ):
+                # A new detector episode for the same named pair does not
+                # invalidate the still-current spoken facts in flight.
+                effects.append("building_retained_same_battle")
+                return "handled", effects
         open_reason: str | None = None
         if self._lane == "building":
             self._cancel_building(effects, reason="replaced_precommit")
@@ -1950,6 +2068,15 @@ class NarrativeRuntime:
             return "ignored_stale_or_inapplicable", ["stale_silence_generation"]
         self._silence_generation = generation
         effects = ["silence_armed"]
+        if self._on_silence_due is not None:
+            if (
+                self._lane == "idle"
+                and self._runtime in {"ready", "degraded"}
+                and self._narrative_run_active
+            ):
+                effects.append("effect:request_silence_fact")
+            self._rearm_silence_deadline(effects)
+            return "handled", effects
         if self._lane == "idle" and self._runtime in {"ready", "degraded"}:
             open_reason: str | None = None
             if self._plans_in_cycle == 0:
@@ -1957,6 +2084,10 @@ class NarrativeRuntime:
             elif self._plans_in_cycle >= MAX_PLANS_PER_CYCLE:
                 open_reason = "silence_after_exhausted"
             self._dispatch_plan(effects, open_cycle_reason=open_reason)
+            if self._lane == "idle":
+                # No eligible fresh fact: check again later instead of leaving
+                # the watchdog permanently disarmed after its first expiry.
+                self._rearm_silence_deadline(effects)
         return "handled", effects
 
     def _on_validity(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
@@ -2124,6 +2255,12 @@ class NarrativeRuntime:
             actor_bindings=tuple(bindings),
             required_actors=frozenset(required),
             allowed_sentences=allowed_sentences,
+            experimental_free_wording=(
+                isinstance(self._realization, dict)
+                and isinstance(self._realization.get("microplan"), dict)
+                and self._realization.get("wordingPolicy") == "experimental_free"
+                and command.payload.get("backend") == "qwen_compiled"
+            ),
             now_ms=int(command.enqueued_mono_ms),
             deadline_mono_ms=int(command.enqueued_mono_ms) + 60_000,
         )
@@ -2236,7 +2373,9 @@ class NarrativeRuntime:
                     self._invalidate_episode(effects)
                     self._note_director_failure(effects)
                     return "handled", effects
-                semantic_verdict = "accepted"
+                semantic_verdict = (
+                    "not_enforced" if intent.experimental_free_wording else "accepted"
+                )
         self._lane = "committed"
         self._utterance = {
             "utteranceId": f"utterance:{self._reducer_sequence}",
@@ -2286,10 +2425,18 @@ class NarrativeRuntime:
         self._realization = None
         self._commit_token = None
         self._lane = "idle"
-        effects = ["realization_failed", "effect:cancel_realization_deadline"]
+        # The frozen result DTO has only succeeded/failed/cancelled. A valid
+        # model skip uses the reserved internal command ID and leaves this
+        # planning opportunity silent without charging a director failure.
+        model_skip = str(command.command_id).startswith("effect:rz-skip:")
+        effects = [
+            "realization_skipped" if model_skip else "realization_failed",
+            "effect:cancel_realization_deadline",
+        ]
         self._release_opportunity_attempt(effects)
         self._invalidate_episode(effects)
-        self._note_director_failure(effects)
+        if not model_skip:
+            self._note_director_failure(effects)
         return "handled", effects
 
     def _on_realization_deadline(self, command: NarrativeCommand) -> tuple[Disposition, list[str]]:
