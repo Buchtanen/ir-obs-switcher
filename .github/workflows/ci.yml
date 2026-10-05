@@ -15,7 +15,7 @@ jobs:
         working-directory: frontend/studio
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.25.0
       - uses: actions/setup-node@v6
