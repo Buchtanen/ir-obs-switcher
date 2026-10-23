@@ -93,7 +93,7 @@ jobs:
 
       - name: Upload coverage HTML
         if: ${{ inputs.run_coverage && matrix.python-version == inputs.coverage_python }}
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-html
           path: htmlcov/
